@@ -1,10 +1,16 @@
 "use client";
 import { useState } from "react";
+import { useAdmin } from "@/src/lib/hooks/useAdmin";
 import SeccionConfirmacion from "../components/SeccionConfirmacion";
+import SeccionAdminMercado from "../components/SeccionAdminMercado";
+import SeccionReglamentoMercado from "../components/SeccionRegalementoMercado";
+import SeccionTraspasos from "../components/SeccionTraspasos";
 
 export default function FichajesPage() {
     const [activeTab, setActiveTab] = useState("traspasos");
+    const { isAdmin, loading } = useAdmin(); // Usamos la auth real
 
+    if (loading) return <div className="text-white p-10">Cargando credenciales...</div>;
     return (
         <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] font-sans p-6 md:p-10">
             {/* HEADER */}
@@ -17,6 +23,11 @@ export default function FichajesPage() {
 
             {/* NAVEGACIÓN DE SECCIONES (TABS) */}
             <div className="max-w-6xl mx-auto flex flex-wrap border-b border-[#2a2a2a] mb-10">
+                <TabButton
+                    label="Reglamento"
+                    active={activeTab === "reglamento"}
+                    onClick={() => setActiveTab("reglamento")}
+                />
                 <TabButton
                     label="Traspasos"
                     active={activeTab === "traspasos"}
@@ -32,13 +43,28 @@ export default function FichajesPage() {
                     active={activeTab === "confirmacion"}
                     onClick={() => setActiveTab("confirmacion")}
                 />
+
+                {/* TAB EXCLUSIVA PARA ADMIN */}
+                {!loading && isAdmin && (
+                    <TabButton
+                        label="Panel Admin"
+                        active={activeTab === "admin"}
+                        onClick={() => setActiveTab("admin")}
+                    />
+                )}
             </div>
 
             {/* CONTENIDO DINÁMICO */}
             <div className="max-w-6xl mx-auto">
+                {/* Mostramos un loader discreto si está verificando el rol */}
+                {loading && activeTab === "admin" && <p className="text-[#444] animate-pulse">Verificando credenciales...</p>}
+                {activeTab === "reglamento" && <SeccionReglamentoMercado />}
                 {activeTab === "traspasos" && <SeccionTraspasos />}
                 {activeTab === "libres" && <SeccionLibres />}
                 {activeTab === "confirmacion" && <SeccionConfirmacion />}
+
+                {/* Renderizado seguro del panel admin */}
+                {activeTab === "admin" && isAdmin && <SeccionAdminMercado />}
             </div>
         </main>
     );
@@ -50,8 +76,8 @@ function TabButton({ label, active, onClick }: { label: string, active: boolean,
         <button
             onClick={onClick}
             className={`font-bebas text-xl md:text-2xl tracking-[3px] px-8 py-4 transition-all uppercase ${active
-                    ? "text-[#c9a84c] border-b-4 border-[#c9a84c] bg-[#111]"
-                    : "text-[#444] hover:text-[#888]"
+                ? "text-[#c9a84c] border-b-4 border-[#c9a84c] bg-[#111]"
+                : "text-[#444] hover:text-[#888]"
                 }`}
         >
             {label}
@@ -59,32 +85,6 @@ function TabButton({ label, active, onClick }: { label: string, active: boolean,
     );
 }
 
-function SeccionTraspasos() {
-    return (
-        <div className="grid gap-4">
-            <h3 className="font-barlow-condensed text-[#888] uppercase tracking-[3px] mb-4 text-sm">Últimos movimientos entre clubes</h3>
-            {/* Ejemplo de Fila de Traspaso */}
-            <div className="bg-[#111] border border-[#2a2a2a] p-4 flex items-center justify-between group hover:border-[#c9a84c] transition-colors">
-                <div className="flex flex-col">
-                    <span className="text-white font-bold text-lg uppercase tracking-wider">Cristiano Ronaldo</span>
-                    <span className="text-[10px] text-[#c9a84c] tracking-[2px] uppercase">Delantero (DC)</span>
-                </div>
-                <div className="flex items-center gap-6">
-                    <div className="text-right">
-                        <span className="block text-[10px] text-[#444] uppercase">Origen</span>
-                        <span className="text-sm font-barlow-condensed">Real Madrid</span>
-                    </div>
-                    <span className="text-[#c9a84c] font-bebas text-2xl">→</span>
-                    <div className="text-left">
-                        <span className="block text-[10px] text-[#444] uppercase">Destino</span>
-                        <span className="text-sm font-barlow-condensed">Inter de Milán</span>
-                    </div>
-                </div>
-                <div className="font-bebas text-2xl text-[#27ae60]">$15.000.000</div>
-            </div>
-        </div>
-    );
-}
 
 function SeccionLibres() {
     return (

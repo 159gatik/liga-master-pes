@@ -102,7 +102,6 @@ function SeccionPlantilla({ equipoId }: { equipoId: string }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Accedemos a la sub-colección 'plantilla' dentro del equipo seleccionado
         const plantillaRef = collection(db, "equipos", equipoId, "plantilla");
         const q = query(plantillaRef, orderBy("dorsal", "asc"));
 
@@ -117,17 +116,23 @@ function SeccionPlantilla({ equipoId }: { equipoId: string }) {
         return () => unsubscribe();
     }, [equipoId]);
 
-    const valorTotal = jugadores.reduce((acc, j) => acc + (j.valor || 0), 0);
+    // --- CÁLCULOS FINANCIEROS TOTALES ---
+    const valorTotalPlantilla = jugadores.reduce((acc, j) => acc + (j.valor || 0), 0);
+    const totalSueldos = valorTotalPlantilla * 0.10; // 10% del total
 
     if (loading) return <p className="text-[#c9a84c] font-bebas tracking-widest animate-pulse">Cargando plantel...</p>;
 
     return (
         <div className="animate-fadeIn">
-            {/* Resumen de Valor del Plantel */}
-            <div className="mb-6 flex justify-end">
-                <div className="bg-[#1a1a1a] border-l-2 border-[#27ae60] px-4 py-2 shadow-lg">
-                    <span className="text-[10px] text-[#555] uppercase tracking-widest block">Valor Total Plantilla</span>
-                    <span className="text-[#27ae60] font-bebas text-2xl">${valorTotal.toLocaleString('es-AR')}</span>
+            {/* RESUMEN FINANCIERO DEL PLANTEL */}
+            <div className="mb-8 flex flex-wrap justify-end gap-4">
+                <div className="bg-[#1a1a1a] border-l-2 border-[#27ae60] px-6 py-3 shadow-lg min-w-[200px]">
+                    <span className="text-[10px] text-[#555] uppercase tracking-widest block font-bold">Valor Total Plantilla</span>
+                    <span className="text-[#27ae60] font-bebas text-3xl">${valorTotalPlantilla.toLocaleString('es-AR')}</span>
+                </div>
+                <div className="bg-[#1a1a1a] border-l-2 border-orange-500 px-6 py-3 shadow-lg min-w-[200px]">
+                    <span className="text-[10px] text-[#555] uppercase tracking-widest block font-bold italic">Presupuesto p/ Sueldos (10%)</span>
+                    <span className="text-orange-500 font-bebas text-3xl">${totalSueldos.toLocaleString('es-AR')}</span>
                 </div>
             </div>
 
@@ -138,35 +143,59 @@ function SeccionPlantilla({ equipoId }: { equipoId: string }) {
                             <th className="pb-4 font-bold">#</th>
                             <th className="pb-4 font-bold">Jugador</th>
                             <th className="pb-4 font-bold">Posición</th>
-                            <th className="pb-4 font-bold">Edad</th>
-                            <th className="pb-4 font-bold text-right">Valor</th>
+                            <th className="pb-4 font-bold text-center">Compra (100%)</th>
+                            <th className="pb-4 font-bold text-center text-blue-400">Préstamo (30%)</th>
+                            <th className="pb-4 font-bold text-right text-orange-500 italic">Sueldo (10%)</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[#1a1a1a]">
                         {jugadores.length > 0 ? (
-                            jugadores.map((j, i) => (
-                                <tr key={i} className="hover:bg-[#ffffff03] group transition-colors">
-                                    <td className="py-4 font-mono text-[#c9a84c] text-lg">#{j.dorsal}</td>
-                                    <td className="py-4 font-bold text-white uppercase tracking-wider group-hover:text-[#c9a84c]">
-                                        {j.nombre}
-                                    </td>
-                                    <td className="py-4 text-gray-400 text-sm">{j.pos}</td>
-                                    <td className="py-4 text-gray-500 text-sm">{j.edad} años</td>
-                                    <td className="py-4 text-right font-bebas text-xl text-[#27ae60]">
-                                        ${j.valor?.toLocaleString('es-AR')}
-                                    </td>
-                                </tr>
-                            ))
+                            jugadores.map((j, i) => {
+                                // CÁLCULOS POR JUGADOR
+                                const vBase = j.valor || 0;
+                                const vPrestamo = vBase * 0.30;
+                                const vSueldo = vBase * 0.10;
+
+                                return (
+                                    <tr key={i} className="hover:bg-[#ffffff03] group transition-colors">
+                                        <td className="py-4 font-mono text-[#c9a84c] text-lg">#{j.dorsal}</td>
+                                        <td className="py-4 font-bold text-white uppercase tracking-wider group-hover:text-[#c9a84c]">
+                                            {j.nombre}
+                                            <span className="block text-[10px] text-gray-600 font-normal">{j.edad} años</span>
+                                        </td>
+                                        <td className="py-4 text-gray-400 text-sm uppercase">{j.pos}</td>
+
+                                        {/* VALOR COMPRA */}
+                                        <td className="py-4 text-center font-bebas text-xl text-[#27ae60]">
+                                            ${vBase.toLocaleString('es-AR')}
+                                        </td>
+
+                                        {/* VALOR PRÉSTAMO */}
+                                        <td className="py-4 text-center font-bebas text-xl text-blue-400/80">
+                                            ${vPrestamo.toLocaleString('es-AR')}
+                                        </td>
+
+                                        {/* VALOR SUELDO */}
+                                        <td className="py-4 text-right font-bebas text-xl text-orange-500/80">
+                                            ${vSueldo.toLocaleString('es-AR')}
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         ) : (
                             <tr>
-                                <td colSpan={5} className="py-10 text-center text-[#333] italic uppercase tracking-widest">
-                                    No hay jugadores registrados en este club
+                                    <td colSpan={6} className="py-10 text-center text-[#333] italic uppercase tracking-widest">
+                                        No hay jugadores registrados
                                 </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
             </div>
+
+            <p className="mt-6 text-[10px] text-[#444] uppercase tracking-widest text-center italic">
+                * Los valores de préstamo y sueldo son calculados automáticamente sobre la cotización base.
+            </p>
         </div>
     );
 }
