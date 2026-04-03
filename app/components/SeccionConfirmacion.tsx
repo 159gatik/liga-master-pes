@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { db } from "../../src/lib/firebase";
-import { useAdmin } from "@/src/lib/hooks/useAdmin";  // Importamos tu hook de seguridad
+import { useAuth } from "@/src/lib/hooks/useAuht"; // Importamos el nuevo hook unificado
 import {
     collection, addDoc, serverTimestamp, Timestamp, query,
     orderBy, onSnapshot, limit, getDocs, writeBatch
@@ -21,10 +21,12 @@ interface Solicitud {
 }
 
 export default function SeccionConfirmacion() {
-    const [loading, setLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState(false); // Estado para acciones de escritura
     const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
     const [jugadoresDisponibles, setJugadoresDisponibles] = useState<{ id: string, nombre: string }[]>([]);
-    const { isAdmin } = useAdmin(); // Verificamos si sos vos
+
+    // Obtenemos isAdmin y el estado de carga inicial del hook unificado
+    const { isAdmin, loading: authLoading } = useAuth();
 
     const [formData, setFormData] = useState({
         vendedorId: "",
@@ -83,7 +85,7 @@ export default function SeccionConfirmacion() {
         const confirmar = confirm("⚠️ ¿ESTÁS SEGURO? Se borrarán todas las solicitudes del historial permanentemente.");
         if (!confirmar) return;
 
-        setLoading(true);
+        setActionLoading(true);
         try {
             const batch = writeBatch(db);
             const snapshot = await getDocs(collection(db, "solicitudes_mercado"));
@@ -94,7 +96,7 @@ export default function SeccionConfirmacion() {
             console.error("Error al borrar:", error);
             alert("No tienes permisos para borrar.");
         } finally {
-            setLoading(false);
+            setActionLoading(false);
         }
     };
 
@@ -105,7 +107,7 @@ export default function SeccionConfirmacion() {
             return;
         }
 
-        setLoading(true);
+        setActionLoading(true);
         try {
             await addDoc(collection(db, "solicitudes_mercado"), {
                 vendedorId: formData.vendedorId,
@@ -123,9 +125,12 @@ export default function SeccionConfirmacion() {
             console.error("Error:", error);
             alert("Error al enviar la solicitud.");
         } finally {
-            setLoading(false);
+            setActionLoading(false);
         }
     };
+
+    // Si el hook de auth todavía está cargando, mostramos un estado neutro
+    if (authLoading) return <div className="text-center py-10 font-bebas text-[#c9a84c] animate-pulse">Sincronizando...</div>;
 
     return (
         <div className="max-w-4xl mx-auto space-y-10">
@@ -201,15 +206,15 @@ export default function SeccionConfirmacion() {
 
                     <button
                         type="submit"
-                        disabled={loading}
-                        className={`w-full font-bold py-3 uppercase tracking-[3px] transition-all ${loading ? "bg-gray-600" : "bg-[#27ae60] text-black hover:bg-white"}`}
+                        disabled={actionLoading}
+                        className={`w-full font-bold py-3 uppercase tracking-[3px] transition-all ${actionLoading ? "bg-gray-600" : "bg-[#27ae60] text-black hover:bg-white"}`}
                     >
-                        {loading ? "Enviando..." : "Enviar para Validación"}
+                        {actionLoading ? "Enviando..." : "Enviar para Validación"}
                     </button>
                 </form>
             </div>
 
-            {/* FEED DE ACTIVIDAD CON BOTÓN DE BORRADO */}
+            {/* FEED DE ACTIVIDAD */}
             <div className="space-y-4">
                 <div className="flex justify-between items-end border-b border-[#2a2a2a] pb-2">
                     <h5 className="font-barlow-condensed text-[#888] uppercase tracking-[4px] text-sm">
@@ -218,10 +223,10 @@ export default function SeccionConfirmacion() {
                     {isAdmin && (
                         <button
                             onClick={limpiarHistorial}
-                            disabled={loading}
+                            disabled={actionLoading}
                             className="text-[10px] bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-900 px-3 py-1 transition-all uppercase font-bold tracking-widest disabled:opacity-50"
                         >
-                            {loading ? "Limpiando..." : "Limpiar Historial"}
+                            {actionLoading ? "Limpiando..." : "Limpiar Historial"}
                         </button>
                     )}
                 </div>

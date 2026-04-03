@@ -1,17 +1,45 @@
 "use client";
 import { useState } from "react";
-import { useAdmin } from "@/src/lib/hooks/useAdmin";
+import { useAuth } from "@/src/lib/hooks/useAuht"; // Ruta unificada
+import Link from "next/link";
+// Ya no necesitamos useAdmin aquí
 import SeccionConfirmacion from "../components/SeccionConfirmacion";
 import SeccionAdminMercado from "../components/SeccionAdminMercado";
 import SeccionReglamentoMercado from "../components/SeccionRegalementoMercado";
 import SeccionTraspasos from "../components/SeccionTraspasos";
+import SeccionLibres from "../components/SeccionLibres";
 
 export default function FichajesPage() {
     const [activeTab, setActiveTab] = useState("traspasos");
-    const { isAdmin, loading } = useAdmin(); // Usamos la auth real
 
-    if (loading) return <div className="text-white p-10">Cargando credenciales...</div>;
+    // Extraemos todo de useAuth. isAdmin ahora viene de aquí.
+    const { user, userData, isAdmin, loading } = useAuth();
+
+    // 1. ESTADO DE CARGA UNIFICADO
+    if (loading) return (
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+            <div className="text-[#c9a84c] font-bebas text-2xl animate-pulse tracking-widest">
+                VERIFICANDO CREDENCIALES...
+            </div>
+        </div>
+    );
+
+    // 2. PROTECCIÓN: USUARIO NO REGISTRADO (Público general)
+    if (!user) {
+        return (
+            <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 text-center">
+                <h2 className="font-bebas text-5xl text-white mb-4 italic uppercase">Contenido Restringido</h2>
+                <p className="font-barlow-condensed text-[#555] uppercase tracking-[3px] mb-8 max-w-md">
+                    Debes formar parte de la liga para acceder al mercado de pases y ver los movimientos oficiales.
+                </p>
+                <Link href="/register" className="bg-[#c9a84c] text-black px-10 py-4 font-bebas text-2xl uppercase tracking-widest hover:bg-white transition-all shadow-lg">
+                    Registrarse en la Liga
+                </Link>
+            </div>
+        );
+    }
     return (
+
         <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] font-sans p-6 md:p-10">
             {/* HEADER */}
             <div className="max-w-6xl mx-auto mb-10 border-l-4 border-[#c9a84c] pl-5 flex flex-col md:flex-row md:items-baseline gap-4">
@@ -33,19 +61,31 @@ export default function FichajesPage() {
                     active={activeTab === "traspasos"}
                     onClick={() => setActiveTab("traspasos")}
                 />
-                <TabButton
-                    label="Jugadores Libres"
-                    active={activeTab === "libres"}
-                    onClick={() => setActiveTab("libres")}
-                />
-                <TabButton
-                    label="Confirmación"
-                    active={activeTab === "confirmacion"}
-                    onClick={() => setActiveTab("confirmacion")}
-                />
 
-                {/* TAB EXCLUSIVA PARA ADMIN */}
-                {!loading && isAdmin && (
+                {/* ACCESO PARA DTs O ADMINS */}
+                {(userData?.rol === "dt" || isAdmin) ? (
+                    <>
+                        <TabButton
+                            label="Jugadores Libres"
+                            active={activeTab === "libres"}
+                            onClick={() => setActiveTab("libres")}
+                        />
+                        <TabButton
+                            label="Confirmación"
+                            active={activeTab === "confirmacion"}
+                            onClick={() => setActiveTab("confirmacion")}
+                        />
+                    </>
+                ) : (
+                    <div className="flex items-center px-4">
+                        <span className="text-[10px] text-[#333] uppercase font-bold tracking-widest border border-[#222] px-2 py-1">
+                            Acceso DT Requerido
+                        </span>
+                    </div>
+                )}
+
+                {/* TAB EXCLUSIVA DE ADMIN */}
+                {isAdmin && (
                     <TabButton
                         label="Panel Admin"
                         active={activeTab === "admin"}
@@ -56,22 +96,30 @@ export default function FichajesPage() {
 
             {/* CONTENIDO DINÁMICO */}
             <div className="max-w-6xl mx-auto">
-                {/* Mostramos un loader discreto si está verificando el rol */}
-                {loading && activeTab === "admin" && <p className="text-[#444] animate-pulse">Verificando credenciales...</p>}
                 {activeTab === "reglamento" && <SeccionReglamentoMercado />}
                 {activeTab === "traspasos" && <SeccionTraspasos />}
-                {activeTab === "libres" && <SeccionLibres />}
-                {activeTab === "confirmacion" && <SeccionConfirmacion />}
 
-                {/* Renderizado seguro del panel admin */}
+                {/* Renderizado de secciones protegidas */}
+                {activeTab === "libres" && (userData?.rol === "dt" || isAdmin) && <SeccionLibres />}
+                {activeTab === "confirmacion" && (userData?.rol === "dt" || isAdmin) && <SeccionConfirmacion />}
                 {activeTab === "admin" && isAdmin && <SeccionAdminMercado />}
+
+                {/* Mensaje de bloqueo para usuarios invitados (sin equipo) */}
+                {(activeTab === "libres" || activeTab === "confirmacion") && userData?.rol === "invitado" && !isAdmin && (
+                    <div className="py-20 text-center border border-[#1a1a1a] bg-[#050505] animate-fade-in">
+                        <p className="text-[#c9a84c] font-bebas text-3xl mb-2">ACCESO DENEGADO</p>
+                        <p className="text-[#555] font-barlow-condensed uppercase tracking-widest text-sm">
+                            Tu cuenta aún no tiene un equipo asignado para realizar operaciones.
+                        </p>
+                    </div>
+                )}
             </div>
         </main>
     );
 }
 
-// Componente para los botones del menú superior
 function TabButton({ label, active, onClick }: { label: string, active: boolean, onClick: () => void }) {
+
     return (
         <button
             onClick={onClick}
@@ -82,35 +130,5 @@ function TabButton({ label, active, onClick }: { label: string, active: boolean,
         >
             {label}
         </button>
-    );
-}
-
-
-function SeccionLibres() {
-    return (
-        <div className="bg-[#111] border border-[#2a2a2a] overflow-hidden">
-            <table className="w-full text-left font-barlow-condensed">
-                <thead>
-                    <tr className="bg-[#1a1a1a] text-[#888] text-[10px] uppercase tracking-[2px]">
-                        <th className="p-4">Jugador</th>
-                        <th className="p-4">Posición</th>
-                        <th className="p-4">Edad</th>
-                        <th className="p-4">Cotización (80%)</th>
-                        <th className="p-4 text-center">Acción</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-[#2a2a2a]">
-                    <tr className="hover:bg-[#ffffff05] transition-colors">
-                        <td className="p-4 font-bold text-white uppercase tracking-wider">D. Forlán</td>
-                        <td className="p-4 text-[#c9a84c]">DC</td>
-                        <td className="p-4">33</td>
-                        <td className="p-4">$4.000.000</td>
-                        <td className="p-4 text-center">
-                            <button className="bg-[#c9a84c] text-black text-[10px] font-bold px-3 py-1 uppercase tracking-tighter hover:bg-white">Fichar</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
     );
 }

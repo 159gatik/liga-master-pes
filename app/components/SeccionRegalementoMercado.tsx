@@ -30,7 +30,7 @@ export default function SeccionReglamentoMercado() {
                 {/* REGLA 2: PRÉSTAMOS */}
                 <div className="bg-[#111] border border-[#2a2a2a] p-6 hover:border-blue-500 transition-colors">
                     <div className="flex items-center gap-3 mb-4">
-                        <span className="bg-blue-600 text-white font-bold px-2 py-1 text-xs uppercase">Cesión</span>
+                        <span className="bg-blue-600 text-white font-bold px-2 py-1 text-xs uppercase">Préstamo</span>
                         <h4 className="text-xl text-white font-bold uppercase tracking-wider">Préstamo Temporal</h4>
                     </div>
                     <p className="text-gray-400 text-sm leading-relaxed">
@@ -50,9 +50,6 @@ export default function SeccionReglamentoMercado() {
                     <p className="text-gray-400 text-sm leading-relaxed">
                         Cada club debe abonar el **10% del valor total de su plantilla** al finalizar la temporada en concepto de fichas y salarios. Si el presupuesto es negativo, el club no podrá realizar fichajes.
                     </p>
-                    <div className="mt-4 text-orange-500 font-bold text-xs uppercase tracking-widest">
-                        Cálculo: (Valor Total Plantel) x 0.10
-                    </div>
                 </div>
 
                 {/* REGLA 4: JUGADORES LIBRES */}
