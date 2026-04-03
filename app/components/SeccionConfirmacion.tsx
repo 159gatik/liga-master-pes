@@ -60,26 +60,48 @@ export default function SeccionConfirmacion() {
     }, []);
 
     // 2. CARGAR JUGADORES CUANDO CAMBIA EL VENDEDOR
+    // 2. CARGAR JUGADORES DESDE SUBCOLECCIÓN CUANDO CAMBIA EL VENDEDOR
     useEffect(() => {
         const cargarJugadores = async () => {
+            // Si no hay vendedorId, limpiamos la lista
             if (!formData.vendedorId) {
                 setJugadoresDisponibles([]);
                 return;
             }
+
+            console.log("Consultando plantilla del equipo ID:", formData.vendedorId);
+
             try {
-                const querySnapshot = await getDocs(collection(db, `equipos/${formData.vendedorId}/plantilla`));
-                const docs = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    nombre: doc.data().nombre || doc.id
-                }));
+                // Referencia exacta a la subcolección: equipos -> {ID} -> plantilla
+                const plantillaRef = collection(db, "equipos", formData.vendedorId, "plantilla");
+                const querySnapshot = await getDocs(plantillaRef);
+
+                if (querySnapshot.empty) {
+                    console.warn("La plantilla está vacía en Firestore para este equipo.");
+                    setJugadoresDisponibles([]);
+                    return;
+                }
+
+                const docs = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        // IMPORTANTE: Verifica si en Firestore el campo es 'nombre', 'jugador' o 'Nombre'
+                        nombre: data.nombre || data.jugador || data.Nombre || doc.id
+                    };
+                });
+
+                console.log("Jugadores encontrados:", docs.length);
                 setJugadoresDisponibles(docs);
+
             } catch (error) {
-                console.error("Error cargando plantilla:", error);
+                console.error("Error crítico cargando plantilla:", error);
+                setJugadoresDisponibles([]);
             }
         };
+
         cargarJugadores();
     }, [formData.vendedorId]);
-
     // 3. FUNCIÓN PARA BORRAR TODO EL HISTORIAL (SOLO ADMIN)
     const limpiarHistorial = async () => {
         const confirmar = confirm("⚠️ ¿ESTÁS SEGURO? Se borrarán todas las solicitudes del historial permanentemente.");
