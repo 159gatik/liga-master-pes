@@ -22,7 +22,7 @@ export default function LoginForm() {
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            router.push("/equipos");
+            router.push("/");
         } catch (error) {
             console.error("Error de usuario:", error);
             let textoError = "Error al iniciar sesión.";

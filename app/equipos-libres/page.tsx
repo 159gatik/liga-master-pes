@@ -24,7 +24,7 @@ interface Equipo {
 }
 
 export default function EquiposLibresPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, userData, loading: authLoading } = useAuth();
     const [equipos, setEquipos] = useState<Equipo[]>([]);
     const [selectedTeam, setSelectedTeam] = useState("");
     const [loading, setLoading] = useState(true);
@@ -97,7 +97,9 @@ export default function EquiposLibresPage() {
             ) : (
                 <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-6 mb-16">
                         {equipos.map((equipo) => {
-                            const isLibre = equipo.estado === 'Libre';
+                            // CAMBIO CLAVE: Validamos si el estado es distinto a 'Ocupado'
+                            // O si prefieres, equipo.estado === 'Disponible' (asegúrate que en DB diga así)
+                            const isLibre = equipo.estado !== 'Ocupado';
                             const isSelected = equipo.nombre === selectedTeam;
 
                             return (
@@ -107,6 +109,7 @@ export default function EquiposLibresPage() {
                                         ? 'border-white scale-105 z-10 shadow-[0_0_25px_rgba(201,168,76,0.2)]'
                                         : (isLibre && !yaPostulado)
                                             ? 'border-[#27ae60]/30 cursor-pointer hover:border-[#27ae60]'
+                                            // Si está ocupado, le damos el estilo de "bloqueado"
                                             : 'border-[#2a2a2a] opacity-40 grayscale pointer-events-none'
                                         }`}
                                     onClick={() => !yaPostulado && isLibre && setSelectedTeam(equipo.nombre)}
@@ -122,18 +125,27 @@ export default function EquiposLibresPage() {
                                     <h3 className="font-bebas text-xl tracking-wider text-center text-white italic">
                                         {equipo.nombre}
                                     </h3>
-                                    <div className="mt-2 text-center">
-                                        <span className={`text-[10px] font-bold uppercase px-3 py-0.5 tracking-tighter ${isLibre ? 'bg-[#27ae60] text-black' : 'bg-[#333] text-gray-400'
+
+                                    <div className="mt-2 text-center w-full">
+                                        <span className={`text-[10px] font-bold uppercase px-3 py-0.5 tracking-tighter block truncate ${isLibre
+                                            ? 'bg-[#27ae60] text-black'
+                                            : 'bg-red-900/20 text-red-500 border border-red-900/50'
                                             }`}>
-                                            {isLibre ? 'Disponible' : `DT: ${equipo.dt}`}
+                                            {isLibre ? 'Disponible' : `DT: ${equipo.dt || 'Ocupado'}`}
                                         </span>
                                     </div>
+
+                                    {/* Badge visual de "Tu Equipo" si el ID coincide */}
+                                    {userData && equipo.dt === userData.nombre && (
+                                        <div className="absolute -top-2 -right-2 bg-[#c9a84c] text-black text-[8px] font-bold px-2 py-1 shadow-lg z-20">
+                                            TU CLUB
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
                 </div>
             )}
-
             {/* SECCIÓN DINÁMICA: FORMULARIO O CARTEL DE YA POSTULADO */}
             <div className="max-w-xl mx-auto">
                 {yaPostulado ? (
@@ -162,8 +174,9 @@ export default function EquiposLibresPage() {
                                 )}
                             </div>
                             <FormularioPostulacion
-                                key={selectedTeam}
+                                key={selectedTeam} // Esto reinicia el form al cambiar equipo
                                 equipoPreseleccionado={selectedTeam}
+                                equipoIdPreseleccionado={equipos.find(e => e.nombre === selectedTeam)?.id} // <--- Pasamos el ID real
                             />
                     </>
                 )}

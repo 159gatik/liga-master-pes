@@ -1,11 +1,40 @@
 "use client";
+import { useState, useEffect } from "react";
 import Link from 'next/link';
-import { useAuth } from '@/src/lib/hooks/useAuht'; // Importamos el hook de autenticación
+import { useAuth } from '@/src/lib/hooks/useAuht';
+import { db } from "@/src/lib/firebase";
+import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 
 export default function Page() {
-    const { user, loading } = useAuth(); // Obtenemos el estado del usuario
+    const { user, userData, loading } = useAuth();
+    const [yaPostulado, setYaPostulado] = useState(false);
+    const [equipos, setEquipos] = useState([]); // Estado para los despachos
 
-    // Datos de ejemplo (Luego los traerás de Firestore)
+    useEffect(() => {
+        // 1. Cargar equipos para la grilla de Despachos
+        const qEquipos = query(collection(db, "equipos"), orderBy("nombre", "asc"));
+        const unsubEquipos = onSnapshot(qEquipos, (snapshot) => {
+            setEquipos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+
+        // 2. Verificar si el usuario ya se postuló
+        if (!user) return;
+        const q = query(
+            collection(db, "postulaciones"),
+            where("uid", "==", user.uid)
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setYaPostulado(!snapshot.empty);
+        }, (error) => {
+            console.error("Error en el listener:", error);
+        });
+
+        return () => {
+            unsubEquipos();
+            unsubscribe();
+        };
+    }, [user]);
+
     const resultados = [
         { local: "[ Local ]", score: "vs", visita: "[ Visitante ]", pendiente: true },
         { local: "[ Local ]", score: "vs", visita: "[ Visitante ]", pendiente: true },
@@ -46,54 +75,65 @@ export default function Page() {
                         El Legado es una liga de PES 6 online entre amigos, donde cada DT defiende los colores de su equipo y compite por el título.
                     </p>
 
-                    <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-wrap gap-4 items-center">
                         <Link href="/equipos" className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
                             Equipos
                         </Link>
 
-                        {/* LÓGICA DINÁMICA DE BOTONES */}
                         {!loading && (
                             <>
                                 {!user ? (
-                                    // Si NO está logueado (Invitado)
+                                    // CASO: INVITADO
                                     <Link href="/register" className="bg-[#c9a84c] border-2 border-[#c9a84c] text-[#0a0a0a] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:border-white transition-all shadow-[0_0_15px_rgba(201,168,76,0.3)]">
                                         Registrate para participar
                                     </Link>
                                 ) : (
-                                    // Si YA está logueado
-                                    <Link href="/equipos-libres" className="bg-[#c9a84c] border-2 border-[#c9a84c] text-[#0a0a0a] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:border-white transition-all">
-                                        Postulate a un equipo
-                                    </Link>
+                                        // CASO: LOGUEADO (Mostramos Despachos y el estado de su postulación/club)
+                                        <>
+                                            {userData?.equipoId ? (
+                                                <Link href="/perfil" className="bg-[#27ae60] border-2 border-[#27ae60] text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-[#27ae60] transition-all font-bold">
+                                                    Ir a mi Oficina
+                                                </Link>
+                                            ) : yaPostulado ? (
+                                                <button disabled className="bg-[#333] border-2 border-[#333] text-[#888] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 cursor-not-allowed opacity-70">
+                                                    Postulación en revisión
+                                                </button>
+                                            ) : (
+                                                <Link href="/equipos-libres" className="bg-[#c9a84c] border-2 border-[#c9a84c] text-[#0a0a0a] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:border-white transition-all shadow-[0_0_15px_rgba(201,168,76,0.3)]">
+                                                    Postulate a un equipo
+                                                </Link>
+                                            )}
+
+                                        {/* BOTÓN DESPACHOS: Solo aparece si 'user' existe */}
+                                        <Link href="/despachos" className="border-2 border-white text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-black transition-all italic">
+                                            Despachos
+                                        </Link>
+                                    </>
                                 )}
                             </>
                         )}
 
                         <Link href="/reglamento" className="border-2 border-[#444] text-[#888] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-all">
-                            Ver Reglamento
+                            Reglamento
                         </Link>
                     </div>
                 </div>
             </section>
 
-            {/* RESTO DEL CONTENIDO (STATS, CAMPEÓN, GRID, NOVEDADES) */}
+            {/* ESTADÍSTICAS RÁPIDAS */}
             <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-3 mb-10">
-                <StatCard value="0" label="Participantes" />
+                <StatCard value={`${equipos.length}`} label="Clubes" />
                 <StatCard value="0" label="Partidos Jugados" />
                 <StatCard value="0" label="Goles Totales" />
                 <StatCard value="0" label="Fechas Restantes" />
                 <StatCard value="I" label="Edición" />
             </div>
 
-            <div className="max-w-6xl mx-auto bg-gradient-to-r from-[#1a1400] via-[#0a0a0a] to-[#1a1200] border border-[#c9a84c] p-8 flex items-center justify-between mb-10">
-                <div>
-                    <div className="text-[#c9a84c] opacity-70 font-barlow-condensed text-xs tracking-[4px] uppercase mb-2">🏆 Campeón actual</div>
-                    <div className="font-bebas text-4xl text-[#c9a84c] tracking-[5px]">-</div>
-                    <div className="text-[#f0ece0] opacity-60 font-barlow-condensed text-sm tracking-[2px]">-</div>
-                </div>
-                <div className="text-6xl opacity-40">🏆</div>
-            </div>
 
+
+            {/* GRILLA INFERIOR: RESULTADOS Y POSICIONES */}
             <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
+
                 {/* PANEL: ÚLTIMOS RESULTADOS */}
                 <div className="bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden">
                     <div className="flex justify-between items-center p-4 bg-[#222222] border-b border-[#2a2a2a]">
@@ -133,9 +173,9 @@ export default function Page() {
                                 <th className="p-3">PTS</th>
                             </tr>
                         </thead>
-                        <tbody className="font-barlow-condensed text-sm uppercase">
+                        <tbody className="font-barlow-condensed text-sm uppercase text-[#444] opacity-50 italic">
                             {[1, 2, 3, 4].map((pos) => (
-                                <tr key={pos} className="border-b border-[#1e1e1e] text-[#888] opacity-50">
+                                <tr key={pos} className="border-b border-[#1e1e1e]">
                                     <td className="p-3 font-bebas text-lg">{pos}</td>
                                     <td className="p-3 text-left">[ Equipo ]</td>
                                     <td className="p-3">—</td>
@@ -155,16 +195,16 @@ export default function Page() {
                 </div>
                 <div className="divide-y divide-[#1e1e1e]">
                     {noticias.map((nota, i) => (
-                        <div key={i} className="flex gap-6 p-5 hover:bg-[#c9a84c05] transition-colors cursor-pointer">
+                        <div key={i} className="flex gap-6 p-5 hover:bg-[#c9a84c05] transition-colors cursor-pointer text-[#888]">
                             <div className="text-center min-w-[50px]">
                                 <div className="font-bebas text-2xl text-[#c9a84c] leading-none">{nota.dia}</div>
-                                <div className="font-barlow-condensed text-[10px] tracking-[2px] text-[#888888]">{nota.mes}</div>
+                                <div className="font-barlow-condensed text-[10px] tracking-[2px]">{nota.mes}</div>
                             </div>
                             <div>
                                 <h4 className="font-barlow-condensed font-bold text-base uppercase tracking-wider text-white mb-1">
                                     {nota.titulo}
                                 </h4>
-                                <p className="text-sm text-[#888888] leading-relaxed">{nota.desc}</p>
+                                <p className="text-sm leading-relaxed">{nota.desc}</p>
                             </div>
                         </div>
                     ))}
