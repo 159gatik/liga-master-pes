@@ -1,6 +1,7 @@
 import { Bebas_Neue, Barlow_Condensed, Barlow } from 'next/font/google';
 import "./globals.css"; // <--- ESTA LÍNEA ES VITAL
 import Navbar from "./components/Navbar";
+import Footer from './components/Footer';
 const bebas = Bebas_Neue({
   weight: '400',
   subsets: ['latin'],
@@ -25,6 +26,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <body className="font-sans bg-[#0a0a0a]">
         <Navbar /> {/* <--- EL NAV APARECERÁ ARRIBA DE TODO */}
         {children}
+        <Footer />
       </body>
     </html>
   );

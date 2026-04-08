@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/src/lib/hooks/useAuht';
 import { db } from "@/src/lib/firebase";
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import BannerPatrocinadores from "./components/BannerPatrocinadores";
 
 export default function Page() {
     const { user, userData, loading } = useAuth();
@@ -119,6 +120,9 @@ export default function Page() {
                     </div>
                 </div>
             </section>
+
+            {/* SECCIÓN PATROCINADORES */}
+            <BannerPatrocinadores />
 
             {/* ESTADÍSTICAS RÁPIDAS */}
             <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-3 mb-10">

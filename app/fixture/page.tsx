@@ -4,8 +4,9 @@ import { db } from "@/src/lib/firebase";
 import { collection, query, onSnapshot, orderBy, doc, where, Timestamp, deleteDoc } from "firebase/firestore";
 import { useAuth } from "@/src/lib/hooks/useAuht";
 import FormularioReporte from "../components/FormularioReporte";
+import SeccionDisponibilidad from "../components/SeccionDisponibilidad";
 
-// Interfaces para tipado estricto
+// Interfaces para que no rompa las bolas el any
 interface Equipo {
     id: string;
     nombre: string;
@@ -26,12 +27,22 @@ interface Reporte {
     timestamp: Timestamp;
 }
 
+interface Disponibilidad {
+    id: string;
+    equipoId: string;
+    nombreEquipo: string;
+    fechaTorneo: number;
+    texto: string;
+    timestamp: Timestamp; //
+}
+
 export default function FixturePage() {
     const { userData } = useAuth();
     const [fechaActiva, setFechaActiva] = useState(1);
     const [equipos, setEquipos] = useState<Equipo[]>([]);
-    const [reportesFecha, setReportesFecha] = useState<Reporte[]>([]); // Solución al 'any'
+    const [reportesFecha, setReportesFecha] = useState<Reporte[]>([]); // Solución al any
     const [fechasAbiertas, setFechasAbiertas] = useState<Record<string, boolean>>({});
+    const [listaHorarios, setListaHorarios] = useState<Disponibilidad[]>([]);
     const totalFechas = 19;
 
     // 1. Carga de datos iniciales (Equipos y Estado de Fechas)
@@ -53,8 +64,7 @@ export default function FixturePage() {
         };
     }, []);
 
-    // 2. Listener de Reportes en Tiempo Real (Filtrado por fecha activa)
-    // 2. Listener de Reportes (ACTUALIZADO)
+    // 2. Reportes en Tiempo Real (Filtrado por fecha activa)
     useEffect(() => {
         // Forzamos que sea número para evitar errores de tipo
         const numFecha = Number(fechaActiva);
@@ -62,7 +72,7 @@ export default function FixturePage() {
         const qReportes = query(
             collection(db, "reportes"),
             where("fechaTorneo", "==", numFecha),
-            orderBy("timestamp", "desc") // Si esto falla, recordá el link azul en la consola
+            orderBy("timestamp", "desc") 
         );
 
         const unsubReportes = onSnapshot(qReportes, (snap) => {
@@ -79,6 +89,21 @@ export default function FixturePage() {
         return () => unsubReportes();
     }, [fechaActiva]);
 
+    useEffect(() => {
+        const q = query(
+            collection(db, "disponibilidad"),
+            where("fechaTorneo", "==", fechaActiva)
+        );
+        const unsub = onSnapshot(q, (snap) => {
+            const data = snap.docs.map(d => ({
+                id: d.id,
+                ...d.data()
+            } as Disponibilidad));
+            setListaHorarios(data);
+        });
+        return () => unsub();
+    }, [fechaActiva]);
+
     const estaAbierta = fechasAbiertas[`fecha_${fechaActiva}`] === true;
 
     const eliminarReporte = async (reporteId: string) => {
@@ -91,6 +116,19 @@ export default function FixturePage() {
             } catch (error) {
                 console.error("Error al eliminar:", error);
                 alert("No tenés permisos para eliminar o hubo un error de conexión.");
+            }
+        }
+    };
+
+    const eliminarDisponibilidad = async (id: string) => {
+        const confirmar = window.confirm("¿Estás seguro de eliminar este horario?");
+        if (confirmar) {
+            try {
+                await deleteDoc(doc(db, "disponibilidad", id));
+                alert("Disponibilidad eliminada.");
+            } catch (error) {
+                console.error("Error al eliminar:", error);
+                alert("No tienes permisos para realizar esta acción.");
             }
         }
     };
@@ -220,8 +258,49 @@ export default function FixturePage() {
                     </section>
 
                     <aside className="space-y-6">
+                        {/* SECCIÓN DE DISPONIBILIDAD PERSONAL (Solo para DTs) */}
+                        {userData?.rol === "dt" && (
+                            <SeccionDisponibilidad
+                                equipoId={userData.equipoId!}
+                                nombreEquipo={userData.nombreEquipo!}
+                                fechaActiva={fechaActiva}
+                            />
+                        )}
+
+                        {/* LISTA DE DISPONIBILIDAD DE TODOS LOS DTs */}
+                        <div className="bg-[#0f0f0f] border border-[#222] p-5 space-y-4">
+                            <h4 className="font-bebas text-2xl text-white uppercase italic">Horarios de los DTs</h4>
+                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                                {listaHorarios.length > 0 ? (
+                                    listaHorarios.map(h => (
+                                        <div key={h.id} className="border-b border-[#222] pb-2">
+                                            <p className="text-[#c9a84c] text-[15px] font-bold uppercase tracking-wider">
+                                                {h.nombreEquipo}
+                                            </p>
+                                            <p className="text-gray-400 text-[14px] leading-tight mt-1 italic">
+                                                {h.texto}
+                                            </p>
+                                            {/* BOTÓN ELIMINAR (SOLO ADMIN) */}
+                                            {userData?.rol === 'admin' && (
+                                                <button
+                                                    onClick={() => eliminarDisponibilidad(h.id)}
+                                                    className="ml-2 p-1 text-gray-600 hover:text-red-500 transition-colors"
+                                                    title="Eliminar disponibilidad"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                                    </svg>
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-gray-600 text-xs italic">Nadie cargó horarios todavía.</p>
+                                )}
+                            </div>
+                        </div>
                         <div className={`p-6 shadow-2xl transition-all border-t-2 ${estaAbierta ? "bg-[#0f0f0f] border-[#c9a84c]" : "bg-[#0f0f0f] border-red-900 opacity-60"}`}>
-                            <h4 className="font-bebas text-3xl text-white mb-2 italic uppercase">Centro de Reportes</h4>
+                            <h4 className="font-bebas text-3xl text-white mb-2 italic uppercase">Reportar partido</h4>
                             {estaAbierta ? (
                                 userData?.rol === "dt" ? (
                                     <FormularioReporte

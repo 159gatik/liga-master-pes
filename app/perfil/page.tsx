@@ -19,7 +19,7 @@ export interface UserData {
 interface Jugador {
     id: string;
     nombre: string;
-    posicion?: string;
+    pos: string;
     media?: number | string;
 }
 
@@ -113,7 +113,7 @@ export default function PerfilDT() {
                                     onError={(e) => { (e.target as HTMLImageElement).src = "/escudos/default.png" }}
                                 />
                             )}
-                            <h1 className="font-bebas text-8xl md:text-9xl leading-none tracking-tighter italic text-white uppercase">
+                            <h1 className="font-bebas text-8xl md:text-5xl leading-none tracking-tighter italic text-white uppercase">
                                 {equipoDoc?.nombre || "Cargando..."}
                             </h1>
                         </div>
@@ -132,14 +132,14 @@ export default function PerfilDT() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
 
-                    {/* PLANTILLA (Mantenemos tu lógica de grilla) */}
+                    {/* PLANTILLA */}
                     <section className="lg:col-span-2 space-y-8">
                         <div className="flex items-center justify-between border-b border-[#222] pb-4">
                             <h3 className="font-bebas text-4xl uppercase tracking-widest italic text-white">
                                 Nómina de Jugadores
                             </h3>
                             <span className="text-[#c9a84c] text-xl italic font-bold">
-                                {plantilla.length} / 23
+                                {plantilla.length}
                             </span>
                         </div>
 
@@ -148,8 +148,9 @@ export default function PerfilDT() {
                                 <div key={jugador.id} className="bg-[#111] border border-[#222] p-5 flex justify-between items-center hover:border-[#c9a84c] transition-all group">
                                     <div>
                                         <p className="text-white font-bold text-2xl uppercase group-hover:text-[#c9a84c] transition-colors leading-none">{jugador.nombre}</p>
-                                        <p className="text-[10px] text-[#555] uppercase tracking-[3px] mt-2 font-bold italic">
-                                            {jugador.posicion || "General"}
+                                        {/* POSICIÓN APARECE AQUÍ */}
+                                        <p className="text-[10px] text-[#c9a84c] uppercase tracking-[3px] mt-2 font-bold italic">
+                                            {jugador.pos || "General"}
                                         </p>
                                     </div>
                                     <div className="font-bebas text-4xl text-[#c9a84c]/40 group-hover:text-[#c9a84c] transition-colors">
@@ -163,7 +164,6 @@ export default function PerfilDT() {
                     {/* IDENTIDAD VISUAL (CARNET DE DT) */}
                     <aside className="space-y-10">
                         <div className="bg-[#111] border-2 border-[#c9a84c] p-8 relative overflow-hidden shadow-2xl">
-                            {/* Decoración Esquinas */}
                             <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#c9a84c]"></div>
                             <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#c9a84c]"></div>
 
@@ -182,7 +182,6 @@ export default function PerfilDT() {
                                     <p className="text-xl text-[#c9a84c] font-bold italic truncate">{userData.discord || "NO VINCULADO"}</p>
                                 </div>
 
-                                {/* ESTADÍSTICAS ESTILO PES */}
                                 <div className="grid grid-cols-2 gap-4 mt-8 pt-6 border-t border-[#222]">
                                     <div className="text-center">
                                         <p className="text-[10px] text-green-500 font-bold uppercase mb-1">Victorias</p>
@@ -195,14 +194,12 @@ export default function PerfilDT() {
                                 </div>
                             </div>
 
-                            {/* Marca de agua de fondo */}
-                            {/* 2. En la Credencial (Marca de agua) */}
                             {equipoDoc?.escudo && (
-                                /* eslint-disable-next-line @next/next/no-img-element */
+                                // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                     src={equipoDoc.escudo}
                                     alt=""
-                                    className="absolute -right-0 bottom-31 w-48 h-48 object-contain pointer-events-none"
+                                    className="absolute -right-0 bottom-31 w-48 h-48 object-contain pointer-events-none opacity-20"
                                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                                 />
                             )}
@@ -210,11 +207,10 @@ export default function PerfilDT() {
 
                         <div className="bg-gradient-to-r from-[#c9a84c]/10 to-transparent p-6 border-l-2 border-[#c9a84c] italic">
                             <p className="text-sm text-gray-500 font-barlow-condensed leading-snug tracking-wider uppercase">
-
+                                Gestión de oficina deportiva
                             </p>
                         </div>
                     </aside>
-
                 </div>
             </div>
         </main>

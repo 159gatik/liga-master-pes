@@ -10,7 +10,7 @@ import SeccionTraspasos from "../components/SeccionTraspasos";
 import SeccionLibres from "../components/SeccionLibres";
 
 export default function FichajesPage() {
-    const [activeTab, setActiveTab] = useState("traspasos");
+    const [activeTab, setActiveTab] = useState("reglamento");
 
     // Extraemos todo de useAuth. isAdmin ahora viene de aquí.
     const { user, userData, isAdmin, loading } = useAuth();
