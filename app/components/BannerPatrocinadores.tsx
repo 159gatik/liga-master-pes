@@ -23,12 +23,12 @@ export default function BannerPatrocinadores() {
                     <div key={index} className="flex items-center mx-12 opacity-50 hover:opacity-100 transition-opacity grayscale hover:grayscale-0">
                         <span className="font-bebas text-xl text-gray-500 mr-4 tracking-tighter italic">OFFICIAL PARTNER</span>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        {/* <img
                             src={patro.logo}
                             alt={patro.name}
                             className="h-8 md:h-10 object-contain"
                             onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/100x40?text=" + patro.name }}
-                        />
+                        /> */}
                     </div>
                 ))}
             </div>

@@ -12,8 +12,9 @@ interface Postulacion {
     equipoId: string;
     discord: string;
     pais: string;
-    experiencia: string; // <--- Agregado
+    experiencia: string;
     fecha: Timestamp;
+    speedtestUrl: string;
 }
 
 export default function BandejaPostulaciones() {
@@ -92,6 +93,9 @@ export default function BandejaPostulaciones() {
                             <p className="text-gray-500 text-xs uppercase tracking-widest">Club: <span className="text-white font-bold">{p.equipoNombre}</span></p>
                             <p className="text-[10px] text-[#444] font-mono uppercase">
                                 DISCORD: <span className="text-gray-300">{p.discord}</span> | PAIS: <span className="text-gray-300">{p.pais}</span>
+                            </p>
+                            <p className="text-[10px] text-[#444] font-mono uppercase">
+                                TEST INTERNET: <span className="text-gray-300">{p.speedtestUrl}</span>
                             </p>
                         </div>
 

@@ -12,6 +12,7 @@ interface EquipoTabla {
     pe: number;
     pp: number;
     puntos: number;
+    df?: number; // Diferencia de gol (opcional pero recomendado)
 }
 
 export default function Positions() {
@@ -19,8 +20,7 @@ export default function Positions() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Consultamos los equipos ordenados por puntos (descendente) 
-        // y como segundo criterio partidos ganados
+        // Consultamos TODOS los equipos de la colección
         const q = query(
             collection(db, "equipos"),
             orderBy("puntos", "desc"),
@@ -28,10 +28,21 @@ export default function Positions() {
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as EquipoTabla));
+            const data = snapshot.docs.map(doc => {
+                const d = doc.data();
+                return {
+                    id: doc.id,
+                    nombre: d.nombre || "Equipo Sin Nombre",
+                    escudo: d.escudo || "",
+                    // Si el campo no existe en Firebase, forzamos que sea 0
+                    pj: d.pj ?? 0,
+                    pg: d.pg ?? 0,
+                    pe: d.pe ?? 0,
+                    pp: d.pp ?? 0,
+                    puntos: d.puntos ?? 0,
+                    df: d.df ?? 0
+                } as EquipoTabla;
+            });
             setEquipos(data);
             setLoading(false);
         });
@@ -74,10 +85,12 @@ export default function Positions() {
                             </thead>
                             <tbody className="divide-y divide-[#1a1a1a]">
                                 {equipos.map((eq, index) => {
-                                    const esClasificado = index < 8; // Ejemplo: Clasifican los 8 primeros
+                                    const esClasificado = index < 8;
+                                    const sinPartidos = eq.pj === 0;
+
                                     return (
-                                        <tr key={eq.id} className="hover:bg-white/[0.02] transition-colors group">
-                                            {/* POSICIÓN CON INDICADOR DE COLOR */}
+                                        <tr key={eq.id} className={`hover:bg-white/[0.02] transition-colors group ${sinPartidos ? 'opacity-60' : 'opacity-100'}`}>
+                                            {/* POSICIÓN */}
                                             <td className="px-6 py-4 text-center relative">
                                                 {esClasificado && (
                                                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
@@ -90,28 +103,29 @@ export default function Positions() {
                                             {/* CLUB + ESCUDO */}
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-4">
-                                                    {eq.escudo ? (
-                                                        /* eslint-disable-next-line @next/next/no-img-element */
-                                                        <img src={eq.escudo} alt="" className="w-8 h-8 object-contain" />
-                                                    ) : (
-                                                        <div className="w-8 h-8 bg-[#222] rounded-full"></div>
-                                                    )}
+                                                    <div className="relative w-8 h-8 flex-shrink-0">
+                                                        {eq.escudo ? (
+                                                            <img src={eq.escudo} alt="" className="w-full h-full object-contain" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-[#222] rounded-full"></div>
+                                                        )}
+                                                    </div>
                                                     <span className="text-white font-bold uppercase tracking-wider group-hover:text-[#c9a84c] transition-colors">
                                                         {eq.nombre}
                                                     </span>
                                                 </div>
                                             </td>
 
-                                            {/* ESTADÍSTICAS */}
-                                            <td className="px-4 py-4 text-center font-mono text-gray-400">{eq.pj || 0}</td>
-                                            <td className="px-4 py-4 text-center font-mono text-gray-400">{eq.pg || 0}</td>
-                                            <td className="px-4 py-4 text-center font-mono text-gray-400">{eq.pe || 0}</td>
-                                            <td className="px-4 py-4 text-center font-mono text-gray-400">{eq.pp || 0}</td>
+                                            {/* ESTADÍSTICAS (PJ, PG, PE, PP) */}
+                                            <td className="px-4 py-4 text-center font-mono text-gray-400">{eq.pj}</td>
+                                            <td className="px-4 py-4 text-center font-mono text-gray-400">{eq.pg}</td>
+                                            <td className="px-4 py-4 text-center font-mono text-gray-400">{eq.pe}</td>
+                                            <td className="px-4 py-4 text-center font-mono text-gray-400">{eq.pp}</td>
 
                                             {/* PUNTOS TOTALES */}
                                             <td className="px-6 py-4 text-center">
                                                 <span className="font-bebas text-3xl text-[#c9a84c] tabular-nums">
-                                                    {eq.puntos || 0}
+                                                    {eq.puntos}
                                                 </span>
                                             </td>
                                         </tr>

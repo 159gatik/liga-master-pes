@@ -14,7 +14,7 @@ export default function Navbar() {
         { name: 'Inicio', href: '/' }, // <-- Nueva sección con Tabs
         { name: 'Reglamento', href: '/reglamento' },
         { name: 'Fixture', href: '/fixture' },
-        { name: 'Multimedia', href: '/multimedia' },
+        // { name: 'Multimedia', href: '/multimedia' },
         { name: 'Guías', href: '/guias' },
     ];
 

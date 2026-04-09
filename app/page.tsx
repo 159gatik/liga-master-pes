@@ -3,13 +3,23 @@ import { useState, useEffect } from "react";
 import Link from 'next/link';
 import { useAuth } from '@/src/lib/hooks/useAuht';
 import { db } from "@/src/lib/firebase";
-import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, limit, Timestamp } from "firebase/firestore";
 import BannerPatrocinadores from "./components/BannerPatrocinadores";
+
+
+interface Reporte {
+    id: string;
+    local: string;
+    visita: string;
+    score: string;
+    fecha: Timestamp;
+}
 
 export default function Page() {
     const { user, userData, loading } = useAuth();
     const [yaPostulado, setYaPostulado] = useState(false);
     const [equipos, setEquipos] = useState([]); // Estado para los despachos
+    const [resultados, setResultados] = useState<Reporte[]>([]);
 
     useEffect(() => {
         // 1. Cargar equipos para la grilla de Despachos
@@ -36,12 +46,25 @@ export default function Page() {
         };
     }, [user]);
 
-    const resultados = [
-        { local: "[ Local ]", score: "vs", visita: "[ Visitante ]", pendiente: true },
-        { local: "[ Local ]", score: "vs", visita: "[ Visitante ]", pendiente: true },
-        { local: "[ Local ]", score: "vs", visita: "[ Visitante ]", pendiente: true },
-        { local: "[ Local ]", score: "vs", visita: "[ Visitante ]", pendiente: true }
-    ];
+    useEffect(() => {
+        // Escuchar los últimos 4 reportes subidos
+        const qReportes = query(
+            collection(db, "reportes"),
+            orderBy("fecha", "desc"),
+            limit(4)
+        );
+
+        const unsubReportes = onSnapshot(qReportes, (snapshot) => {
+            const nuevosResultados = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as Reporte[]; // Le decimos que todo el array es de Reportes
+
+            setResultados(nuevosResultados);
+        });
+
+        return () => unsubReportes();
+    }, []);
 
     const noticias = [
         { dia: "01", mes: "ENE", titulo: "Arranca el torneo · Fecha 1 disponible", desc: "Ya está disponible el fixture de la primera fecha. Coordiná con tu rival." },
@@ -139,6 +162,7 @@ export default function Page() {
             <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
 
                 {/* PANEL: ÚLTIMOS RESULTADOS */}
+                {/* PANEL: ÚLTIMOS RESULTADOS */}
                 <div className="bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden">
                     <div className="flex justify-between items-center p-4 bg-[#222222] border-b border-[#2a2a2a]">
                         <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Últimos Resultados</h3>
@@ -146,16 +170,58 @@ export default function Page() {
                             Ver todo el fixture →
                         </Link>
                     </div>
+
                     <div className="p-0">
-                        {resultados.map((partido, i) => (
-                            <div key={i} className="grid grid-cols-3 items-center p-4 border-b border-[#1e1e1e] last:border-0">
-                                <span className="font-barlow-condensed font-bold text-right uppercase tracking-wider text-sm">{partido.local}</span>
-                                <span className={`text-center font-bebas text-xl tracking-[3px] mx-4 py-1 px-3 bg-[#222] rounded ${partido.pendiente ? 'text-[#444]' : 'text-[#c9a84c]'}`}>
-                                    {partido.score}
-                                </span>
-                                <span className="font-barlow-condensed font-bold text-left uppercase tracking-wider text-sm">{partido.visita}</span>
+                        {resultados.length === 0 ? (
+                            <div className="p-10 text-center space-y-2">
+                                <p className="text-gray-600 italic text-sm font-barlow-condensed uppercase tracking-widest">No hay reportes recientes</p>
+                                <p className="text-[10px] text-gray-700 uppercase">Los resultados aparecerán cuando los DTs envíen sus reportes</p>
                             </div>
-                        ))}
+                        ) : (
+                            resultados.map((partido, i) => {
+                                const marcador = partido.score || "0-0";
+
+                                // Dividimos el marcador para comparar goles (Formato "2-1")
+                                const [gL, gV] = marcador.split('-').map(Number);
+
+                                // Lógica de colores para resaltar al ganador
+                                const localGana = gL > gV;
+                                const visitaGana = gV > gL;
+
+                                return (
+                                    <div key={partido.id || i} className="grid grid-cols-3 items-center p-4 border-b border-[#1e1e1e] last:border-0 hover:bg-[#ffffff03] transition-colors">
+
+                                        {/* EQUIPO LOCAL */}
+                                        <div className="text-right pr-2">
+                                            <span className={`font-barlow-condensed font-bold uppercase tracking-wider text-sm transition-all ${localGana ? 'text-[#c9a84c] drop-shadow-[0_0_5px_rgba(201,168,76,0.2)]' : 'text-[#555]'}`}>
+                                                {partido.local || "Equipo Local"}
+                                            </span>
+                                        </div>
+
+                                        {/* MARCADOR CENTRAL */}
+                                        <div className="flex justify-center">
+                                            <div className="flex items-center bg-[#0a0a0a] border border-[#333] px-3 py-1 rounded shadow-inner">
+                                                <span className={`font-bebas text-2xl px-2 ${localGana ? 'text-[#c9a84c]' : 'text-white'}`}>
+                                                    {gL}
+                                                </span>
+                                                <span className="text-[#333] font-bebas text-xl">-</span>
+                                                <span className={`font-bebas text-2xl px-2 ${visitaGana ? 'text-[#c9a84c]' : 'text-white'}`}>
+                                                    {gV}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* EQUIPO VISITANTE */}
+                                        <div className="text-left pl-2">
+                                            <span className={`font-barlow-condensed font-bold uppercase tracking-wider text-sm transition-all ${visitaGana ? 'text-[#c9a84c] drop-shadow-[0_0_5px_rgba(201,168,76,0.2)]' : 'text-[#555]'}`}>
+                                                {partido.visita || "Equipo Visita"}
+                                            </span>
+                                        </div>
+
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </div>
 

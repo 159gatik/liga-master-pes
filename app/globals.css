@@ -24,3 +24,15 @@ background-color: #0a0a0a;
   color: white;
   font-family: Arial, Helvetica, sans-serif;
 }
+/* Esto quita la barra en Chrome, Safari y Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Esto quita la barra en Firefox e IE/Edge */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}

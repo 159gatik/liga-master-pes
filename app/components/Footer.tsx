@@ -26,6 +26,7 @@ export default function Footer() {
                         <li><Link href="/positions" className="hover:text-white transition-colors">Tabla de Posiciones</Link></li>
                         <li><Link href="/fichajes" className="hover:text-white transition-colors">Mercado de Pases</Link></li>
                         <li><Link href="/equipos" className="hover:text-white transition-colors">Equipos</Link></li>
+                        <li><Link href="/despachos" className="hover:text-white transition-colors">Despachos</Link></li>
                     </ul>
                 </div>
 
@@ -36,7 +37,8 @@ export default function Footer() {
                         <li><Link href="/perfil" className="hover:text-white transition-colors">Oficina del DT</Link></li>
                         <li><Link href="/reglamento" className="hover:text-white transition-colors">Reglamento</Link></li>
                         <li><Link href="/admin" className="hover:text-white transition-colors">Panel de Control</Link></li>
-                    
+                        <li><Link href="/soporte" className="hover:text-white transition-colors">Soporte</Link></li>
+                        <li><Link href="/guias" className="hover:text-white transition-colors">Guia</Link></li>
                     </ul>
                 </div>
 
@@ -46,11 +48,11 @@ export default function Footer() {
                     <div className="bg-[#111] p-4 border border-[#222]">
                         <p className="text-gray-500 text-[10px] uppercase font-bold mb-2">Unite al Servidor</p>
                         <a
-                            href="TU_LINK_DE_DISCORD"
+                            href="/"
                             target="_blank"
                             className="text-white font-bebas text-xl flex items-center gap-2 hover:text-[#c9a84c] transition-all"
                         >
-                            DISCORD OFICIAL
+                            PROXIMAMENTE
                         </a>
                     </div>
                 </div>

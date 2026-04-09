@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { db } from "@/src/lib/firebase";
 import { useAuth } from "@/src/lib/hooks/useAuht";
 import { doc, onSnapshot, collection, query, orderBy } from "firebase/firestore";
-import Image from "next/image";
 
 // 1. Interfaces estrictas
 export interface UserData {

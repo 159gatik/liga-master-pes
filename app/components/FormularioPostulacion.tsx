@@ -30,7 +30,8 @@ export default function FormularioPostulacion({
         jugoOnline: "SI",
         pais: "",
         equipoNombre: equipoPreseleccionado,
-        equipoId: equipoIdPreseleccionado
+        equipoId: equipoIdPreseleccionado,
+        linkSpeedtest: "",
     });
 
     // Validar el nombre en tiempo real
@@ -76,8 +77,9 @@ export default function FormularioPostulacion({
                 pais: formData.pais,
                 edad: formData.edad,
                 internet: formData.internet,
+                speedtestUrl: formData.linkSpeedtest,
                 experiencia: formData.jugoOnline,
-                fecha: serverTimestamp()
+                fecha: serverTimestamp(),
             });
 
             await emailjs.send(
@@ -164,6 +166,22 @@ export default function FormularioPostulacion({
                         <label className="text-[10px] tracking-[2px] text-[#888] uppercase">Internet (MB)</label>
                         <input type="text" required className="bg-[#1a1a1a] border border-[#333] p-2 outline-none focus:border-[#c9a84c]"
                             onChange={(e) => setFormData({ ...formData, internet: e.target.value })} />
+                    </div>
+                    <div className="flex flex-col gap-2 bg-[#0a0a0a] p-4 border-l-2 border-[#c9a84c]">
+                        <label className="text-[10px] tracking-[2px] text-[#c9a84c] uppercase font-bold italic">
+                            Link de Speedtest
+                        </label>
+                        <p className="text-[10px] text-gray-500 uppercase">
+                            Realizá el test en <a href="https://www.speedtest.net" target="_blank" className="underline text-white">Speedtest.net</a>, hacé clic en Compartir y pegá el link acá.
+                        </p>
+                        <input
+                            type="url"
+                            required
+                            placeholder="https://www.speedtest.net/result/..."
+                            className="bg-[#1a1a1a] border border-[#333] p-2 text-xs outline-none focus:border-[#c9a84c]"
+                            onChange={(e) => setFormData({ ...formData, linkSpeedtest: e.target.value })}
+                            value={formData.linkSpeedtest}
+                        />
                     </div>
                 </div>
 

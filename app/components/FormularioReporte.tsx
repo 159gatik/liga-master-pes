@@ -6,26 +6,32 @@ import { useAuth } from "@/src/lib/hooks/useAuht";
 
 interface Props {
     fechaNumero: number;
-    rivales: { id: string, nombre: string }[]; // Lista de equipos para el select
+    rivales: { id: string, nombre: string }[];
+    equipoNombre: string; // <--- Agregamos esto// Lista de equipos para el select
 }
 
-export default function FormularioReporte({ fechaNumero, rivales }: Props) {
+export default function FormularioReporte({ fechaNumero, rivales, equipoNombre }: Props) {
     const { userData, user } = useAuth();
     const [subiendo, setSubiendo] = useState(false);
     const [formData, setFormData] = useState({
         rivalId: "",
-        resultado: "victoria", // victoria, empate, derrota
+        resultado: "victoria",
+        golesPro: "", // Goles que hizo el DT
+        golesRival: "", // Goles que recibió
         comentario: "",
-        captura1: "",
-        captura2: "",
-        captura3: ""
+        captura1: "", captura2: "", captura3: "",
     });
 
     const enviarReporte = async (e: React.FormEvent) => {
         e.preventDefault();
+
         if (!user || !userData?.equipoId) return alert("Error de sesión");
         if (!formData.captura1 || !formData.captura2 || !formData.captura3) {
             return alert("Las 3 capturas son obligatorias según el reglamento.");
+        }
+        // Verificación de goles (asegurate de tener estos campos en tu formData)
+        if (formData.golesPro === "" || formData.golesRival === "") {
+            return alert("Debes ingresar los goles del partido.");
         }
 
         setSubiendo(true);
@@ -35,17 +41,25 @@ export default function FormularioReporte({ fechaNumero, rivales }: Props) {
             const userRef = doc(db, "users", user.uid);
             const equipoRef = doc(db, "equipos", userData.equipoId);
 
-            // 1. Guardar el reporte
+            // 1. Buscamos el nombre del rival para que la Home lo muestre sin hacer otro fetch
+            const nombreRival = rivales.find(r => r.id === formData.rivalId)?.nombre || "Rival Desconocido";
+
+            // 2. Guardar el reporte con los campos que espera la HOME
             await addDoc(reporteRef, {
                 ...formData,
                 dtUid: user.uid,
                 equipoId: userData.equipoId,
                 nombreDT: userData.nombre,
                 fechaTorneo: Number(fechaNumero),
-                timestamp: serverTimestamp(),
+
+                // AGREGAMOS ESTOS VALORES DE RESPALDO (Backups)
+                local: equipoNombre || userData?.nombre || "Equipo Local",
+                visita: nombreRival,
+                score: `${formData.golesPro}-${formData.golesRival}`,
+                fecha: serverTimestamp(),
             });
 
-            // 2. Actualizar estadísticas del DT y Puntos del Equipo
+            // 3. Actualizar estadísticas del DT y Puntos del Equipo (Batch)
             const esWin = formData.resultado === "victoria";
             const esEmpate = formData.resultado === "empate";
 
@@ -56,17 +70,20 @@ export default function FormularioReporte({ fechaNumero, rivales }: Props) {
 
             batch.update(equipoRef, {
                 puntos: esWin ? increment(3) : esEmpate ? increment(1) : increment(0),
-                pj: increment(1), // Partidos Jugados
+                pj: increment(1),
                 pg: esWin ? increment(1) : increment(0),
                 pe: esEmpate ? increment(1) : increment(0),
-                pp: formData.resultado === "derrota" ? increment(1) : increment(0)
+                pp: formData.resultado === "derrota" ? increment(1) : increment(0),
+                // También actualizamos goles en la tabla general
+                gf: increment(Number(formData.golesPro)),
+                gc: increment(Number(formData.golesRival))
             });
 
             await batch.commit();
-            alert("Reporte subido y tabla actualizada.");
+            alert("Reporte subido y tabla actualizada con éxito.");
             window.location.reload();
         } catch (error) {
-            console.error(error);
+            console.error("Error al reportar:", error);
             alert("Error al subir el reporte.");
         } finally {
             setSubiendo(false);
@@ -104,7 +121,18 @@ export default function FormularioReporte({ fechaNumero, rivales }: Props) {
                     </select>
                 </div>
             </div>
-
+            <div className="grid grid-cols-2 gap-4">
+                <input
+                    type="number" required placeholder="Tus Goles"
+                    className="bg-[#0a0a0a] border border-[#333] p-2 text-center text-white"
+                    onChange={(e) => setFormData({ ...formData, golesPro: e.target.value })}
+                />
+                <input
+                    type="number" required placeholder="Goles Rival"
+                    className="bg-[#0a0a0a] border border-[#333] p-2 text-center text-white"
+                    onChange={(e) => setFormData({ ...formData, golesRival: e.target.value })}
+                />
+            </div>
             {/* Capturas Obligatorias */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <input type="url" required placeholder="Link Captura 1 (IMGUR/Discord)" className="bg-[#0a0a0a] border border-[#333] p-2 text-xs"

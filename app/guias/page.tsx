@@ -63,18 +63,71 @@ export default function GuiasPage() {
 
                     {/* GUÍA 1: INSTALACIÓN */}
                     {activeTab === "instalacion" && (
-                        <article className="space-y-6">
+                        <article className="space-y-6 animate-fadeIn">
                             <h2 className="font-bebas text-4xl text-[#c9a84c] italic">Instalación del Parche Oficial</h2>
-                            <div className="space-y-4 text-gray-400 leading-relaxed">
-                                <p>Para garantizar que todos tengan los mismos uniformes, estadios y plantillas, es obligatorio seguir estos pasos:</p>
-                                <ul className="list-decimal list-inside space-y-2 ml-4">
-                                    <li>Descargá el <span className="text-white font-bold underline cursor-pointer">Parche Temporada 1</span>.</li>
-                                    <li>Descomprimí el contenido en la carpeta raíz de tu PES 6.</li>
-                                    <li>Instalá el <span className="text-white">KitServer</span> ejecutando el archivo <code className="bg-black px-1 text-red-400">setup.exe</code>.</li>
-                                    <li>Pegá el archivo <code className="bg-black px-1 text-green-400">EDIT6.bin</code> en <code className="text-xs">Documentos/KONAMI/Pro Evolution Soccer 6/save/folder1</code>.</li>
-                                </ul>
-                                <div className="bg-yellow-900/20 border border-yellow-700/50 p-4 mt-6">
-                                    <p className="text-yellow-500 text-sm">⚠️ IMPORTANTE: No modifiques los nombres de los jugadores por tu cuenta o causarás errores de conexión (Crash) con tu rival.</p>
+
+                            <div className="space-y-6 text-gray-400 leading-relaxed">
+                                <p className="uppercase tracking-widest text-xl font-bold text-white/70">
+                                    Temporada Actual: <span className="text-[#c9a84c]">Infinitty Patch Final Season</span>
+                                </p>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-start gap-4 bg-[#111] p-4 border border-[#222]">
+                                        <span className="font-bebas text-4xl text-[#c9a84c]">01</span>
+                                        <div>
+                                            <p className="text-white font-bold uppercase text-m">Descarga del Juego</p>
+                                            <a
+                                                href="https://bit.ly/INFINITTYFS2425"
+                                                target="_blank"
+                                                className="text-[#c9a84c] text-m underline break-all hover:text-white transition-colors"
+                                            >
+                                                https://bit.ly/INFINITTYFS2425
+                                            </a>
+                                            <p className="text-[16px] mt-1 italic text-gray-500">Dentro de la carpeta encontrarás los archivos para descargar uno por uno.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-4 bg-[#111] p-4 border border-[#222]">
+                                        <span className="font-bebas text-4xl text-[#c9a84c]">02</span>
+                                        <div>
+                                            <p className="text-white font-bold uppercase text-m">Preparación de archivos</p>
+                                            <p className="text-m">Mueve todos los archivos descargados a una nueva carpeta exclusiva para la instalación.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-4 bg-[#111] p-4 border border-[#222]">
+                                        <span className="font-bebas text-4xl text-[#c9a84c]">03</span>
+                                        <div>
+                                            <p className="text-white font-bold uppercase text-m">Ejecución del instalador</p>
+                                            <p className="text-m">Ejecuta el archivo <code className="text-red-400">.exe</code>. Si Windows muestra un cartel de advertencia, selecciona <span className="text-white italic">Ejecutar de todas formas</span>.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* SECCIÓN DEL CÓDIGO DE INSTALACIÓN */}
+                                <div className="bg-[#c9a84c]/10 border-2 border-[#c9a84c] p-6 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 bg-[#c9a84c] text-black font-black px-3 py-1 text-[15px] uppercase">
+                                        Dato Vital
+                                    </div>
+                                    <h3 className="font-bebas text-4xl text-white mb-2 tracking-tighter">Código de Instalación & Online</h3>
+                                    <p className="text-[16px] text-gray-400 uppercase mb-4 leading-tight">
+                                        Este código es necesario para la instalación y será el mismo que utilizarás para ingresar al modo Online.
+                                    </p>
+                                    <div className="bg-black p-4 text-center border border-[#c9a84c]/30 group hover:border-[#c9a84c] transition-all cursor-copy">
+                                        <code className="font-mono text-[#c9a84c] text-lg md:text-2xl font-bold tracking-widest select-all">
+                                            DAYX7MVSENUXR2DWLXER
+                                        </code>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-center pt-4">
+                                    <button
+                                        onClick={() => setActiveTab("online")}
+                                        className="group flex items-center gap-2 text-[16px] font-bold uppercase tracking-[3px] text-gray-500 hover:text-[#c9a84c] transition-all"
+                                    >
+                                        PASO SIGUIENTE: CONFIGURAR ONLINE
+                                        <span className="group-hover:translate-x-2 transition-transform">→</span>
+                                    </button>
                                 </div>
                             </div>
                         </article>
@@ -82,21 +135,95 @@ export default function GuiasPage() {
 
                     {/* GUÍA 2: JUGAR ONLINE */}
                     {activeTab === "online" && (
-                        <article className="space-y-6">
+                        <article className="space-y-6 animate-fadeIn">
                             <h2 className="font-bebas text-4xl text-[#c9a84c] italic">Cómo Jugar Online</h2>
-                            <div className="space-y-6">
-                                <div className="border-l-2 border-[#333] pl-4">
-                                    <h3 className="text-white font-bold uppercase tracking-widest text-sm mb-2">1. Configuración de Red</h3>
-                                    <p className="text-gray-400 text-sm">Abrí el archivo <code className="text-white">hosts</code> en tu PC y apuntá la dirección al servidor de la liga.</p>
+
+                            <div className="space-y-8 text-gray-400 leading-relaxed">
+
+                                {/* PASO 1: REGISTRO */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <span className="bg-[#c9a84c] text-black font-bebas px-2 py-1 text-xl italic">01</span>
+                                        <h3 className="text-white font-bold uppercase tracking-widest text-m">Registro en el Servidor</h3>
+                                    </div>
+                                    <p className="text-m">El primer paso es crear tu cuenta oficial en el servidor de la liga:</p>
+                                    <a
+                                        href="https://pes6.es/"
+                                        target="_blank"
+                                        className="inline-block bg-[#111] border border-[#333] px-6 py-2 text-[#c9a84c] font-bold hover:border-[#c9a84c] transition-all"
+                                    >
+                                        VISITAR PES6.ES
+                                    </a>
+
+                                    <div className="mt-4 border border-[#222] p-2 bg-[#050505]">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src="..//img/registro-servidor.png"
+                                            alt="Interfaz de Registro Servidor"
+                                            className="w-full opacity-80 hover:opacity-100 transition-opacity"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="border-l-2 border-[#333] pl-4">
-                                    <h3 className="text-white font-bold uppercase tracking-widest text-sm mb-2">2. Conexión Radmin VPN</h3>
-                                    <p className="text-gray-400 text-sm">Debes estar en la misma red de Radmin que tu rival para que el lobby los detecte.</p>
+
+                                {/* NOTA IMPORTANTE: CREDENCIALES */}
+                                <div className="bg-[#c9a84c]/5 border-l-4 border-[#c9a84c] p-6 space-y-4">
+                                    <h4 className="font-bebas text-3xl text-white tracking-tighter uppercase">Datos de tu cuenta</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[16px] uppercase tracking-wider">
+                                        <div className="bg-black/40 p-3 border border-white/5">
+                                            <p className="text-[#c9a84c] font-bold mb-1">Usuario</p>
+                                            <p className="text-gray-300">Usa el mismo Nick con el que te postulaste en esta web (Obligatorio).</p>
+                                        </div>
+                                        <div className="bg-black/40 p-3 border border-white/5">
+                                            <p className="text-[#c9a84c] font-bold mb-1">Contraseña</p>
+                                            <p className="text-gray-300">Usa una clave simple. Es la que escribirás con el joystick dentro del juego.</p>
+                                        </div>
+                                        <div className="bg-black/40 p-3 border border-white/5">
+                                            <p className="text-[#c9a84c] font-bold mb-1">PES 6 Serial</p>
+                                            <p className="text-gray-300 italic">DAYX7MVSENUXR2DWLXER (Sin guiones)</p>
+                                        </div>
+                                        <div className="bg-black/40 p-3 border border-white/5">
+                                            <p className="text-[#c9a84c] font-bold mb-1">Validación</p>
+                                            <p className="text-red-400 font-bold">REVISÁ TU MAIL. Debes validar la cuenta para poder entrar.</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="border-l-2 border-[#333] pl-4">
-                                    <h3 className="text-white font-bold uppercase tracking-widest text-sm mb-2">3. Dentro del Juego</h3>
-                                    <p className="text-gray-400 text-sm">Entrá a RED, seleccioná tu perfil y buscá a tu rival en el Salón de Juego acordado.</p>
+
+                                {/* PASO 2: ARCHIVO HOSTS */}
+                                <div className="space-y-4 ">
+                                    <div className="flex items-center gap-3 ">
+                                        <span className="bg-[#c9a84c] text-black font-bebas px-2 py-1 text-xl italic">02</span>
+                                        <h3 className="text-white font-bold uppercase tracking-widest text-xl">Configuración de Conexión</h3>
+                                    </div>
+                                    <p className="text-xl">Para redireccionar el juego al servidor correcto, descarga y reemplaza tu archivo hosts:</p>
+
+                                    <a
+                                        href="https://drive.google.com/file/d/1d8UzhojB1995v67PCBXWQH5AO8ISzs0f/view"
+                                        target="_blank"
+                                        className="flex items-center gap-3 bg-[#111] p-4 border border-dashed border-[#444] hover:border-[#c9a84c] group transition-all"
+                                    >
+                                        <div className="bg-white/10 p-2 group-hover:bg-[#c9a84c]/20">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-bold text-xl uppercase">Descargar Archivo Hosts</p>
+                                            <p className="text-[15px] text-gray-500 italic uppercase">Servidor Oficial El Legado</p>
+                                        </div>
+                                    </a>
+
+                                    <div className="bg-black p-4 border border-[#222]">
+                                        <p className="text-[16px] text-gray-500 uppercase font-bold mb-2">Ruta de instalación:</p>
+                                        <code className="text-[#c9a84c] text-xl break-all">C:\Windows\System32\drivers\etc</code>
+                                    </div>
                                 </div>
+
+                                {/* PASO FINAL */}
+                                <div className="pt-6 text-center">
+                                    <div className="inline-block border-2 border-[#27ae60] px-8 py-3 bg-[#27ae60]/10">
+                                        <p className="font-bebas text-3xl text-[#27ae60] italic tracking-tighter">¡LISTO PARA EL ONLINE!</p>
+                                        <p className="text-[10px] text-white uppercase tracking-[2px]">Iniciá el juego, ve a RED e ingresá tus datos.</p>
+                                    </div>
+                                </div>
+
                             </div>
                         </article>
                     )}
