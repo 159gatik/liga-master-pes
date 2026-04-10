@@ -55,16 +55,33 @@ export default function FixturePage() {
 
     // 1. Carga de datos iniciales
     useEffect(() => {
+        // 1. Listener de Equipos con manejo de error
         const qEquipos = query(collection(db, "equipos"), orderBy("nombre", "asc"));
-        const unsubEquipos = onSnapshot(qEquipos, (snap) => {
-            setEquipos(snap.docs.map(d => ({ id: d.id, nombre: d.data().nombre, escudo: d.data().escudo } as Equipo)));
-        });
-
-        const unsubEstado = onSnapshot(doc(db, "torneo", "configuracion"), (docSnap) => {
-            if (docSnap.exists()) {
-                setFechasAbiertas(docSnap.data().fechasStatus || {});
+        const unsubEquipos = onSnapshot(qEquipos,
+            (snap) => {
+                setEquipos(snap.docs.map(d => ({
+                    id: d.id,
+                    nombre: d.data().nombre,
+                    escudo: d.data().escudo
+                } as Equipo)));
+            },
+            (error) => {
+                console.warn("Firestore: Acceso denegado a 'equipos' o error de red.", error);
             }
-        });
+        );
+
+        // 2. Listener de Configuración con manejo de error
+        // OJO: Asegúrate que el ID sea "configuracion" como en tu imagen
+        const unsubEstado = onSnapshot(doc(db, "torneo", "configuracion"),
+            (docSnap) => {
+                if (docSnap.exists()) {
+                    setFechasAbiertas(docSnap.data().fechasStatus || {});
+                }
+            },
+            (error) => {
+                console.warn("Firestore: Acceso denegado a 'torneo/configuracion'.", error);
+            }
+        );
 
         return () => {
             unsubEquipos();

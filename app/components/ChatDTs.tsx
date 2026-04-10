@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { db, auth } from "@/src/lib/firebase";
 import { collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, getDoc, doc } from "firebase/firestore";
+import { sendEmailVerification } from "firebase/auth";
+
 
 export default function ChatDTs({ equipoUsuario }) {
     const [messages, setMessages] = useState([]);
@@ -10,18 +12,32 @@ export default function ChatDTs({ equipoUsuario }) {
 
     // 1. Escuchar mensajes (Mantenemos tu lógica de tiempo real)
     useEffect(() => {
+        // 1. Si no hay usuario, ni siquiera intentamos conectar
+        const currentUser = auth.currentUser;
+        if (!currentUser) return;
+
         const q = query(collection(db, "chat"), orderBy("timestamp", "asc"), limit(50));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            setTimeout(() => {
-                if (scrollRef.current) {
-                    scrollRef.current.scrollTo({
-                        top: scrollRef.current.scrollHeight,
-                        behavior: "smooth"
-                    });
-                }
-            }, 100);
-        });
+
+        // 2. Pasamos un tercer argumento al onSnapshot para manejar errores (como el de permisos)
+        const unsubscribe = onSnapshot(q,
+            (snapshot) => {
+                setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+                setTimeout(() => {
+                    if (scrollRef.current) {
+                        scrollRef.current.scrollTo({
+                            top: scrollRef.current.scrollHeight,
+                            behavior: "smooth"
+                        });
+                    }
+                }, 100);
+            },
+            (error) => {
+                // Esto atrapa el error "permission-denied" y evita que Next.js explote
+                console.warn("Chat bloqueado: Falta verificación de email.");
+            }
+        );
+
         return () => unsubscribe();
     }, []);
 
@@ -58,6 +74,7 @@ export default function ChatDTs({ equipoUsuario }) {
         }
     };
 
+    const isVerified = auth.currentUser?.emailVerified
     return (
         <div className="flex flex-col h-[85vh] bg-[#111] border border-[#222] shadow-2xl">
             {/* HEADER */}
@@ -99,6 +116,8 @@ export default function ChatDTs({ equipoUsuario }) {
             </div>
 
             {/* INPUT */}
+
+            {isVerified ? ( 
             <form onSubmit={sendMessage} className="p-4 bg-[#0a0a0a] border-t border-[#222] flex gap-2">
                 <input
                     type="text"
@@ -110,7 +129,12 @@ export default function ChatDTs({ equipoUsuario }) {
                 <button type="submit" className="bg-[#c9a84c] text-black font-bebas px-6 py-2 hover:bg-[#b08d35] transition-colors">
                     Enviar
                 </button>
-            </form>
+                </form>) : (<div className="p-4 bg-yellow-900/20 text-yellow-500 text-xs border border-yellow-500/30">
+                    ⚠️ Debes verificar tu email para participar en el chat.
+                    <button onClick={() => sendEmailVerification(auth.currentUser)} className="underline ml-2">
+                        Reenviar mail
+                    </button>
+                </div>)}
         </div>
     );
 }

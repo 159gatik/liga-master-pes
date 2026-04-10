@@ -79,18 +79,54 @@ export default function PerfilDT() {
     if (!user || !userData) return null; // Protección básica
 
     // Vista para Invitados
+    // Vista para Invitados / Sin Equipo
     if (userData.rol === "invitado" || !userData.equipoId) {
         return (
-            <main className="min-h-screen bg-[#0a0a0a] p-10 flex items-center justify-center font-barlow-condensed">
-                <div className="bg-[#111] border-2 border-[#c9a84c] p-12 max-w-xl text-center shadow-[0_0_50px_rgba(201,168,76,0.1)] relative">
-                    <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#c9a84c]"></div>
-                    <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#c9a84c]"></div>
-                    <h2 className="font-bebas text-6xl text-[#c9a84c] mb-6 uppercase italic tracking-tighter">En Revisión</h2>
-                    <p className="text-gray-400 text-2xl uppercase tracking-widest leading-tight">
-                        Hola, <span className="text-white font-bold">{userData.nombre}</span>.<br />
-                        Tu contrato está siendo procesado por el comisionado.
-                    </p>
+            <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-10 flex flex-col items-center justify-center font-barlow-condensed">
+                {/* CONTENEDOR PRINCIPAL */}
+                <div className="bg-[#111] border-2 border-[#c9a84c] p-8 md:p-16 max-w-3xl w-full text-center shadow-[0_0_60px_rgba(201,168,76,0.05)] relative overflow-hidden">
+
+                    {/* DECORACIÓN ESTILO PES 6 */}
+                    <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-[#c9a84c]"></div>
+                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-[#c9a84c]"></div>
+
+
+                    <div className="relative z-10 space-y-8">
+                        <div>
+                            <h2 className="font-bebas text-7xl md:text-8xl text-[#c9a84c] mb-2 uppercase italic tracking-tighter leading-none">
+                                OFICINA VACANTE
+                            </h2>
+                            <div className="h-1 w-24 bg-[#c9a84c] mx-auto mb-6"></div>
+                        </div>
+
+                        <p className="text-gray-400 text-xl md:text-2xl uppercase tracking-widest leading-snug max-w-lg mx-auto">
+                            Hola, <span className="text-white font-bold">{userData.nombre}</span>. Actualmente no tienes un club asignado en la base de datos de <span className="text-[#c9a84c]">El Legado</span>.
+                        </p>
+
+                        {/* TARJETAS DE ACCIÓN */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10">
+                            <a href="/equipos-libres" className="group bg-white/5 border border-white/10 p-6 hover:border-[#c9a84c] transition-all">
+                                <h4 className="font-bebas text-2xl text-[#c9a84c] group-hover:scale-110 transition-transform italic underline decoration-1 underline-offset-4">POSTULARSE</h4>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2">Ver equipos libres y enviar contrato</p>
+                            </a>
+                            <a href="/reglamento" className="group bg-white/5 border border-white/10 p-6 hover:border-[#c9a84c] transition-all">
+                                <h4 className="font-bebas text-2xl text-[#c9a84c] group-hover:scale-110 transition-transform italic underline decoration-1 underline-offset-4">REGLAMENTO</h4>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2">Leer normas de la Liga Master</p>
+                            </a>
+                        </div>
+
+                        <div className="pt-8 border-t border-white/5">
+                            <p className="text-[11px] text-[#555] uppercase tracking-[4px] animate-pulse">
+                                Esperando aprobación del comisionado...
+                            </p>
+                        </div>
+                    </div>
                 </div>
+
+                {/* BOTÓN SECUNDARIO DE SALIDA */}
+                <p className="mt-8 text-gray-600 text-xs uppercase tracking-[3px]">
+                    ¿Hubo un error? Contacta al soporte en Discord
+                </p>
             </main>
         );
     }
