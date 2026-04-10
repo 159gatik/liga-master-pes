@@ -15,6 +15,7 @@ export default function Navbar() {
         { name: 'Reglamento', href: '/reglamento' },
         { name: 'Fixture', href: '/fixture' },
         // { name: 'Multimedia', href: '/multimedia' },
+        { name: 'Comunidad', href: '/comunidad' },
         { name: 'Guías', href: '/guias' },
     ];
 
