@@ -10,39 +10,10 @@ import FormularioReporte from "../components/FormularioReporte";
 import SeccionDisponibilidad from "../components/SeccionDisponibilidad";
 import Image from "next/image";
 
-// Interfaces actualizadas para coincidir con el nuevo sistema de reportes
-interface Equipo {
-    id: string;
-    nombre: string;
-    escudo?: string;
-}
-
-interface Reporte {
-    id: string;
-    local: string;    // Nombre del equipo local
-    visita: string;   // Nombre del equipo visitante
-    equipoId: string; // ID del local (quien reporta)
-    rivalId: string;  // ID del visitante
-    score: string;    // Formato "2-1"
-    dtUid: string;
-    nombreDT: string;
-    resultado: string;
-    comentario: string;
-    captura1: string;
-    captura2: string;
-    captura3: string;
-    fechaTorneo: number;
-    fecha: Timestamp; // Sincronizado con el formulario
-}
-
-interface Disponibilidad {
-    id: string;
-    equipoId: string;
-    nombreEquipo: string;
-    fechaTorneo: number;
-    texto: string;
-    fecha: Timestamp;
-}
+// Interfaces (Mantenidas igual)
+interface Equipo { id: string; nombre: string; escudo?: string; }
+interface Reporte { id: string; local: string; visita: string; equipoId: string; rivalId: string; score: string; dtUid: string; nombreDT: string; resultado: string; comentario: string; captura1: string; captura2: string; captura3: string; fechaTorneo: number; fecha: Timestamp; }
+interface Disponibilidad { id: string; equipoId: string; nombreEquipo: string; fechaTorneo: number; texto: string; fecha: Timestamp; }
 
 export default function FixturePage() {
     const { userData } = useAuth();
@@ -53,25 +24,18 @@ export default function FixturePage() {
     const [listaHorarios, setListaHorarios] = useState<Disponibilidad[]>([]);
     const totalFechas = 19;
 
-    // 1. Carga de datos iniciales
+    // 1. Carga de datos iniciales (Equipos y Config)
     useEffect(() => {
-        // 1. Listener de Equipos con manejo de error
         const qEquipos = query(collection(db, "equipos"), orderBy("nombre", "asc"));
         const unsubEquipos = onSnapshot(qEquipos,
             (snap) => {
-                setEquipos(snap.docs.map(d => ({
-                    id: d.id,
-                    nombre: d.data().nombre,
-                    escudo: d.data().escudo
-                } as Equipo)));
+                setEquipos(snap.docs.map(d => ({ id: d.id, ...d.data() } as Equipo)));
             },
             (error) => {
-                console.warn("Firestore: Acceso denegado a 'equipos' o error de red.", error);
+                console.warn("Fixture: Error en equipos (Modo invitado)", error);
             }
         );
 
-        // 2. Listener de Configuración con manejo de error
-        // OJO: Asegúrate que el ID sea "configuracion" como en tu imagen
         const unsubEstado = onSnapshot(doc(db, "torneo", "configuracion"),
             (docSnap) => {
                 if (docSnap.exists()) {
@@ -79,51 +43,57 @@ export default function FixturePage() {
                 }
             },
             (error) => {
-                console.warn("Firestore: Acceso denegado a 'torneo/configuracion'.", error);
+                console.warn("Fixture: Error en config (Modo invitado)", error);
             }
         );
 
-        return () => {
-            unsubEquipos();
-            unsubEstado();
-        };
+        return () => { unsubEquipos(); unsubEstado(); };
     }, []);
 
-    // 2. Reportes Sincronizados (Usa 'fecha' en lugar de 'timestamp')
+    // 2. Reportes Sincronizados con Manejo de Error
     useEffect(() => {
         const numFecha = Number(fechaActiva);
-
         const qReportes = query(
             collection(db, "reportes"),
             where("fechaTorneo", "==", numFecha),
             orderBy("fecha", "desc")
         );
 
-        const unsubReportes = onSnapshot(qReportes, (snap) => {
-            setReportesFecha(snap.docs.map(d => ({ id: d.id, ...d.data() } as Reporte)));
-        }, (err) => {
-            console.error("Error en reporte: ", err);
-            // Fallback por si falta el índice en Firebase
-            const qFallBack = query(collection(db, "reportes"), where("fechaTorneo", "==", numFecha));
-            onSnapshot(qFallBack, (s) => {
-                setReportesFecha(s.docs.map(d => ({ id: d.id, ...d.data() } as Reporte)));
-            });
-        });
+        const unsubReportes = onSnapshot(qReportes,
+            (snap) => {
+                setReportesFecha(snap.docs.map(d => ({ id: d.id, ...d.data() } as Reporte)));
+            },
+            (err) => {
+                console.warn("Fixture: Acceso denegado a reportes. Intentando fallback sin orden...");
+                // Fallback sin orderBy para evitar errores de índices o permisos de ordenamiento
+                const qFallBack = query(collection(db, "reportes"), where("fechaTorneo", "==", numFecha));
+                onSnapshot(qFallBack, (s) => {
+                    setReportesFecha(s.docs.map(d => ({ id: d.id, ...d.data() } as Reporte)));
+                }, (e) => console.error("Error crítico en reportes:", e));
+            }
+        );
 
         return () => unsubReportes();
     }, [fechaActiva]);
 
-    // 3. Disponibilidad
+    // 3. Disponibilidad con Manejo de Error
     useEffect(() => {
         const q = query(
             collection(db, "disponibilidad"),
             where("fechaTorneo", "==", fechaActiva)
         );
-        const unsub = onSnapshot(q, (snap) => {
-            setListaHorarios(snap.docs.map(d => ({ id: d.id, ...d.data() } as Disponibilidad)));
-        });
+        const unsub = onSnapshot(q,
+            (snap) => {
+                setListaHorarios(snap.docs.map(d => ({ id: d.id, ...d.data() } as Disponibilidad)));
+            },
+            (error) => {
+                console.warn("Fixture: Acceso denegado a disponibilidad (Modo invitado)");
+            }
+        );
         return () => unsub();
     }, [fechaActiva]);
+
+    // ... (El resto del código de lógica y JSX se mantiene igual)
 
     const estaAbierta = fechasAbiertas[`fecha_${fechaActiva}`] === true;
 
@@ -141,8 +111,7 @@ export default function FixturePage() {
     return (
         <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-10 font-barlow-condensed text-white">
             <div className="max-w-6xl mx-auto space-y-10">
-
-                {/* CABECERA */}
+                {/* ... (Todo tu JSX de cabecera, carrusel y grilla) ... */}
                 <div className="border-l-4 border-[#c9a84c] pl-6">
                     <h1 className="font-bebas text-7xl italic tracking-tighter uppercase leading-none">
                         Calendario <span className="text-[#c9a84c]">Oficial</span>
@@ -150,114 +119,58 @@ export default function FixturePage() {
                     <p className="text-gray-500 uppercase tracking-[4px] text-sm italic">Temporada 1 · El Legado PES 6</p>
                 </div>
 
-                {/* NAVEGACIÓN DE FECHAS */}
+                {/* NAVEGACIÓN (Carrusel) */}
                 <div className="relative group bg-[#111] border-y border-[#222] py-2">
-                    <button
-                        onClick={() => document.getElementById('carrusel-fechas')?.scrollBy({ left: -200, behavior: 'smooth' })}
-                        className="absolute left-0 top-0 bottom-0 z-10 px-2 bg-gradient-to-r from-[#111] to-transparent text-[#c9a84c] hover:text-white transition-all"
-                    >
-                        <span className="font-bebas text-4xl leading-none">‹</span>
-                    </button>
-
-                    <div
-                        id="carrusel-fechas"
-                        className="flex overflow-x-auto gap-4 px-10 no-scrollbar scroll-smooth items-center"
-                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    >
+                    <button onClick={() => document.getElementById('carrusel-fechas')?.scrollBy({ left: -200, behavior: 'smooth' })} className="absolute left-0 top-0 bottom-0 z-10 px-2 bg-gradient-to-r from-[#111] to-transparent text-[#c9a84c]"><span className="font-bebas text-4xl">‹</span></button>
+                    <div id="carrusel-fechas" className="flex overflow-x-auto gap-4 px-10 no-scrollbar scroll-smooth items-center" style={{ scrollbarWidth: 'none' }}>
                         {Array.from({ length: totalFechas }, (_, i) => i + 1).map((f) => (
-                            <button
-                                key={f}
-                                onClick={() => setFechaActiva(f)}
-                                className={`px-8 py-3 font-bebas text-3xl transition-all flex-shrink-0 italic tracking-widest relative ${fechaActiva === f ? "text-[#c9a84c] scale-110" : "text-[#333] hover:text-gray-400"}`}
-                            >
+                            <button key={f} onClick={() => setFechaActiva(f)} className={`px-8 py-3 font-bebas text-3xl transition-all flex-shrink-0 italic tracking-widest relative ${fechaActiva === f ? "text-[#c9a84c] scale-110" : "text-[#333] hover:text-gray-400"}`}>
                                 FECHA {f}
-                                {fechaActiva === f && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#c9a84c] shadow-[0_0_15px_rgba(201,168,76,0.6)]"></div>
-                                )}
+                                {fechaActiva === f && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#c9a84c]"></div>}
                             </button>
                         ))}
                     </div>
-
-                    <button
-                        onClick={() => document.getElementById('carrusel-fechas')?.scrollBy({ left: 200, behavior: 'smooth' })}
-                        className="absolute right-0 top-0 bottom-0 z-10 px-2 bg-gradient-to-l from-[#111] to-transparent text-[#c9a84c] hover:text-white transition-all"
-                    >
-                        <span className="font-bebas text-4xl leading-none">›</span>
-                    </button>
+                    <button onClick={() => document.getElementById('carrusel-fechas')?.scrollBy({ left: 200, behavior: 'smooth' })} className="absolute right-0 top-0 bottom-0 z-10 px-2 bg-gradient-to-l from-[#111] to-transparent text-[#c9a84c]"><span className="font-bebas text-4xl">›</span></button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-
-                    {/* COLUMNA IZQUIERDA: CRONOGRAMA Y RESULTADOS */}
                     <section className="lg:col-span-2 space-y-12">
-
-                        {/* RESULTADOS DINÁMICOS */}
                         <div className="space-y-6">
                             <h3 className="font-bebas text-3xl text-[#c9a84c] uppercase italic tracking-widest border-b border-[#222] pb-2">Resultados Procesados</h3>
                             <div className="grid gap-4">
                                 {reportesFecha.length > 0 ? (
                                     reportesFecha.map((rep) => (
                                         <div key={rep.id} className="bg-[#111] border border-[#222] p-6 flex flex-col group hover:border-[#c9a84c]/40 transition-all shadow-xl">
-
-                                            {/* MARCADOR ESTILO PES */}
                                             <div className="flex justify-between items-center mb-6">
                                                 <div className="flex-1 flex items-center justify-start gap-4">
-                                                    {/* CONTENEDOR DEL ESCUDO */}
                                                     <div className="relative w-12 h-12 md:w-14 md:h-14 flex-shrink-0 bg-black/40 rounded-full p-2 border border-[#222] overflow-hidden">
-                                                        <Image
-                                                            src={equipos.find(e => e.id === rep.equipoId)?.escudo || "/escudo-default.png"}
-                                                            alt="Visita"
-                                                            fill
-                                                            sizes="(max-width: 768px) 48px, 56px"
-                                                            className="object-contain p-2" // El padding aquí ayuda a que el escudo no toque los bordes del círculo
-                                                        />
+                                                        <Image src={equipos.find(e => e.id === rep.equipoId)?.escudo || "/escudo-default.png"} alt="Local" fill className="object-contain p-2" />
                                                     </div>
-
-                                                    {/* NOMBRE DEL EQUIPO */}
-                                                    <p className="font-bebas text-3xl text-white uppercase italic tracking-wider">
-                                                        {rep.local}
-                                                    </p>
+                                                    <p className="font-bebas text-3xl text-white uppercase italic tracking-wider">{rep.local}</p>
                                                 </div>
                                                 <div className="px-8">
-                                                    <div className="bg-black border border-[#333] px-6 py-2 font-bebas text-4xl text-[#c9a84c] shadow-[0_0_20px_rgba(201,168,76,0.1)] rounded">
-                                                        {rep.score}
-                                                    </div>
+                                                    <div className="bg-black border border-[#333] px-6 py-2 font-bebas text-4xl text-[#c9a84c] rounded">{rep.score}</div>
                                                 </div>
                                                 <div className="flex-1 flex items-center justify-start gap-4">
-                                                    {/* CONTENEDOR DEL ESCUDO */}
                                                     <div className="relative w-12 h-12 md:w-14 md:h-14 flex-shrink-0 bg-black/40 rounded-full p-2 border border-[#222] overflow-hidden">
-                                                        <Image
-                                                            src={equipos.find(e => e.id === rep.rivalId)?.escudo || "/escudo-default.png"}
-                                                            alt="Visita"
-                                                            fill
-                                                            sizes="(max-width: 768px) 48px, 56px"
-                                                            className="object-contain p-2" // El padding aquí ayuda a que el escudo no toque los bordes del círculo
-                                                        />
+                                                        <Image src={equipos.find(e => e.id === rep.rivalId)?.escudo || "/escudo-default.png"} alt="Visita" fill className="object-contain p-2" />
                                                     </div>
-
-                                                    {/* NOMBRE DEL EQUIPO */}
-                                                    <p className="font-bebas text-3xl text-white uppercase italic tracking-wider">
-                                                        {rep.visita}
-                                                    </p>
+                                                    <p className="font-bebas text-3xl text-white uppercase italic tracking-wider">{rep.visita}</p>
                                                 </div>
                                             </div>
-
-                                            {/* DETALLES Y CAPTURAS */}
                                             <div className="flex flex-col md:flex-row justify-between items-center pt-4 border-t border-[#222]/50 gap-4">
                                                 <div className="flex items-center gap-4 text-[11px] uppercase tracking-widest font-bold">
                                                     <div className="text-[#c9a84c]">DT {rep.nombreDT}</div>
-                                                    <div className="w-px h-4 bg-[#333]"></div>
                                                     <div className="text-gray-500 italic lowercase font-normal italic">{rep.comentario || "Sin comentarios"}</div>
                                                 </div>
-
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex gap-1">
-                                                        <a href={rep.captura1} target="_blank" className="bg-black hover:bg-[#c9a84c] hover:text-black text-gray-600 text-[10px] px-3 py-1 border border-[#222] transition-all">CAP 1</a>
-                                                        <a href={rep.captura2} target="_blank" className="bg-black hover:bg-[#c9a84c] hover:text-black text-gray-600 text-[10px] px-3 py-1 border border-[#222] transition-all">CAP 2</a>
-                                                        <a href={rep.captura3} target="_blank" className="bg-black hover:bg-[#c9a84c] hover:text-black text-gray-600 text-[10px] px-3 py-1 border border-[#222] transition-all">CAP 3</a>
+                                                        <a href={rep.captura1} target="_blank" className="bg-black hover:bg-[#c9a84c] hover:text-black text-gray-600 text-[10px] px-3 py-1 border border-[#222]">CAP 1</a>
+                                                        <a href={rep.captura2} target="_blank" className="bg-black hover:bg-[#c9a84c] hover:text-black text-gray-600 text-[10px] px-3 py-1 border border-[#222]">CAP 2</a>
+                                                        <a href={rep.captura3} target="_blank" className="bg-black hover:bg-[#c9a84c] hover:text-black text-gray-600 text-[10px] px-3 py-1 border border-[#222]">CAP 3</a>
                                                     </div>
                                                     {userData?.rol === 'admin' && (
-                                                        <button onClick={() => eliminarReporte(rep.id)} className="ml-2 text-red-900 hover:text-red-500 transition-colors">
+                                                        <button onClick={() => eliminarReporte(rep.id)} className="ml-2 text-red-900 hover:text-red-500">
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6" /></svg>
                                                         </button>
                                                     )}
@@ -274,17 +187,12 @@ export default function FixturePage() {
                         </div>
                     </section>
 
-                    {/* COLUMNA DERECHA: REPORTAR Y HORARIOS */}
                     <aside className="space-y-6">
                         <div className={`p-6 border-t-2 transition-all shadow-2xl ${estaAbierta ? "bg-[#0f0f0f] border-[#c9a84c]" : "bg-[#0f0f0f] border-red-900 opacity-60"}`}>
                             <h4 className="font-bebas text-3xl text-white mb-4 italic uppercase">Reportar partido</h4>
                             {estaAbierta ? (
                                 userData?.rol === "dt" ? (
-                                    <FormularioReporte
-                                        fechaNumero={fechaActiva}
-                                        rivales={equipos.filter(e => e.id !== userData.equipoId)}
-                                        equipoNombre={equipos.find(e => e.id === userData.equipoId)?.nombre || "Mi Equipo"}
-                                    />
+                                    <FormularioReporte fechaNumero={fechaActiva} rivales={equipos.filter(e => e.id !== userData.equipoId)} equipoNombre={equipos.find(e => e.id === userData.equipoId)?.nombre || "Mi Equipo"} />
                                 ) : (
                                     <p className="text-[#c9a84c] font-bold text-xs uppercase text-center py-6 border border-dashed border-[#222]">Acceso restringido a DTs</p>
                                 )
@@ -301,12 +209,8 @@ export default function FixturePage() {
                                 {listaHorarios.length > 0 ? (
                                     listaHorarios.map(h => (
                                         <div key={h.id} className="border-b border-[#222]/50 pb-2 last:border-0">
-                                            <p className="text-[#c9a84c] text-[13px] font-bold uppercase tracking-wider">
-                                                {h.nombreEquipo}
-                                            </p>
-                                            <p className="text-gray-400 text-[13px] leading-tight mt-1 italic font-light">
-                                                {h.texto}
-                                            </p>
+                                            <p className="text-[#c9a84c] text-[13px] font-bold uppercase tracking-wider">{h.nombreEquipo}</p>
+                                            <p className="text-gray-400 text-[13px] leading-tight mt-1 italic font-light">{h.texto}</p>
                                         </div>
                                     ))
                                 ) : (
@@ -314,15 +218,9 @@ export default function FixturePage() {
                                 )}
                             </div>
                         </div>
-
                         {userData?.rol === "dt" && (
-                            <SeccionDisponibilidad
-                                equipoId={userData.equipoId!}
-                                nombreEquipo={userData.nombreEquipo!}
-                                fechaActiva={fechaActiva}
-                            />
+                            <SeccionDisponibilidad equipoId={userData.equipoId!} nombreEquipo={userData.nombreEquipo!} fechaActiva={fechaActiva} />
                         )}
-
                     </aside>
                 </div>
             </div>

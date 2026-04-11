@@ -6,7 +6,6 @@ import { db } from "@/src/lib/firebase";
 import { collection, query, where, onSnapshot, orderBy, limit, Timestamp } from "firebase/firestore";
 import BannerPatrocinadores from "./components/BannerPatrocinadores";
 
-
 interface Reporte {
     id: string;
     local: string;
@@ -18,50 +17,64 @@ interface Reporte {
 export default function Page() {
     const { user, userData, loading } = useAuth();
     const [yaPostulado, setYaPostulado] = useState(false);
-    const [equipos, setEquipos] = useState([]); // Estado para los despachos
+    const [equipos, setEquipos] = useState([]);
     const [resultados, setResultados] = useState<Reporte[]>([]);
 
     useEffect(() => {
-        // 1. Cargar equipos para la grilla de Despachos
+        // 1. Cargar equipos (Lectura pública según tus reglas)
         const qEquipos = query(collection(db, "equipos"), orderBy("nombre", "asc"));
-        const unsubEquipos = onSnapshot(qEquipos, (snapshot) => {
-            setEquipos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        });
-
-        // 2. Verificar si el usuario ya se postuló
-        if (!user) return;
-        const q = query(
-            collection(db, "postulaciones"),
-            where("uid", "==", user.uid)
+        const unsubEquipos = onSnapshot(qEquipos,
+            (snapshot) => {
+                setEquipos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            },
+            (error) => {
+                console.warn("Inicio: Modo invitado (Equipos restringidos o esperando login)");
+            }
         );
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setYaPostulado(!snapshot.empty);
-        }, (error) => {
-            console.error("Error en el listener:", error);
-        });
+
+        // 2. Verificar postulación (SOLO si hay usuario)
+        let unsubPostulacion = () => { };
+        if (user) {
+            const q = query(
+                collection(db, "postulaciones"),
+                where("uid", "==", user.uid)
+            );
+            unsubPostulacion = onSnapshot(q,
+                (snapshot) => {
+                    setYaPostulado(!snapshot.empty);
+                },
+                (error) => {
+                    console.error("Error al verificar postulación:", error);
+                }
+            );
+        }
 
         return () => {
             unsubEquipos();
-            unsubscribe();
+            unsubPostulacion();
         };
     }, [user]);
 
     useEffect(() => {
-        // Escuchar los últimos 4 reportes subidos
+        // 3. Cargar reportes (Asegúrate de que 'reportes' tenga allow read: if true en tus reglas)
         const qReportes = query(
             collection(db, "reportes"),
             orderBy("fecha", "desc"),
             limit(4)
         );
 
-        const unsubReportes = onSnapshot(qReportes, (snapshot) => {
-            const nuevosResultados = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Reporte[]; // Le decimos que todo el array es de Reportes
-
-            setResultados(nuevosResultados);
-        });
+        const unsubReportes = onSnapshot(qReportes,
+            (snapshot) => {
+                const nuevosResultados = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })) as Reporte[];
+                setResultados(nuevosResultados);
+            },
+            (error) => {
+                console.warn("Inicio: No se pudieron cargar los reportes (Modo invitado)");
+            }
+        );
 
         return () => unsubReportes();
     }, []);
@@ -73,12 +86,11 @@ export default function Page() {
 
     return (
         <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] font-sans p-6 md:p-10">
-
             {/* HEADER DE SECCIÓN */}
             <div className="max-w-6xl mx-auto mb-10 border-l-4 border-[#c9a84c] pl-5 flex items-baseline gap-4">
                 <h1 className="font-bebas text-5xl md:text-7xl tracking-[5px] uppercase">Inicio</h1>
                 <span className="font-barlow-condensed text-sm tracking-[3px] text-[#c9a84c] uppercase">
-                    Liga Master PES 6 · Buenos Aires
+                    Liga Master Online · Buenos Aires
                 </span>
             </div>
 
@@ -96,7 +108,7 @@ export default function Page() {
                         El <span className="text-[#c9a84c]">Legado</span>
                     </h2>
                     <p className="text-[#888888] max-w-lg leading-relaxed mb-8">
-                        El Legado es una liga de PES 6 online entre amigos, donde cada DT defiende los colores de su equipo y compite por el título.
+                        El Legado es una liga de PES 6 online entre amigos, donde cada DT defiende los colores de su equipo y pelea por el titulo.
                     </p>
 
                     <div className="flex flex-wrap gap-4 items-center">
@@ -107,12 +119,10 @@ export default function Page() {
                         {!loading && (
                             <>
                                 {!user ? (
-                                    // CASO: INVITADO
                                     <Link href="/register" className="bg-[#c9a84c] border-2 border-[#c9a84c] text-[#0a0a0a] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:border-white transition-all shadow-[0_0_15px_rgba(201,168,76,0.3)]">
                                         Registrate para participar
                                     </Link>
                                 ) : (
-                                        // CASO: LOGUEADO (Mostramos Despachos y el estado de su postulación/club)
                                         <>
                                             {userData?.equipoId ? (
                                                 <Link href="/perfil" className="bg-[#27ae60] border-2 border-[#27ae60] text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-[#27ae60] transition-all font-bold">
@@ -123,12 +133,10 @@ export default function Page() {
                                                     Postulación en revisión
                                                 </button>
                                             ) : (
-                                                <Link href="/equipos-libres" className="bg-[#c9a84c] border-2 border-[#c9a84c] text-[#0a0a0a] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:border-white transition-all shadow-[0_0_15px_rgba(201,168,76,0.3)]">
+                                                        <Link href="/equipos-libres" className="bg-[#c9a84c] border-2 border-[#c9a84c] text-[#0a0a0a] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:border-white transition-all shadow-[0_0_15px_rgba(201,168,76,0.3)]">
                                                     Postulate a un equipo
                                                 </Link>
                                             )}
-
-                                        {/* BOTÓN DESPACHOS: Solo aparece si 'user' existe */}
                                         <Link href="/despachos" className="border-2 border-white text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-black transition-all italic">
                                             Despachos
                                         </Link>
@@ -144,7 +152,6 @@ export default function Page() {
                 </div>
             </section>
 
-            {/* SECCIÓN PATROCINADORES */}
             <BannerPatrocinadores />
 
             {/* ESTADÍSTICAS RÁPIDAS */}
@@ -156,12 +163,8 @@ export default function Page() {
                 <StatCard value="I" label="Edición" />
             </div>
 
-
-
-            {/* GRILLA INFERIOR: RESULTADOS Y POSICIONES */}
+            {/* GRILLA INFERIOR */}
             <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
-
-                {/* PANEL: ÚLTIMOS RESULTADOS */}
                 {/* PANEL: ÚLTIMOS RESULTADOS */}
                 <div className="bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden">
                     <div className="flex justify-between items-center p-4 bg-[#222222] border-b border-[#2a2a2a]">
@@ -179,45 +182,29 @@ export default function Page() {
                             </div>
                         ) : (
                             resultados.map((partido, i) => {
-                                const marcador = partido.score || "0-0";
-
-                                // Dividimos el marcador para comparar goles (Formato "2-1")
-                                const [gL, gV] = marcador.split('-').map(Number);
-
-                                // Lógica de colores para resaltar al ganador
+                                const [gL, gV] = (partido.score || "0-0").split('-').map(Number);
                                 const localGana = gL > gV;
                                 const visitaGana = gV > gL;
 
                                 return (
                                     <div key={partido.id || i} className="grid grid-cols-3 items-center p-4 border-b border-[#1e1e1e] last:border-0 hover:bg-[#ffffff03] transition-colors">
-
-                                        {/* EQUIPO LOCAL */}
                                         <div className="text-right pr-2">
-                                            <span className={`font-barlow-condensed font-bold uppercase tracking-wider text-sm transition-all ${localGana ? 'text-[#c9a84c] drop-shadow-[0_0_5px_rgba(201,168,76,0.2)]' : 'text-[#555]'}`}>
-                                                {partido.local || "Equipo Local"}
+                                            <span className={`font-barlow-condensed font-bold uppercase tracking-wider text-sm ${localGana ? 'text-[#c9a84c]' : 'text-[#555]'}`}>
+                                                {partido.local}
                                             </span>
                                         </div>
-
-                                        {/* MARCADOR CENTRAL */}
                                         <div className="flex justify-center">
-                                            <div className="flex items-center bg-[#0a0a0a] border border-[#333] px-3 py-1 rounded shadow-inner">
-                                                <span className={`font-bebas text-2xl px-2 ${localGana ? 'text-[#c9a84c]' : 'text-white'}`}>
-                                                    {gL}
-                                                </span>
+                                            <div className="flex items-center bg-[#0a0a0a] border border-[#333] px-3 py-1 rounded">
+                                                <span className={`font-bebas text-2xl px-2 ${localGana ? 'text-[#c9a84c]' : 'text-white'}`}>{gL}</span>
                                                 <span className="text-[#333] font-bebas text-xl">-</span>
-                                                <span className={`font-bebas text-2xl px-2 ${visitaGana ? 'text-[#c9a84c]' : 'text-white'}`}>
-                                                    {gV}
-                                                </span>
+                                                <span className={`font-bebas text-2xl px-2 ${visitaGana ? 'text-[#c9a84c]' : 'text-white'}`}>{gV}</span>
                                             </div>
                                         </div>
-
-                                        {/* EQUIPO VISITANTE */}
                                         <div className="text-left pl-2">
-                                            <span className={`font-barlow-condensed font-bold uppercase tracking-wider text-sm transition-all ${visitaGana ? 'text-[#c9a84c] drop-shadow-[0_0_5px_rgba(201,168,76,0.2)]' : 'text-[#555]'}`}>
-                                                {partido.visita || "Equipo Visita"}
+                                            <span className={`font-barlow-condensed font-bold uppercase tracking-wider text-sm ${visitaGana ? 'text-[#c9a84c]' : 'text-[#555]'}`}>
+                                                {partido.visita}
                                             </span>
                                         </div>
-
                                     </div>
                                 );
                             })
@@ -225,11 +212,11 @@ export default function Page() {
                     </div>
                 </div>
 
-                {/* PANEL: TABLA DE POSICIONES */}
+                {/* PANEL: TABLA (Simulada por ahora) */}
                 <div className="bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden">
                     <div className="flex justify-between items-center p-4 bg-[#222222] border-b border-[#2a2a2a]">
                         <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Tabla de Posiciones</h3>
-                        <Link href="/positions" className="font-barlow-condensed text-[10px] tracking-[2px] text-[#888888] uppercase hover:text-[#c9a84c]">
+                        <Link href="/fixture" className="font-barlow-condensed text-[10px] tracking-[2px] text-[#888888] uppercase hover:text-[#c9a84c]">
                             Ver completa →
                         </Link>
                     </div>
@@ -239,7 +226,6 @@ export default function Page() {
                                 <th className="p-3">#</th>
                                 <th className="p-3 text-left">Equipo</th>
                                 <th className="p-3">PJ</th>
-                                <th className="p-3">DG</th>
                                 <th className="p-3">PTS</th>
                             </tr>
                         </thead>
@@ -249,7 +235,6 @@ export default function Page() {
                                     <td className="p-3 font-bebas text-lg">{pos}</td>
                                     <td className="p-3 text-left">[ Equipo ]</td>
                                     <td className="p-3">—</td>
-                                    <td className="p-3">—</td>
                                     <td className="p-3 font-bebas text-2xl">—</td>
                                 </tr>
                             ))}
@@ -258,14 +243,14 @@ export default function Page() {
                 </div>
             </div>
 
-            {/* PANEL: NOVEDADES DEL TORNEO */}
+            {/* PANEL: NOVEDADES */}
             <div className="max-w-6xl mx-auto bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden mb-10">
                 <div className="p-4 bg-[#222222] border-b border-[#2a2a2a]">
                     <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Novedades del Torneo</h3>
                 </div>
                 <div className="divide-y divide-[#1e1e1e]">
                     {noticias.map((nota, i) => (
-                        <div key={i} className="flex gap-6 p-5 hover:bg-[#c9a84c05] transition-colors cursor-pointer text-[#888]">
+                        <div key={i} className="flex gap-6 p-5 hover:bg-[#c9a84c05] transition-colors text-[#888]">
                             <div className="text-center min-w-[50px]">
                                 <div className="font-bebas text-2xl text-[#c9a84c] leading-none">{nota.dia}</div>
                                 <div className="font-barlow-condensed text-[10px] tracking-[2px]">{nota.mes}</div>
