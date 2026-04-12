@@ -5,6 +5,7 @@ import { useAuth } from '@/src/lib/hooks/useAuht';
 import { db } from "@/src/lib/firebase";
 import { collection, query, where, onSnapshot, orderBy, limit, Timestamp } from "firebase/firestore";
 import BannerPatrocinadores from "./components/BannerPatrocinadores";
+import FormularioNoticias from "./components/FormularioNoticias"; // Asegúrate de crear este archivo
 
 interface Reporte {
     id: string;
@@ -19,20 +20,22 @@ export default function Page() {
     const [yaPostulado, setYaPostulado] = useState(false);
     const [equipos, setEquipos] = useState([]);
     const [resultados, setResultados] = useState<Reporte[]>([]);
+    const [noticias, setNoticias] = useState([]);
+    const [mostrarEditor, setMostrarEditor] = useState(false); // Estado para el formulario
 
     useEffect(() => {
-        // 1. Cargar equipos (Lectura pública según tus reglas)
+        // 1. Cargar equipos
         const qEquipos = query(collection(db, "equipos"), orderBy("nombre", "asc"));
         const unsubEquipos = onSnapshot(qEquipos,
             (snapshot) => {
                 setEquipos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             },
             (error) => {
-                console.warn("Inicio: Modo invitado (Equipos restringidos o esperando login)");
+                console.warn("Inicio: Modo invitado (Equipos restringidos)");
             }
         );
 
-        // 2. Verificar postulación (SOLO si hay usuario)
+        // 2. Verificar postulación
         let unsubPostulacion = () => { };
         if (user) {
             const q = query(
@@ -56,7 +59,7 @@ export default function Page() {
     }, [user]);
 
     useEffect(() => {
-        // 3. Cargar reportes (Asegúrate de que 'reportes' tenga allow read: if true en tus reglas)
+        // 3. Cargar reportes
         const qReportes = query(
             collection(db, "reportes"),
             orderBy("fecha", "desc"),
@@ -72,17 +75,21 @@ export default function Page() {
                 setResultados(nuevosResultados);
             },
             (error) => {
-                console.warn("Inicio: No se pudieron cargar los reportes (Modo invitado)");
+                console.warn("Inicio: No se pudieron cargar los reportes");
             }
         );
 
         return () => unsubReportes();
     }, []);
 
-    const noticias = [
-        { dia: "01", mes: "ENE", titulo: "Arranca el torneo · Fecha 1 disponible", desc: "Ya está disponible el fixture de la primera fecha. Coordiná con tu rival." },
-        { dia: "DD", mes: "MES", titulo: "[ Título de la novedad ]", desc: "[ Descripción breve de la noticia o recordatorio ]" },
-    ];
+    useEffect(() => {
+        // 4. Cargar Novedades
+        const q = query(collection(db, "novedades"), orderBy("timestamp", "desc"), limit(10));
+        const unsub = onSnapshot(q, (snap) => {
+            setNoticias(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+        return () => unsub();
+    }, []);
 
     return (
         <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] font-sans p-6 md:p-10">
@@ -90,25 +97,25 @@ export default function Page() {
             <div className="max-w-6xl mx-auto mb-10 border-l-4 border-[#c9a84c] pl-5 flex items-baseline gap-4">
                 <h1 className="font-bebas text-5xl md:text-7xl tracking-[5px] uppercase">Inicio</h1>
                 <span className="font-barlow-condensed text-sm tracking-[3px] text-[#c9a84c] uppercase">
-                    Liga Master Online · Buenos Aires
+                    Liga Master Online · El Legado
                 </span>
             </div>
 
             {/* HERO SECTION */}
-            <section className="max-w-6xl mx-auto relative bg-[#111111] border border-[#2a2a2a] border-t-4 border-t-[#c9a84c] p-10 md:p-16 mb-10 overflow-hidden">
+            <section className="max-w-6xl mx-auto relative bg-[#111111] border border-[#2a2a2a] border-t-4 border-t-[#c9a84c] p-10 md:p-16 mb-10 overflow-hidden shadow-2xl">
                 <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 font-bebas text-[10rem] text-[#c9a84c] opacity-[0.03] pointer-events-none whitespace-nowrap hidden lg:block">
                     EL LEGADO
                 </div>
 
                 <div className="relative z-10">
                     <div className="font-barlow-condensed text-xs tracking-[5px] text-[#c9a84c] uppercase mb-4">
-                        Bienvenido a la Liga Master
+                        Bienvenido a la plataforma oficial
                     </div>
                     <h2 className="font-bebas text-6xl md:text-8xl tracking-[8px] leading-[0.9] mb-6 uppercase">
                         El <span className="text-[#c9a84c]">Legado</span>
                     </h2>
                     <p className="text-[#888888] max-w-lg leading-relaxed mb-8">
-                        El Legado es una liga de PES 6 online entre amigos, donde cada DT defiende los colores de su equipo y pelea por el titulo.
+                        La liga de PES 6 online más competitiva. Gestiona tu equipo, coordina tus partidos y escribe tu propia historia.
                     </p>
 
                     <div className="flex flex-wrap gap-4 items-center">
@@ -120,7 +127,7 @@ export default function Page() {
                             <>
                                 {!user ? (
                                     <Link href="/register" className="bg-[#c9a84c] border-2 border-[#c9a84c] text-[#0a0a0a] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:border-white transition-all shadow-[0_0_15px_rgba(201,168,76,0.3)]">
-                                        Registrate para participar
+                                        Registrate
                                     </Link>
                                 ) : (
                                         <>
@@ -134,7 +141,7 @@ export default function Page() {
                                                 </button>
                                             ) : (
                                                         <Link href="/equipos-libres" className="bg-[#c9a84c] border-2 border-[#c9a84c] text-[#0a0a0a] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:border-white transition-all shadow-[0_0_15px_rgba(201,168,76,0.3)]">
-                                                    Postulate a un equipo
+                                                            Postulate ahora
                                                 </Link>
                                             )}
                                         <Link href="/despachos" className="border-2 border-white text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-black transition-all italic">
@@ -144,10 +151,6 @@ export default function Page() {
                                 )}
                             </>
                         )}
-
-                        <Link href="/reglamento" className="border-2 border-[#444] text-[#888] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-all">
-                            Reglamento
-                        </Link>
                     </div>
                 </div>
             </section>
@@ -157,13 +160,13 @@ export default function Page() {
             {/* ESTADÍSTICAS RÁPIDAS */}
             <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-3 mb-10">
                 <StatCard value={`${equipos.length}`} label="Clubes" />
-                <StatCard value="0" label="Partidos Jugados" />
-                <StatCard value="0" label="Goles Totales" />
-                <StatCard value="0" label="Fechas Restantes" />
+                <StatCard value={`${resultados.length}`} label="Reportes" />
+                <StatCard value="ONLINE" label="Estado" />
+                <StatCard value="19" label="Fechas" />
                 <StatCard value="I" label="Edición" />
             </div>
 
-            {/* GRILLA INFERIOR */}
+            {/* GRILLA: RESULTADOS Y TABLA */}
             <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
                 {/* PANEL: ÚLTIMOS RESULTADOS */}
                 <div className="bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden">
@@ -178,16 +181,15 @@ export default function Page() {
                         {resultados.length === 0 ? (
                             <div className="p-10 text-center space-y-2">
                                 <p className="text-gray-600 italic text-sm font-barlow-condensed uppercase tracking-widest">No hay reportes recientes</p>
-                                <p className="text-[10px] text-gray-700 uppercase">Los resultados aparecerán cuando los DTs envíen sus reportes</p>
                             </div>
                         ) : (
-                            resultados.map((partido, i) => {
+                                resultados.map((partido) => {
                                 const [gL, gV] = (partido.score || "0-0").split('-').map(Number);
                                 const localGana = gL > gV;
                                 const visitaGana = gV > gL;
 
                                 return (
-                                    <div key={partido.id || i} className="grid grid-cols-3 items-center p-4 border-b border-[#1e1e1e] last:border-0 hover:bg-[#ffffff03] transition-colors">
+                                    <div key={partido.id} className="grid grid-cols-3 items-center p-4 border-b border-[#1e1e1e] last:border-0 hover:bg-[#ffffff03] transition-colors">
                                         <div className="text-right pr-2">
                                             <span className={`font-barlow-condensed font-bold uppercase tracking-wider text-sm ${localGana ? 'text-[#c9a84c]' : 'text-[#555]'}`}>
                                                 {partido.local}
@@ -212,11 +214,11 @@ export default function Page() {
                     </div>
                 </div>
 
-                {/* PANEL: TABLA (Simulada por ahora) */}
+                {/* PANEL: TABLA (Simulada) */}
                 <div className="bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden">
                     <div className="flex justify-between items-center p-4 bg-[#222222] border-b border-[#2a2a2a]">
                         <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Tabla de Posiciones</h3>
-                        <Link href="/fixture" className="font-barlow-condensed text-[10px] tracking-[2px] text-[#888888] uppercase hover:text-[#c9a84c]">
+                        <Link href="/positions" className="font-barlow-condensed text-[10px] tracking-[2px] text-[#888888] uppercase hover:text-[#c9a84c]">
                             Ver completa →
                         </Link>
                     </div>
@@ -243,26 +245,66 @@ export default function Page() {
                 </div>
             </div>
 
-            {/* PANEL: NOVEDADES */}
-            <div className="max-w-6xl mx-auto bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden mb-10">
-                <div className="p-4 bg-[#222222] border-b border-[#2a2a2a]">
-                    <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Novedades del Torneo</h3>
+            {/* PANEL: NOVEDADES CON BOTÓN DE PUBLICAR */}
+            <div className="max-w-6xl mx-auto mb-6 flex justify-between items-center px-2">
+                <h3 className="font-bebas text-3xl tracking-[3px] text-white italic uppercase">Prensa <span className="text-[#c9a84c]">Oficial</span></h3>
+
+                {user && (
+                    <button
+                        onClick={() => setMostrarEditor(!mostrarEditor)}
+                        className={`font-bebas text-xl px-6 py-2 transition-all border shadow-lg ${mostrarEditor
+                            ? "bg-red-600 border-red-500 text-white"
+                            : "bg-[#c9a84c] border-[#c9a84c] text-black hover:bg-white hover:border-white"
+                            }`}
+                    >
+                        {mostrarEditor ? "Cerrar Editor" : "+ Nueva Noticia"}
+                    </button>
+                )}
+            </div>
+
+            {user && mostrarEditor && (
+                <div className="max-w-6xl mx-auto mb-10 animate-fadeIn">
+                    <FormularioNoticias />
                 </div>
+            )}
+
+            <div className="max-w-6xl mx-auto bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden mb-10 font-barlow-condensed">
+                <div className="p-4 bg-[#222222] border-b border-[#2a2a2a] flex justify-between items-center">
+                    <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Últimas Noticias</h3>
+                    <span className="text-[10px] text-gray-500 uppercase tracking-widest italic">Actualización en vivo</span>
+                </div>
+
                 <div className="divide-y divide-[#1e1e1e]">
-                    {noticias.map((nota, i) => (
-                        <div key={i} className="flex gap-6 p-5 hover:bg-[#c9a84c05] transition-colors text-[#888]">
+                    {noticias.length > 0 ? noticias.map((nota) => (
+                        <div key={nota.id} className="flex gap-6 p-5 hover:bg-[#c9a84c05] transition-colors group">
                             <div className="text-center min-w-[50px]">
                                 <div className="font-bebas text-2xl text-[#c9a84c] leading-none">{nota.dia}</div>
-                                <div className="font-barlow-condensed text-[10px] tracking-[2px]">{nota.mes}</div>
+                                <div className="font-barlow-condensed text-[10px] tracking-[2px] text-gray-500">{nota.mes}</div>
                             </div>
-                            <div>
-                                <h4 className="font-barlow-condensed font-bold text-base uppercase tracking-wider text-white mb-1">
-                                    {nota.titulo}
-                                </h4>
-                                <p className="text-sm leading-relaxed">{nota.desc}</p>
+
+                            <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-1">
+                                    <span className={`text-[9px] px-1.5 py-0.5 font-bold uppercase border ${nota.categoria === 'Torneo' || nota.categoria === 'Campeonato'
+                                        ? 'bg-red-900/20 border-red-500/50 text-red-400'
+                                        : 'bg-blue-900/20 border-blue-500/50 text-blue-400'
+                                        }`}>
+                                        {nota.categoria}
+                                    </span>
+                                    <h4 className="font-bold text-base uppercase tracking-wider text-white">
+                                        {nota.titulo}
+                                    </h4>
+                                </div>
+                                <p className="text-sm leading-relaxed text-[#888] mb-2">{nota.desc}</p>
+                                <div className="text-[10px] uppercase tracking-widest text-gray-600 italic">
+                                    Por <span className="text-gray-400">{nota.autor}</span> — {nota.equipo}
+                                </div>
                             </div>
                         </div>
-                    ))}
+                    )) : (
+                        <div className="p-10 text-center text-gray-600 italic uppercase text-xs tracking-[4px]">
+                            Esperando novedades del staff...
+                        </div>
+                    )}
                 </div>
             </div>
         </main>

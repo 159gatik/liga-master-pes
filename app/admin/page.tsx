@@ -3,16 +3,23 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/src/lib/hooks/useAuht";
 import { db } from "@/src/lib/firebase";
-import { collection, query, onSnapshot, doc, writeBatch, orderBy, where } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, writeBatch, orderBy, where, updateDoc, getDoc, setDoc } from "firebase/firestore";
 import SeccionAdminMercado from "../components/SeccionAdminMercado";
 import BandejaPostulaciones from "../components/BandejaPostulaciones";
+import BandejaMercadoLibre from "../components/BandejaMercadoLibre";
 
 interface Equipo { id: string; nombre: string; dt: string; dtUid?: string; estado: string; }
 
 interface Seleccionado {
-    id: string;   // ID del equipo
-    uid: string;  // UID del usuario
-    nombre: string; // Nombre del DT
+    id: string;
+    uid: string;
+    nombre: string;
+}
+
+// Interfaz para la configuración del mercado
+interface ConfigMercado {
+    fichajesAbiertos: boolean;
+    liberacionesAbiertas: boolean;
 }
 
 export default function AdminPage() {
@@ -22,18 +29,50 @@ export default function AdminPage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [seleccionado, setSeleccionado] = useState<Seleccionado | null>(null);
 
-    useEffect(() => {
-        if (!loading && !isAdmin) router.push("/"); // Redirección segura al Home
-    }, [isAdmin, loading, router]);
+    // ESTADO DEL MERCADO
+    const [configMercado, setConfigMercado] = useState<ConfigMercado>({
+        fichajesAbiertos: false,
+        liberacionesAbiertas: false
+    });
 
     useEffect(() => {
+        if (!loading && !isAdmin) router.push("/");
+    }, [isAdmin, loading, router]);
+
+    // 1. Cargar Staff y Configuración del Mercado
+    useEffect(() => {
         if (!isAdmin) return;
+
+        // Listener de Equipos
         const q = query(collection(db, "equipos"), where("estado", "==", "Ocupado"), orderBy("nombre", "asc"));
-        const unsub = onSnapshot(q, (snaps) => {
+        const unsubEquipos = onSnapshot(q, (snaps) => {
             setEquiposOcupados(snaps.docs.map(d => ({ id: d.id, ...d.data() } as Equipo)));
         });
-        return () => unsub();
+
+        // Listener de Configuración del Mercado
+        const unsubConfig = onSnapshot(doc(db, "configuracion", "mercado"), (docSnap) => {
+            if (docSnap.exists()) {
+                setConfigMercado(docSnap.data() as ConfigMercado);
+            } else {
+                // Si no existe el doc, lo creamos por defecto
+                setDoc(doc(db, "configuracion", "mercado"), { fichajesAbiertos: false, liberacionesAbiertas: false });
+            }
+        });
+
+        return () => { unsubEquipos(); unsubConfig(); };
     }, [isAdmin]);
+
+    // Función para togglear estados del mercado
+    const toggleMercado = async (campo: keyof ConfigMercado) => {
+        try {
+            const nuevoEstado = !configMercado[campo];
+            await updateDoc(doc(db, "configuracion", "mercado"), {
+                [campo]: nuevoEstado
+            });
+        } catch (error) {
+            console.error("Error al actualizar mercado:", error);
+        }
+    };
 
     const confirmarEliminacion = async () => {
         if (!seleccionado) return;
@@ -57,8 +96,33 @@ export default function AdminPage() {
                     <p className="text-[#c9a84c] uppercase tracking-[3px] italic">Gestión Oficial El Legado</p>
                 </div>
 
-                <BandejaPostulaciones />
+                {/* --- NUEVA SECCIÓN: CONTROL DE VENTANA DE TRANSFERENCIAS --- */}
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className={`p-6 border-2 transition-all ${configMercado.fichajesAbiertos ? "bg-green-900/10 border-green-500" : "bg-red-900/10 border-red-500"}`}>
+                        <h4 className="font-bebas text-2xl text-white mb-2 uppercase italic">Mercado de Fichajes (Altas)</h4>
+                        <p className="text-gray-400 text-xs uppercase mb-4">Permite a los DTs contratar jugadores libres</p>
+                        <button
+                            onClick={() => toggleMercado('fichajesAbiertos')}
+                            className={`w-full py-2 font-bebas text-xl tracking-widest ${configMercado.fichajesAbiertos ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}
+                        >
+                            {configMercado.fichajesAbiertos ? "ABIERTO" : "CERRADO"}
+                        </button>
+                    </div>
 
+                    <div className={`p-6 border-2 transition-all ${configMercado.liberacionesAbiertas ? "bg-green-900/10 border-green-500" : "bg-red-900/10 border-red-500"}`}>
+                        <h4 className="font-bebas text-2xl text-white mb-2 uppercase italic">Ventana de Bajas (Liberar)</h4>
+                        <p className="text-gray-400 text-xs uppercase mb-4">Permite a los DTs despedir jugadores al mercado</p>
+                        <button
+                            onClick={() => toggleMercado('liberacionesAbiertas')}
+                            className={`w-full py-2 font-bebas text-xl tracking-widest ${configMercado.liberacionesAbiertas ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}
+                        >
+                            {configMercado.liberacionesAbiertas ? "ABIERTO" : "CERRADO"}
+                        </button>
+                    </div>
+                </section>
+
+                <BandejaPostulaciones />
+                <BandejaMercadoLibre />
                 <section className="bg-[#111] border border-[#222] p-6 shadow-2xl">
                     <h3 className="font-bebas text-3xl text-white mb-6 italic uppercase tracking-widest">Staff Técnico Actual</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -80,7 +144,6 @@ export default function AdminPage() {
 
                 <div className="bg-[#111] border border-[#222] p-6 shadow-2xl"><SeccionAdminMercado /></div>
             </div>
-
             {/* MODAL PERSONALIZADO */}
             {modalOpen && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">

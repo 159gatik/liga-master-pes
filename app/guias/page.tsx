@@ -1,22 +1,33 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 
 // Componente para los botones de las pestañas
 interface TabButtonProps {
     label: string;
-    active: boolean;
-    onClick: () => void;
+    active?: boolean;
+    onClick?: () => void;
+    href?: string; // Nueva propiedad para redirección
 }
 
-function TabButton({ label, active, onClick }: TabButtonProps) {
+function TabButton({ label, active, onClick, href }: TabButtonProps) {
+    const className = `px-6 py-4 font-bebas text-xl tracking-widest uppercase transition-all border-b-2 ${active
+        ? "text-[#c9a84c] border-[#c9a84c] bg-[#111]"
+        : "text-gray-500 border-transparent hover:text-gray-300"
+        }`;
+
+    // Si tiene href, se comporta como un Link de Next.js
+    if (href) {
+        return (
+            <Link href={href} className={className}>
+                {label}
+            </Link>
+        );
+    }
+
+    // Si no, se comporta como un botón de estado normal
     return (
-        <button
-            onClick={onClick}
-            className={`px-6 py-4 font-bebas text-xl tracking-widest uppercase transition-all border-b-2 ${active
-                    ? "text-[#c9a84c] border-[#c9a84c] bg-[#111]"
-                    : "text-gray-500 border-transparent hover:text-gray-300"
-                }`}
-        >
+        <button onClick={onClick} className={className}>
             {label}
         </button>
     );
@@ -55,6 +66,12 @@ export default function GuiasPage() {
                         label="Gestión de Fechas"
                         active={activeTab === "gestion"}
                         onClick={() => setActiveTab("gestion")}
+                    />
+                    {/* NUEVA PESTAÑA DE SOPORTE */}
+                    <TabButton
+                        label="Soporte Técnico"
+                        href="/soporte"
+                        active={false}
                     />
                 </nav>
 
@@ -156,7 +173,6 @@ export default function GuiasPage() {
                                     </a>
 
                                     <div className="mt-4 border border-[#222] p-2 bg-[#050505]">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src="..//img/registro-servidor.png"
                                             alt="Interfaz de Registro Servidor"
@@ -233,19 +249,54 @@ export default function GuiasPage() {
                         <article className="space-y-8">
                             <div>
                                 <h2 className="font-bebas text-4xl text-[#c9a84c] italic mb-4">Gestión de Jornadas (Tutorial DT)</h2>
+                                <p className="text-gray-400 text-sm mb-6 uppercase tracking-widest italic">Seguí estos pasos para mantener la liga organizada y evitar quita de puntos.</p>
+
                                 <div className="grid md:grid-cols-2 gap-8">
-                                    <div className="bg-[#151515] p-6 border border-[#222]">
-                                        <h3 className="font-bebas text-2xl text-white mb-2">Cargar Horarios</h3>
-                                        <p className="text-gray-500 text-sm">En el Fixture, usá el recuadro <strong> Mi Disponibilidad  </strong>  para avisar cuándo podés jugar. Esto es obligatorio para evitar sanciones.</p>
+                                    {/* PASO 1: HORARIOS */}
+                                    <div className="bg-[#151515] p-6 border border-[#222] relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-2 bg-[#c9a84c] text-black font-bebas text-xs">PASO 01</div>
+                                        <h3 className="font-bebas text-2xl text-white mb-2 uppercase italic">1. Cargar Disponibilidad</h3>
+                                        <p className="text-gray-500 text-sm mb-4">
+                                            Dentro de la sección <strong>Fixture</strong>, seleccioná la fecha actual y buscá el recuadro dorado.
+                                        </p>
+                                        <ul className="text-[11px] text-[#c9a84c] space-y-1 uppercase font-bold">
+                                            <li>• Sé específico (Ej: Lunes a Jueves de 20 a 22hs).</li>
+                                            <li>• El rival usará esto para contactarte por privado.</li>
+                                            <li>• Si no cargás horario, perdés el derecho a reclamo.</li>
+                                        </ul>
                                     </div>
-                                    <div className="bg-[#151515] p-6 border border-[#222]">
-                                        <h3 className="font-bebas text-2xl text-white mb-2">Subir Reporte</h3>
-                                        <p className="text-gray-500 text-sm">Al terminar, el ganador sube el resultado con las 3 capturas reglamentarias. La tabla se actualizará sola.</p>
+
+                                    {/* PASO 2: REPORTE */}
+                                    <div className="bg-[#151515] p-6 border border-[#222] relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-2 bg-[#c9a84c] text-black font-bebas text-xs">PASO 02</div>
+                                        <h3 className="font-bebas text-2xl text-white mb-2 uppercase italic">2. Subir Reporte Oficial</h3>
+                                        <p className="text-gray-500 text-sm mb-4">
+                                            Una vez jugado el partido, el <strong>ganador</strong> (o el local en caso de empate) debe informar el resultado.
+                                        </p>
+                                        <div className="bg-black/50 p-3 rounded border border-white/5">
+                                            <p className="text-[10px] text-gray-400 uppercase mb-2 italic">Capturas obligatorias:</p>
+                                            <div className="flex gap-2">
+                                                <span className="bg-[#222] px-2 py-1 text-[9px] text-white">1. Resultado</span>
+                                                <span className="bg-[#222] px-2 py-1 text-[9px] text-white">2. Estadísticas</span>
+                                                <span className="bg-[#222] px-2 py-1 text-[9px] text-white">3. Fair Play</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-blue-900/10 border border-blue-500/30 p-6 text-center">
-                                <p className="text-blue-400 text-sm italic">¿Todavía tenés dudas? Consultá en el canal #soporte de nuestro Discord oficial.</p>
+
+                            {/* NOTA SOBRE EL CHAT PRIVADO */}
+                            <div className="bg-[#c9a84c]/5 border-l-4 border-[#c9a84c] p-6">
+                                <h4 className="font-bebas text-xl text-[#c9a84c] mb-1">Coordinación por Mensajería</h4>
+                                <p className="text-gray-500 text-xs">
+                                    Usá el sistema de <strong>Mensajes Privados</strong> en la pestaña Comunidad para hablar con tu rival. No se aceptarán capturas de WhatsApp externo como prueba de No presentación si no hubo contacto previo en la plataforma oficial.
+                                </p>
+                            </div>
+
+                            {/* SOPORTE */}
+                            <div className="bg-blue-900/10 border border-blue-500/30 p-6 text-center group hover:bg-blue-900/20 transition-all">
+                                <p className="text-blue-400 text-sm italic mb-2">¿Todavía tenés dudas sobre el reglamento o el sistema?</p>
+                                <Link href="/soporte" className="bg-blue-600 hover:bg-blue-500 text-white font-bebas px-6 py-2 text-lg italic transition-colors" >Hacé tu consulta en la sección Soporte</Link>
                             </div>
                         </article>
                     )}

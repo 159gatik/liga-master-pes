@@ -2,15 +2,18 @@
 import { useState, useEffect } from "react";
 import { db } from "@/src/lib/firebase";
 import { useAuth } from "@/src/lib/hooks/useAuht";
-import { doc, onSnapshot, collection, query, orderBy } from "firebase/firestore";
+import {
+    doc, onSnapshot, collection, query, orderBy,
+    writeBatch, serverTimestamp
+} from "firebase/firestore";
 
-// 1. Interfaces estrictas
+// 1. Interfaces
 export interface UserData {
     nombre: string;
     rol: string;
     equipoId?: string;
     nombreEquipo?: string;
-    discord?: string; // Sincronizado con la bandeja
+    discord?: string;
     wins?: number;
     losses?: number;
 }
@@ -30,10 +33,16 @@ interface Equipo {
     escudo?: string;
 }
 
+interface ConfigMercado {
+    liberacionesAbiertas: boolean;
+    fichajesAbiertos: boolean;
+}
+
 export default function PerfilDT() {
     const { user, userData, loading: authLoading } = useAuth();
     const [equipoDoc, setEquipoDoc] = useState<Equipo | null>(null);
     const [plantilla, setPlantilla] = useState<Jugador[]>([]);
+    const [configMercado, setConfigMercado] = useState<ConfigMercado>({ liberacionesAbiertas: false, fichajesAbiertos: false });
     const [loadingData, setLoadingData] = useState(true);
 
     useEffect(() => {
@@ -43,12 +52,19 @@ export default function PerfilDT() {
             return () => clearTimeout(timer);
         }
 
+        // Listener: Datos del Equipo
         const unsubEquipo = onSnapshot(doc(db, "equipos", userData.equipoId), (docSnap) => {
             if (docSnap.exists()) {
                 setEquipoDoc({ id: docSnap.id, ...docSnap.data() } as Equipo);
             }
         });
 
+        // Listener: Configuración de Mercado (Admin)
+        const unsubConfig = onSnapshot(doc(db, "configuracion", "mercado"), (snap) => {
+            if (snap.exists()) setConfigMercado(snap.data() as ConfigMercado);
+        });
+
+        // Listener: Plantilla
         const q = query(
             collection(db, "equipos", userData.equipoId, "plantilla"),
             orderBy("nombre", "asc")
@@ -62,9 +78,48 @@ export default function PerfilDT() {
 
         return () => {
             unsubEquipo();
+            unsubConfig();
             unsubPlantilla();
         };
     }, [userData?.equipoId, authLoading]);
+
+    // --- FUNCIÓN PARA LIBERAR JUGADOR ---
+    const liberarJugador = async (jugador: Jugador) => {
+        if (!configMercado.liberacionesAbiertas) {
+            return alert("El periodo de bajas está cerrado por la organización.");
+        }
+
+        if (plantilla.length <= 18) {
+            return alert("REGLAMENTO: No puedes tener menos de 18 jugadores en tu plantilla.");
+        }
+
+        const confirmar = confirm(`¿Estás seguro de rescindir el contrato de ${jugador.nombre}? El jugador pasará a la lista de LIBRES.`);
+
+        if (confirmar && userData?.equipoId) {
+            try {
+                const batch = writeBatch(db);
+
+                // A. Referencia para eliminar del equipo
+                const jugadorRef = doc(db, "equipos", userData.equipoId, "plantilla", jugador.id);
+                batch.delete(jugadorRef);
+
+                // B. Referencia para añadir a Jugadores Libres
+                const libreRef = doc(collection(db, "jugadores_libres"));
+                batch.set(libreRef, {
+                    ...jugador,
+                    exEquipo: userData.nombreEquipo,
+                    fechaLiberacion: serverTimestamp(),
+                    tipo: "Descarte de DT"
+                });
+
+                await batch.commit();
+                alert(`${jugador.nombre} ha sido enviado al mercado de libres.`);
+            } catch (error) {
+                console.error("Error al liberar:", error);
+                alert("Error de conexión con el servidor.");
+            }
+        }
+    };
 
     if (authLoading || loadingData) {
         return (
@@ -76,57 +131,31 @@ export default function PerfilDT() {
         );
     }
 
-    if (!user || !userData) return null; // Protección básica
+    if (!user || !userData) return null;
 
-    // Vista para Invitados
-    // Vista para Invitados / Sin Equipo
+    // Vista para Invitados / Sin Equipo (Mismo diseño tuyo)
     if (userData.rol === "invitado" || !userData.equipoId) {
         return (
             <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-10 flex flex-col items-center justify-center font-barlow-condensed">
-                {/* CONTENEDOR PRINCIPAL */}
                 <div className="bg-[#111] border-2 border-[#c9a84c] p-8 md:p-16 max-w-3xl w-full text-center shadow-[0_0_60px_rgba(201,168,76,0.05)] relative overflow-hidden">
-
-                    {/* DECORACIÓN ESTILO PES 6 */}
                     <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-[#c9a84c]"></div>
                     <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-[#c9a84c]"></div>
-
-
                     <div className="relative z-10 space-y-8">
-                        <div>
-                            <h2 className="font-bebas text-7xl md:text-8xl text-[#c9a84c] mb-2 uppercase italic tracking-tighter leading-none">
-                                OFICINA VACANTE
-                            </h2>
-                            <div className="h-1 w-24 bg-[#c9a84c] mx-auto mb-6"></div>
-                        </div>
-
+                        <h2 className="font-bebas text-7xl md:text-8xl text-[#c9a84c] mb-2 uppercase italic tracking-tighter leading-none">OFICINA VACANTE</h2>
+                        <div className="h-1 w-24 bg-[#c9a84c] mx-auto mb-6"></div>
                         <p className="text-gray-400 text-xl md:text-2xl uppercase tracking-widest leading-snug max-w-lg mx-auto">
-                            Hola, <span className="text-white font-bold">{userData.nombre}</span>. Actualmente no tienes un club asignado en la base de datos de <span className="text-[#c9a84c]">El Legado</span>.
+                            Hola, <span className="text-white font-bold">{userData.nombre}</span>. Actualmente no tienes un club asignado.
                         </p>
-
-                        {/* TARJETAS DE ACCIÓN */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10">
-                            <a href="/equipos-libres" className="group bg-white/5 border border-white/10 p-6 hover:border-[#c9a84c] transition-all">
-                                <h4 className="font-bebas text-2xl text-[#c9a84c] group-hover:scale-110 transition-transform italic underline decoration-1 underline-offset-4">POSTULARSE</h4>
-                                <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2">Ver equipos libres y enviar contrato</p>
+                            <a href="/equipos-libres" className="group bg-white/5 border border-white/10 p-6 hover:border-[#c9a84c] transition-all text-center">
+                                <h4 className="font-bebas text-2xl text-[#c9a84c]">POSTULARSE</h4>
                             </a>
-                            <a href="/reglamento" className="group bg-white/5 border border-white/10 p-6 hover:border-[#c9a84c] transition-all">
-                                <h4 className="font-bebas text-2xl text-[#c9a84c] group-hover:scale-110 transition-transform italic underline decoration-1 underline-offset-4">REGLAMENTO</h4>
-                                <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2">Leer normas de la Liga Master</p>
+                            <a href="/reglamento" className="group bg-white/5 border border-white/10 p-6 hover:border-[#c9a84c] transition-all text-center">
+                                <h4 className="font-bebas text-2xl text-[#c9a84c]">REGLAMENTO</h4>
                             </a>
-                        </div>
-
-                        <div className="pt-8 border-t border-white/5">
-                            <p className="text-[11px] text-[#555] uppercase tracking-[4px] animate-pulse">
-                                Esperando aprobación del comisionado...
-                            </p>
                         </div>
                     </div>
                 </div>
-
-                {/* BOTÓN SECUNDARIO DE SALIDA */}
-                <p className="mt-8 text-gray-600 text-xs uppercase tracking-[3px]">
-                    ¿Hubo un error? Contacta al soporte en Discord
-                </p>
             </main>
         );
     }
@@ -140,13 +169,7 @@ export default function PerfilDT() {
                     <div className="space-y-4">
                         <div className="flex items-center gap-4">
                             {equipoDoc?.escudo && (
-                                /* eslint-disable-next-line @next/next/no-img-element */
-                                <img
-                                    src={equipoDoc.escudo}
-                                    className="w-16 h-16 object-contain"
-                                    alt="Escudo"
-                                    onError={(e) => { (e.target as HTMLImageElement).src = "/escudos/default.png" }}
-                                />
+                                <img src={equipoDoc.escudo} className="w-16 h-16 object-contain" alt="Escudo" />
                             )}
                             <h1 className="font-bebas text-8xl md:text-5xl leading-none tracking-tighter italic text-white uppercase">
                                 {equipoDoc?.nombre || "Cargando..."}
@@ -167,30 +190,36 @@ export default function PerfilDT() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
 
-                    {/* PLANTILLA */}
+                    {/* PLANTILLA CON ACCIÓN DE LIBERAR */}
                     <section className="lg:col-span-2 space-y-8">
                         <div className="flex items-center justify-between border-b border-[#222] pb-4">
-                            <h3 className="font-bebas text-4xl uppercase tracking-widest italic text-white">
-                                Nómina de Jugadores
-                            </h3>
-                            <span className="text-[#c9a84c] text-xl italic font-bold">
-                                {plantilla.length}
-                            </span>
+                            <h3 className="font-bebas text-4xl uppercase tracking-widest italic text-white">Nómina de Jugadores</h3>
+                            <div className="flex items-center gap-4">
+                                <span className="text-gray-500 text-sm uppercase tracking-widest">Plantilla: {plantilla.length}/26</span>
+                                <span className="text-[#c9a84c] text-xl italic font-bold tracking-tighter bg-[#c9a84c]/10 px-3">OFICIAL</span>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {plantilla.map((jugador) => (
-                                <div key={jugador.id} className="bg-[#111] border border-[#222] p-5 flex justify-between items-center hover:border-[#c9a84c] transition-all group">
-                                    <div>
-                                        <p className="text-white font-bold text-2xl uppercase group-hover:text-[#c9a84c] transition-colors leading-none">{jugador.nombre}</p>
-                                        {/* POSICIÓN APARECE AQUÍ */}
-                                        <p className="text-[10px] text-[#c9a84c] uppercase tracking-[3px] mt-2 font-bold italic">
-                                            {jugador.pos || "General"}
-                                        </p>
+                                <div key={jugador.id} className="bg-[#111] border border-[#222] p-5 flex flex-col gap-4 hover:border-[#c9a84c] transition-all group relative">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-white font-bold text-2xl uppercase group-hover:text-[#c9a84c] transition-colors leading-none">{jugador.nombre}</p>
+                                            <p className="text-[10px] text-[#c9a84c] uppercase tracking-[3px] mt-2 font-bold italic">{jugador.pos || "General"}</p>
+                                        </div>
+                                        <div className="font-bebas text-4xl text-[#c9a84c]/40 group-hover:text-[#c9a84c] transition-colors">{jugador.media || "--"}</div>
                                     </div>
-                                    <div className="font-bebas text-4xl text-[#c9a84c]/40 group-hover:text-[#c9a84c] transition-colors">
-                                        {jugador.media || "--"}
-                                    </div>
+
+                                    {/* BOTÓN DE RESCISIÓN: Solo si el mercado está abierto */}
+                                    {configMercado.liberacionesAbiertas && (
+                                        <button
+                                            onClick={() => liberarJugador(jugador)}
+                                            className="w-full border border-red-900/50 text-red-500/50 hover:text-white hover:bg-red-600 hover:border-red-600 py-1 text-[10px] uppercase font-bold tracking-widest transition-all italic"
+                                        >
+                                            Rescindir Contrato
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -202,9 +231,7 @@ export default function PerfilDT() {
                             <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#c9a84c]"></div>
                             <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#c9a84c]"></div>
 
-                            <h4 className="font-bebas text-3xl mb-8 text-[#c9a84c] tracking-widest uppercase italic border-b border-[#c9a84c]/20 pb-2">
-                                credencial
-                            </h4>
+                            <h4 className="font-bebas text-3xl mb-8 text-[#c9a84c] tracking-widest uppercase italic border-b border-[#c9a84c]/20 pb-2">credencial</h4>
 
                             <div className="space-y-6 relative z-10">
                                 <div>
@@ -228,21 +255,13 @@ export default function PerfilDT() {
                                     </div>
                                 </div>
                             </div>
-
-                            {equipoDoc?.escudo && (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    src={equipoDoc.escudo}
-                                    alt=""
-                                    className="absolute -right-0 bottom-31 w-48 h-48 object-contain pointer-events-none opacity-20"
-                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                                />
-                            )}
                         </div>
 
-                        <div className="bg-gradient-to-r from-[#c9a84c]/10 to-transparent p-6 border-l-2 border-[#c9a84c] italic">
-                            <p className="text-sm text-gray-500 font-barlow-condensed leading-snug tracking-wider uppercase">
-                                Gestión de oficina deportiva
+                        {/* ESTADO DEL MERCADO (AVISO) */}
+                        <div className={`p-6 border-l-2 italic flex flex-col gap-1 ${configMercado.liberacionesAbiertas ? 'bg-green-900/10 border-green-500' : 'bg-red-900/10 border-red-500'}`}>
+                            <p className="text-xs uppercase font-bold tracking-widest text-white">Ventana de Bajas</p>
+                            <p className={`text-[10px] uppercase tracking-widest ${configMercado.liberacionesAbiertas ? 'text-green-500' : 'text-red-500'}`}>
+                                {configMercado.liberacionesAbiertas ? 'Abierta - Puedes liberar jugadores' : 'Cerrada - Plantilla bloqueada'}
                             </p>
                         </div>
                     </aside>
