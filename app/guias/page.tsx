@@ -67,6 +67,11 @@ export default function GuiasPage() {
                         active={activeTab === "gestion"}
                         onClick={() => setActiveTab("gestion")}
                     />
+                    <TabButton
+                        label="Gestión de Despachos"
+                        active={activeTab === "despachos"}
+                        onClick={() => setActiveTab("despachos")}
+                    />
                     {/* NUEVA PESTAÑA DE SOPORTE */}
                     <TabButton
                         label="Soporte Técnico"
@@ -300,7 +305,75 @@ export default function GuiasPage() {
                             </div>
                         </article>
                     )}
+                    {activeTab === "despachos" && (
+                        <article className="space-y-10">
+                            <div className="flex items-center gap-4 border-b border-[#c9a84c]/20 pb-4">
+                                <h2 className="font-bebas text-4xl text-[#c9a84c] italic uppercase">El Despacho Oficial</h2>
+                                <span className="bg-[#c9a84c] text-black text-[10px] font-bold px-2 py-0.5 uppercase">Auditoría & Finanzas</span>
+                            </div>
 
+                            <p className="text-gray-400 text-2xl leading-relaxed italic">
+                                El Despacho no es un chat común; es el <span className="text-white font-bold underline decoration-[#c9a84c]">Libro Contable</span> de tu club. Cada mensaje aquí representa una transacción oficial que debe ser validada para impactar en tu presupuesto.
+                            </p>
+
+                            <div className="grid md:grid-cols-2 gap-12 items-start">
+                                {/* PROTOCOLO */}
+                                <div className="space-y-6">
+                                    <h4 className="font-bebas text-3xl text-white uppercase tracking-widest border-l-2 border-[#c9a84c] pl-3">Protocolo de Negociación</h4>
+                                    <div className="space-y-6">
+                                        <div className="flex gap-4 items-start">
+                                            <span className="text-[#c9a84c] font-bebas text-3xl leading-none">01.</span>
+                                            <p className="text-lg text-gray-400 uppercase tracking-tighter leading-tight">Cierre del acuerdo por privado (Discord/WhatsApp).</p>
+                                        </div>
+                                        <div className="flex gap-4 items-start">
+                                            <span className="text-[#c9a84c] font-bebas text-3xl leading-none">02.</span>
+                                            <p className="text-lg text-gray-400 uppercase tracking-tighter leading-tight">El DT debe reportar en <span className="text-white font-bold">SU PROPIO DESPACHO</span>.</p>
+                                        </div>
+                                        <div className="flex gap-4 items-start">
+                                            <span className="text-[#c9a84c] font-bebas text-3xl leading-none">03.</span>
+                                            <p className="text-lg text-gray-400 uppercase tracking-tighter leading-tight">Usar el botón <span className="text-white font-bold">+ AÑADIR LÍNEA</span> para montos.</p>
+                                        </div>
+                                        <div className="flex gap-4 items-start">
+                                            <span className="text-[#c9a84c] font-bebas text-3xl leading-none">04.</span>
+                                            <p className="text-lg text-gray-400 uppercase tracking-tighter leading-tight text-orange-500 font-bold">El post queda PENDIENTE hasta que el Admin lo procese.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* MANUAL DE MOVIMIENTOS */}
+                                <div className="bg-[#111] border border-[#222] p-8 space-y-6 shadow-2xl">
+                                    <h4 className="font-bebas text-3xl text-white uppercase italic">Manual de Movimientos</h4>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between border-b border-white/5 pb-3 text-sm">
+                                            <span className="text-red-500 font-bold">[ COMPRA ]</span>
+                                            <span className="text-gray-300 italic uppercase">Resta de tu caja (-)</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-white/5 pb-3 text-sm">
+                                            <span className="text-green-500 font-bold">[ VENTA ]</span>
+                                            <span className="text-gray-300 italic uppercase">Suma a tu caja (+)</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-white/5 pb-3 text-sm">
+                                            <span className="text-[#c9a84c] font-bold">[ PATROCINIO ]</span>
+                                            <span className="text-gray-300 italic uppercase">Ingreso externo (+)</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 italic uppercase tracking-widest pt-4">
+                                        * Intercambios: Detallar jugadores de ambos clubes en el texto libre.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* ADVERTENCIA DE RESPONSABILIDAD */}
+                            <div className="bg-[#c9a84c]/5 border-l-4 border-[#c9a84c] p-8 space-y-4">
+                                <h4 className="font-bebas text-3xl text-white tracking-widest uppercase">Responsabilidad del Mánager</h4>
+                                <div className="text-gray-400 text-xl leading-relaxed space-y-4">
+                                    <p>Cada reporte enviado tiene valor de <span className="text-white font-bold">Declaración Jurada</span>.</p>
+                                    <p className="border-t border-white/10 pt-4">
+                                        <strong className="text-red-500 underline uppercase font-black">Importante:</strong> El dinero <span className="text-white underline">NO se mueve solo</span>. El Admin valida cada trato. Intentar engañar al presupuesto resultará en <span className="text-white font-bold">SANCIONES DISCIPLINARIAS</span> graves.
+                                    </p>
+                                </div>
+                            </div>
+                        </article>)}
                 </div>
             </div>
         </main>

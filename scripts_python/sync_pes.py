@@ -55,7 +55,7 @@ def sincronizar_por_id_directo(carpeta_plantillas):
                 valor_total += jugador_data['valor']
 
             # Actualizar presupuesto del club
-            equipo_ref.update({"presupuesto": valor_total})
+            equipo_ref.update({"valor_plantilla": valor_total})
             print(f"✅ Sincronizado con éxito. Valor Total: ${valor_total:,}")
 
         except Exception as e:

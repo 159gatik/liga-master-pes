@@ -6,7 +6,7 @@ import {
     doc, onSnapshot, collection, query, orderBy,
     writeBatch, serverTimestamp
 } from "firebase/firestore";
-
+import Image from "next/image";
 // 1. Interfaces
 export interface UserData {
     nombre: string;
@@ -29,6 +29,7 @@ interface Equipo {
     id: string;
     nombre: string;
     presupuesto: number;
+    valor_plantilla: number; // Agregamos este campo
     dt: string;
     escudo?: string;
 }
@@ -44,6 +45,9 @@ export default function PerfilDT() {
     const [plantilla, setPlantilla] = useState<Jugador[]>([]);
     const [configMercado, setConfigMercado] = useState<ConfigMercado>({ liberacionesAbiertas: false, fichajesAbiertos: false });
     const [loadingData, setLoadingData] = useState(true);
+    const limiteSueldos = (equipoDoc?.valor_plantilla || 0) * 0.10;
+    const enRiesgo = (equipoDoc?.presupuesto || 0) < limiteSueldos;
+
 
     useEffect(() => {
         if (authLoading) return;
@@ -163,13 +167,36 @@ export default function PerfilDT() {
     return (
         <main className="min-h-screen bg-[#0a0a0a] text-white p-6 md:p-10 font-barlow-condensed">
             <div className="max-w-7xl mx-auto space-y-12">
+                {/* ⚠️ BLOQUE DE ALERTA DE QUIEBRA (Solo aparece si está en riesgo) */}
+                {enRiesgo && equipoDoc && (
+                    <div className="bg-red-950/20 border-l-4 border-red-600 p-6 flex flex-col md:flex-row items-center justify-between gap-6 animate-pulse shadow-[0_0_30px_rgba(220,38,38,0.1)]">
+                        <div className="flex items-center gap-5">
+                            <div>
+                                <h3 className="font-bebas text-4xl text-red-500 tracking-wider leading-none uppercase italic">Aviso de Quiebra Inminente</h3>
+                                <p className="text-gray-400 text-m uppercase tracking-widest mt-1">Fondos insuficientes para cubrir los sueldos de la temporada</p>
+                                <p className="text-gray-400 text-sm uppercase tracking-widest mt-1">Sugerencia: Libera jugadores para reducir el valor de tu plantilla y bajar el costo de sueldos</p>
 
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[15px] text-red-500/50 uppercase font-bold tracking-[3px]">Sueldos estimados (10%)</p>
+                            <p className="font-bebas text-4xl text-white">${limiteSueldos.toLocaleString()}</p>
+                        </div>
+                    </div>
+                )}
                 {/* HEADER DINÁMICO */}
                 <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b-2 border-[#222] pb-10 gap-8">
                     <div className="space-y-4">
                         <div className="flex items-center gap-4">
                             {equipoDoc?.escudo && (
-                                <img src={equipoDoc.escudo} className="w-16 h-16 object-contain" alt="Escudo" />
+                                <Image
+                                    src={equipoDoc.escudo}
+                                    alt={`Escudo de ${equipoDoc.nombre}`}
+                                    width={64} // Corresponde a w-16
+                                    height={64} // Corresponde a h-16
+                                    className="object-contain"
+                                    priority // Agregamos priority porque está en el header (LCP)
+                                />
                             )}
                             <h1 className="font-bebas text-8xl md:text-5xl leading-none tracking-tighter italic text-white uppercase">
                                 {equipoDoc?.nombre || "Cargando..."}
@@ -180,9 +207,11 @@ export default function PerfilDT() {
                         </p>
                     </div>
 
-                    <div className="bg-[#111] p-6 border-r-8 border-[#27ae60] min-w-[300px] shadow-xl">
+                    {/* Caja de Presupuesto (Cambia de color si hay riesgo) */}
+                    <div className={`p-6 border-r-8 min-w-[300px] shadow-xl transition-all ${enRiesgo ? 'bg-red-900/10 border-red-600' : 'bg-[#111] border-[#27ae60]'
+                        }`}>
                         <p className="text-gray-500 text-xs uppercase tracking-[4px] font-bold mb-2 italic">Presupuesto Disponible</p>
-                        <p className="font-bebas text-6xl text-[#27ae60] tabular-nums">
+                        <p className={`font-bebas text-6xl tabular-nums ${enRiesgo ? 'text-red-500' : 'text-[#27ae60]'}`}>
                             ${equipoDoc?.presupuesto?.toLocaleString()}
                         </p>
                     </div>

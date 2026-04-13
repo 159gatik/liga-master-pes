@@ -17,32 +17,37 @@ interface EquipoProps {
         nombre: string;
         dt: string;
         presupuesto: number;
+        valor_plantilla: number;
         titulos?: string[];
         copas?: string[];
+
     };
 }
 
 export default function DetalleEquipo({ equipo }: EquipoProps) {
     const [activeTab, setActiveTab] = useState("plantilla");
-
     return (
         <div className="w-full bg-[#111] border border-[#2a2a2a] shadow-2xl animate-fadeIn">
 
             {/* 1. INFO BAR (DT y Presupuesto) */}
             <div className="p-6 border-b border-[#222] flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-[#151515] to-[#111]">
                 <div className="flex flex-col gap-1">
-                    <h2 className="font-bebas text-5xl text-white tracking-widest uppercase leading-none">
+                    <h2 className="font-bebas text-5xl text-white tracking-widest uppercase">
                         {equipo.nombre}
                     </h2>
                     <p className="font-barlow-condensed text-[#c9a84c] uppercase tracking-[4px] text-sm">
                         DT: <span className="text-white ml-2">{equipo.dt || "SIN ASIGNAR"}</span>
                     </p>
                 </div>
-                <div className="text-right mt-4 md:mt-0 bg-[#0a0a0a] p-3 border border-[#222]">
-                    <p className="text-[10px] text-[#555] uppercase tracking-[2px] mb-1 font-bold">Presupuesto del Club</p>
-                    <p className="font-bebas text-3xl text-[#27ae60] leading-none">
-                        ${equipo.presupuesto?.toLocaleString('es-AR') || "0"}
-                    </p>
+
+                <div className="flex gap-4">
+                    {/* BILLETERA (Dinero real para fichajes) */}
+                    <div className="text-right bg-[#0a0a0a] p-3 border border-[#c9a84c]/30">
+                        <p className="text-[10px] text-[#c9a84c] uppercase tracking-[2px] mb-1 font-bold">Presupuesto Disponible</p>
+                        <p className="font-bebas text-3xl text-[#27ae60] leading-none">
+                            ${equipo.presupuesto?.toLocaleString('es-AR') || "0"}
+                        </p>
+                    </div>
                 </div>
             </div>
 

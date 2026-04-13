@@ -3,6 +3,7 @@ import { useState } from "react";
 import { db } from "@/src/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/src/lib/hooks/useAuht";
+import { Alert, Toast } from "@/src/lib/alerts";
 
 export default function FormularioNoticia() {
     const { user, userData } = useAuth();
@@ -35,7 +36,11 @@ export default function FormularioNoticia() {
 
             setTitulo("");
             setDesc("");
-            alert("Noticia publicada con éxito");
+            Toast.fire({
+                icon: 'success',
+                title: 'Gran Noticia',
+                text: 'Se subió con éxito.',
+            });
         } catch (error) {
             console.error(error);
         } finally {

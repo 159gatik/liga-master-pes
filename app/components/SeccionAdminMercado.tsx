@@ -13,6 +13,9 @@ import {
     writeBatch, increment, serverTimestamp
 } from "firebase/firestore";
 
+import { Alert } from "@/src/lib/alerts";
+
+
 interface Solicitud {
     id: string;
     vendedor: string;
@@ -101,7 +104,11 @@ export default function SeccionAdminMercado() {
 
         } catch (error) {
             console.error("Error en la validación automática:", error);
-            alert("Error crítico al procesar el traspaso.");
+            Alert.fire({
+                icon: 'warning',
+                title: 'ERROR CRÍTICO',
+                text: 'No se pudo realizar el traspaso.',
+            });
         } finally {
             setProcesando(null);
         }

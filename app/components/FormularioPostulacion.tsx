@@ -4,6 +4,8 @@ import { db } from "../../src/lib/firebase";
 import { useAuth } from "@/src/lib/hooks/useAuht";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import emailjs from '@emailjs/browser';
+import { Alert } from "@/src/lib/alerts";
+
 
 interface FormularioProps {
     equipoPreseleccionado?: string;
@@ -56,12 +58,24 @@ export default function FormularioPostulacion({
 
         // Verificación final antes de enviar
         if (nombreConfirmacion !== userData?.nombre) {
-            alert("El nombre de confirmación no coincide con tu Nick de registro.");
+            Alert.fire({
+                icon: 'warning',
+                title: 'ERROR EN EL NICK',
+                text: 'No coincide con el nick registrado.',
+            });
             return;
         }
 
-        if (!user || !userData) return alert("Debes iniciar sesión.");
-        if (!formData.equipoId) return alert("Selecciona un equipo de la grilla.");
+        if (!user || !userData) return Alert.fire({
+            icon: 'warning',
+            title: 'ERROR',
+            text: 'Debes iniciar sesión.',
+        });;
+        if (!formData.equipoId) return Alert.fire({
+            icon: 'warning',
+            title: 'ERROR',
+            text: 'Seleccioná un equipo de la grilla.',
+        });;
 
         setEnviando(true);
 
@@ -97,7 +111,11 @@ export default function FormularioPostulacion({
             window.location.reload();
         } catch (error) {
             console.error(error);
-            alert("Error al enviar.");
+            Alert.fire({
+                icon: 'warning',
+                title: 'ERROR AL ENVIAR',
+                text: 'No se pudo enviar la postulación.',
+            });
         } finally {
             setEnviando(false);
         }

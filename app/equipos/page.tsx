@@ -11,6 +11,7 @@ interface Equipo {
     escudo: string;
     dt: string;
     presupuesto: number;
+    valor_plantilla: number;
     titulos?: string[];
     copas?: string[];
 }

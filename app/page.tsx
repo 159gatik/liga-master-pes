@@ -5,8 +5,7 @@ import { useAuth } from '@/src/lib/hooks/useAuht';
 import { db } from "@/src/lib/firebase";
 import { collection, query, where, onSnapshot, orderBy, limit, Timestamp } from "firebase/firestore";
 import BannerPatrocinadores from "./components/BannerPatrocinadores";
-import FormularioNoticias from "./components/FormularioNoticias"; // Asegúrate de crear este archivo
-
+import Image from "next/image";
 interface Reporte {
     id: string;
     local: string;
@@ -15,41 +14,57 @@ interface Reporte {
     fecha: Timestamp;
 }
 
+interface Noticia {
+    id: string;
+    titulo: string;
+    categoria: string;
+    contenido: string;
+    autor: string;
+    equipo?: string;
+    fecha: Timestamp;
+}
+
 export default function Page() {
-    const { user, userData, loading } = useAuth();
+    const { user, userData, loading, isAdmin } = useAuth(); // Agregué isAdmin
     const [yaPostulado, setYaPostulado] = useState(false);
     const [equipos, setEquipos] = useState([]);
     const [resultados, setResultados] = useState<Reporte[]>([]);
-    const [noticias, setNoticias] = useState([]);
-    const [mostrarEditor, setMostrarEditor] = useState(false); // Estado para el formulario
 
+    // UNIFICAMOS EN UN SOLO ESTADO DE NOTICIAS
+    const [noticias, setNoticias] = useState<Noticia[]>([]);
+
+    // 1. CARGA DE NOTICIAS (CORREGIDA)
     useEffect(() => {
-        // 1. Cargar equipos
-        const qEquipos = query(collection(db, "equipos"), orderBy("nombre", "asc"));
-        const unsubEquipos = onSnapshot(qEquipos,
-            (snapshot) => {
-                setEquipos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            },
-            (error) => {
-                console.warn("Inicio: Modo invitado (Equipos restringidos)");
-            }
+        const q = query(
+            collection(db, "novedades"),
+            orderBy("fecha", "desc"),
+            limit(3)
         );
 
-        // 2. Verificar postulación
+        const unsub = onSnapshot(q, (snap) => {
+            const docs = snap.docs.map(d => ({
+                id: d.id,
+                ...d.data()
+            } as Noticia));
+            setNoticias(docs);
+        });
+
+        return () => unsub();
+    }, []);
+
+    // 2. CARGA DE EQUIPOS Y POSTULACIÓN
+    useEffect(() => {
+        const qEquipos = query(collection(db, "equipos"), orderBy("nombre", "asc"));
+        const unsubEquipos = onSnapshot(qEquipos, (snapshot) => {
+            setEquipos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+
         let unsubPostulacion = () => { };
         if (user) {
-            const q = query(
-                collection(db, "postulaciones"),
-                where("uid", "==", user.uid)
-            );
-            unsubPostulacion = onSnapshot(q,
-                (snapshot) => {
-                    setYaPostulado(!snapshot.empty);
-                },
-                (error) => {
-                    console.error("Error al verificar postulación:", error);
-                }
-            );
+            const q = query(collection(db, "postulaciones"), where("uid", "==", user.uid));
+            unsubPostulacion = onSnapshot(q, (snapshot) => {
+                setYaPostulado(!snapshot.empty);
+            });
         }
 
         return () => {
@@ -58,39 +73,23 @@ export default function Page() {
         };
     }, [user]);
 
+    // 3. CARGA DE REPORTES
     useEffect(() => {
-        // 3. Cargar reportes
         const qReportes = query(
             collection(db, "reportes"),
             orderBy("fecha", "desc"),
             limit(4)
         );
 
-        const unsubReportes = onSnapshot(qReportes,
-            (snapshot) => {
-                const nuevosResultados = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                })) as Reporte[];
-                setResultados(nuevosResultados);
-            },
-            (error) => {
-                console.warn("Inicio: No se pudieron cargar los reportes");
-            }
-        );
+        const unsubReportes = onSnapshot(qReportes, (snapshot) => {
+            setResultados(snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as Reporte[]);
+        });
 
         return () => unsubReportes();
     }, []);
-
-    useEffect(() => {
-        // 4. Cargar Novedades
-        const q = query(collection(db, "novedades"), orderBy("timestamp", "desc"), limit(10));
-        const unsub = onSnapshot(q, (snap) => {
-            setNoticias(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        });
-        return () => unsub();
-    }, []);
-
     return (
         <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] font-sans p-6 md:p-10">
             {/* HEADER DE SECCIÓN */}
@@ -179,10 +178,41 @@ export default function Page() {
 
                     <div className="p-0">
                         {resultados.length === 0 ? (
-                            <div className="p-10 text-center space-y-2">
-                                <p className="text-gray-600 italic text-sm font-barlow-condensed uppercase tracking-widest">No hay reportes recientes</p>
+                            /* VISTA DE EJEMPLO CUANDO NO HAY REPORTES */
+                            <div className="divide-y divide-[#1e1e1e]">
+                                {[
+                                    { local: "Local", visita: "Visitante" },
+                                    { local: "Local", visita: "Visitante" },
+                                    { local: "Local", visita: "Visitante" }
+                                ].map((ejemplo, i) => (
+                                    <div key={i} className="grid grid-cols-3 items-center p-4 opacity-20 select-none grayscale">
+                                        <div className="text-right pr-2">
+                                            <span className="font-barlow-condensed font-bold uppercase tracking-wider text-sm text-[#555]">
+                                                {ejemplo.local}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-center">
+                                            <div className="flex items-center bg-[#0a0a0a] border border-[#333] px-3 py-1 rounded">
+                                                <span className="font-bebas text-2xl px-2 text-white">0</span>
+                                                <span className="text-[#333] font-bebas text-xl">-</span>
+                                                <span className="font-bebas text-2xl px-2 text-white">0</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-left pl-2">
+                                            <span className="font-barlow-condensed font-bold uppercase tracking-wider text-sm text-[#555]">
+                                                {ejemplo.visita}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="p-6 text-center">
+                                    <p className="text-[#c9a84c] animate-pulse italic text-[10px] font-barlow-condensed uppercase tracking-[4px]">
+                                        Esperando reportes oficiales...
+                                    </p>
+                                </div>
                             </div>
                         ) : (
+                                /* RENDERIZADO REAL DE RESULTADOS */
                                 resultados.map((partido) => {
                                 const [gL, gV] = (partido.score || "0-0").split('-').map(Number);
                                 const localGana = gL > gV;
@@ -231,78 +261,113 @@ export default function Page() {
                                 <th className="p-3">PTS</th>
                             </tr>
                         </thead>
-                        <tbody className="font-barlow-condensed text-sm uppercase text-[#444] opacity-50 italic">
-                            {[1, 2, 3, 4].map((pos) => (
-                                <tr key={pos} className="border-b border-[#1e1e1e]">
-                                    <td className="p-3 font-bebas text-lg">{pos}</td>
-                                    <td className="p-3 text-left">[ Equipo ]</td>
-                                    <td className="p-3">—</td>
-                                    <td className="p-3 font-bebas text-2xl">—</td>
-                                </tr>
-                            ))}
-                        </tbody>
+
+                        {equipos && equipos.length > 0 ? (
+                            /* CUERPO DE TABLA REAL */
+                            <tbody className="font-barlow-condensed text-sm uppercase">
+                                {equipos.slice(0, 4).map((equipo, index) => (
+                                    <tr key={equipo.id} className="border-b border-[#1e1e1e] hover:bg-[#ffffff03] transition-colors">
+                                        <td className="p-3 font-bebas text-lg text-[#888]">{index + 1}</td>
+
+                                        <td className="p-3 text-left font-bold text-white">
+                                            <div className="flex items-center gap-3">
+                                                {/* CONTENEDOR DE LA IMAGEN */}
+                                                <div className="relative w-6 h-6 shrink-0">
+                                                    <Image
+                                                        src={equipo.escudo || "/img/default-shield.png"} // Siempre pon un fallback
+                                                        alt={equipo.nombre}
+                                                        fill
+                                                        className="object-contain"
+                                                    />
+                                                </div>
+                                                {/* NOMBRE DEL EQUIPO */}
+                                                <span className="truncate">{equipo.nombre}</span>
+                                            </div>
+                                        </td>
+
+                                        <td className="p-3 text-gray-400">{equipo.pj || 0}</td>
+                                        <td className="p-3 font-bebas text-2xl text-[#c9a84c]">{equipo.pts || 0}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        ) : (
+                            /* CUERPO DE TABLA DE EJEMPLO (PLACEHOLDER) */
+                            <tbody className="font-barlow-condensed text-sm uppercase text-[#444] opacity-50 italic select-none grayscale">
+                                {[1, 2, 3, 4].map((pos) => (
+                                    <tr key={pos} className="border-b border-[#1e1e1e]">
+                                        <td className="p-3 font-bebas text-lg">{pos}</td>
+                                        <td className="p-3 text-left">[ Equipo de Ejemplo ]</td>
+                                        <td className="p-3">—</td>
+                                        <td className="p-3 font-bebas text-2xl">—</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                        )}
                     </table>
+
+                    {(!equipos || equipos.length === 0) && (
+                        <div className="p-2 bg-black/20 text-center">
+                            <p className="font-barlow-condensed text-[9px] text-[#555] uppercase tracking-[3px]">
+                                Esperando computo de la primera jornada...
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* PANEL: NOVEDADES CON BOTÓN DE PUBLICAR */}
+            {/* SECCIÓN PRENSA - LIMPIADA */}
             <div className="max-w-6xl mx-auto mb-6 flex justify-between items-center px-2">
-                <h3 className="font-bebas text-3xl tracking-[3px] text-white italic uppercase">Prensa <span className="text-[#c9a84c]">Oficial</span></h3>
+                <h3 className="font-bebas text-3xl tracking-[3px] text-white italic uppercase">
+                    Prensa <span className="text-[#c9a84c]">Oficial</span>
+                </h3>
 
-                {user && (
-                    <button
-                        onClick={() => setMostrarEditor(!mostrarEditor)}
-                        className={`font-bebas text-xl px-6 py-2 transition-all border shadow-lg ${mostrarEditor
-                            ? "bg-red-600 border-red-500 text-white"
-                            : "bg-[#c9a84c] border-[#c9a84c] text-black hover:bg-white hover:border-white"
-                            }`}
-                    >
-                        {mostrarEditor ? "Cerrar Editor" : "+ Nueva Noticia"}
-                    </button>
-                )}
+                <Link href="/noticias" className="font-bebas text-xl bg-[#222] border border-[#333] px-6 py-2 text-gray-400 hover:text-[#c9a84c] hover:border-[#c9a84c] transition-all italic uppercase">
+                    Ir a sección noticias →
+                </Link>
             </div>
-
-            {user && mostrarEditor && (
-                <div className="max-w-6xl mx-auto mb-10 animate-fadeIn">
-                    <FormularioNoticias />
-                </div>
-            )}
 
             <div className="max-w-6xl mx-auto bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden mb-10 font-barlow-condensed">
                 <div className="p-4 bg-[#222222] border-b border-[#2a2a2a] flex justify-between items-center">
-                    <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Últimas Noticias</h3>
-                    <span className="text-[10px] text-gray-500 uppercase tracking-widest italic">Actualización en vivo</span>
+                    <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Últimas Novedades</h3>
+                    <span className="text-[10px] text-gray-500 uppercase tracking-widest italic font-bold animate-pulse">En Vivo</span>
                 </div>
 
                 <div className="divide-y divide-[#1e1e1e]">
-                    {noticias.length > 0 ? noticias.map((nota) => (
-                        <div key={nota.id} className="flex gap-6 p-5 hover:bg-[#c9a84c05] transition-colors group">
-                            <div className="text-center min-w-[50px]">
-                                <div className="font-bebas text-2xl text-[#c9a84c] leading-none">{nota.dia}</div>
-                                <div className="font-barlow-condensed text-[10px] tracking-[2px] text-gray-500">{nota.mes}</div>
-                            </div>
+                    {noticias.length > 0 ? noticias.map((nota) => {
+                        const fecha = nota.fecha?.toDate() || new Date();
+                        const dia = fecha.getDate().toString().padStart(2, '0');
+                        const mes = fecha.toLocaleString('es-AR', { month: 'short' }).toUpperCase().replace('.', '');
 
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <span className={`text-[9px] px-1.5 py-0.5 font-bold uppercase border ${nota.categoria === 'Torneo' || nota.categoria === 'Campeonato'
-                                        ? 'bg-red-900/20 border-red-500/50 text-red-400'
-                                        : 'bg-blue-900/20 border-blue-500/50 text-blue-400'
-                                        }`}>
-                                        {nota.categoria}
-                                    </span>
-                                    <h4 className="font-bold text-base uppercase tracking-wider text-white">
-                                        {nota.titulo}
-                                    </h4>
+                        return (
+                            <Link href="/noticias" key={nota.id} className="flex gap-6 p-5 hover:bg-[#c9a84c05] transition-colors group">
+                                <div className="text-center min-w-[50px] border-r border-[#222] pr-4">
+                                    <div className="font-bebas text-3xl text-[#c9a84c] leading-none">{dia}</div>
+                                    <div className="font-barlow-condensed text-[11px] tracking-[2px] text-gray-500 font-bold">{mes}</div>
                                 </div>
-                                <p className="text-sm leading-relaxed text-[#888] mb-2">{nota.desc}</p>
-                                <div className="text-[10px] uppercase tracking-widest text-gray-600 italic">
-                                    Por <span className="text-gray-400">{nota.autor}</span> — {nota.equipo}
+
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <span className={`text-[9px] px-1.5 py-0.5 font-bold uppercase border ${nota.categoria === 'Sancion' || nota.categoria === 'Sanción'
+                                            ? 'bg-red-900/20 border-red-500/50 text-red-400'
+                                            : 'bg-blue-900/20 border-blue-500/50 text-blue-400'
+                                            }`}>
+                                            {nota.categoria}
+                                        </span>
+                                        <h4 className="font-bold text-lg uppercase tracking-wider text-white group-hover:text-[#c9a84c] transition-colors">
+                                            {nota.titulo}
+                                        </h4>
+                                    </div>
+                                    <p className="text-sm leading-relaxed text-[#888] mb-2 line-clamp-1 italic">
+                                        {/* Limpia el HTML para que no se vean las etiquetas en el inicio */}
+                                        {nota.contenido?.replace(/<[^>]*>/g, '').substring(0, 120)}...
+                                    </p>
                                 </div>
-                            </div>
-                        </div>
-                    )) : (
+                            </Link>
+                        );
+                    }) : (
                         <div className="p-10 text-center text-gray-600 italic uppercase text-xs tracking-[4px]">
-                            Esperando novedades del staff...
+                                No hay noticias recientes...
                         </div>
                     )}
                 </div>

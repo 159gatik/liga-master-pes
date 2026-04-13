@@ -3,6 +3,7 @@ import { useState } from "react";
 import { db } from "@/src/lib/firebase";
 import { doc, writeBatch, collection, addDoc, serverTimestamp, increment } from "firebase/firestore";
 import { useAuth } from "@/src/lib/hooks/useAuht";
+import { Alert, Toast } from "@/src/lib/alerts";
 
 interface Props {
     fechaNumero: number;
@@ -27,11 +28,19 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre }
 
         if (!user || !userData?.equipoId) return alert("Error de sesión");
         if (!formData.captura1 || !formData.captura2 || !formData.captura3) {
-            return alert("Las 3 capturas son obligatorias según el reglamento.");
+            return Alert.fire({
+                icon: 'warning',
+                title: 'FALTAN LAS CAPTURAS',
+                text: 'Las 3 capturas son obligatorias según el reglamento.',
+            });;
         }
         // Verificación de goles (asegurate de tener estos campos en tu formData)
         if (formData.golesPro === "" || formData.golesRival === "") {
-            return alert("Debes ingresar los goles del partido.");
+            return Alert.fire({
+                icon: 'warning',
+                title: 'DATOS INCOMPLETOS',
+                text: 'Faltan ingresar los goles del partido.',
+            });;
         }
 
         setSubiendo(true);
@@ -80,11 +89,18 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre }
             });
 
             await batch.commit();
-            alert("Reporte subido y tabla actualizada con éxito.");
+            Toast.fire({
+                icon: 'success',
+                title: 'Reporte enviado con éxito'
+            });
             window.location.reload();
         } catch (error) {
             console.error("Error al reportar:", error);
-            alert("Error al subir el reporte.");
+            Alert.fire({
+                icon: 'warning',
+                title: 'ERROR',
+                text: 'No se pudo subir el reporte.',
+            });
         } finally {
             setSubiendo(false);
         }

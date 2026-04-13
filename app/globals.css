@@ -36,3 +36,29 @@ background-color: #0a0a0a;
   scrollbar-width: none;
   /* Firefox */
 }
+.swal2-styled.swal2-confirm {
+  border-radius: 0 !important;
+  letter-spacing: 2px !important;
+  transform: skewX(-10deg);
+  /* Para ese toque itálico de El Legado */
+}
+
+.swal2-popup {
+  border-radius: 0 !important;
+}
+
+.noticia-contenido p {
+  margin-bottom: 1rem;
+}
+
+.noticia-contenido strong {
+  color: white;
+  font-weight: 800;
+}
+
+.noticia-contenido img {
+  max-width: 100%;
+  height: auto;
+  border: 2px solid #222;
+  margin: 1rem 0;
+}
