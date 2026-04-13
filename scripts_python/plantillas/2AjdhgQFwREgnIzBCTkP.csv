@@ -1,20 +1,24 @@
 nombre,pos,edad,dorsal,valor
-Jan Oblak,POR,33,13,20000000
-Juan Musso,POR,31,1,5000000
-Jose Maria Gimenez,CT,31,2,25000000
-Robin Le Normand,CT,29,24,40000000
-Clement Lenglet,CT,30,15,10000000
-Reinildo Mandava,LI,32,23,9000000
-Nahuel Molina,LD,27,16,28000000
-Marcos Llorente,LD,31,14,30000000
-Conor Gallagher,MC,26,4,50000000
-Rodrigo de Paul,MC,31,5,30000000
-Koke,MC,34,6,12000000
-Pablo Barrios,MC,22,8,30000000
-Samuel Lino,EI,26,12,30000000
-Rodrigo Riquelme,EI,26,17,25000000
-Antoine Griezmann,MO,35,7,25000000
-Julian Alvarez,DC,26,19,75000000
-Alexander Sorloth,DC,30,9,25000000
-Angel Correa,DC,31,10,18000000
-Giuliano Simeone,ED,23,22,10000000
+Jan Oblak,POR,33,13,17000000
+Juan Musso,POR,31,1,3000000
+David Hancko,CT,28,18,35000000
+Marc Pubill,CT,22,18,28000000
+Robin Le Normand,CT,29,24,25000000
+Jose Maria Gimenez,CT,31,2,12000000
+Clement Lenglet,CT,30,15,5000000
+Matteo Ruggeri,LI,23,3,20000000
+Marcos Llorente,LD,31,14,22000000
+Nahuel Molina,LD,28,16,15000000
+Pablo Barrios,MC,22,8,60000000
+Johnny Cardoso,MC,24,5,22000000
+Rodrigo Mendoza,MC,21,4,20000000
+Obed Vargas,MC,20,21,8000000
+Koke,MC,34,6,6000000
+Alex Baena,EI,24,10,45000000
+Nico Gonzalez,EI,28,23,24000000
+Thiago Almada,EI,24,11,20000000
+Giuliano Simeone,ED,23,20,40000000
+Ademola Lookman,MO,28,22,40000000
+Antoine Griezmann,MO,35,7,10000000
+Julian Alvarez,DC,26,19,90000000
+Alexander Sorloth,DC,30,9,20000000

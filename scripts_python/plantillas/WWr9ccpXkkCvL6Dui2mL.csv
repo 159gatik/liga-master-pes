@@ -1,22 +1,29 @@
 nombre,pos,edad,dorsal,valor
-Thibaut Courtois,POR,33,1,28000000
-Andriy Lunin,POR,27,13,25000000
-Eder Militao,CT,28,3,60000000
-Antonio Rudiger,CT,33,22,25000000
-David Alaba,CT,33,4,15000000
-Jesus Vallejo,CT,29,18,1000000
-Ferland Mendy,LI,30,23,22000000
-Fran Garcia,LI,26,20,15000000
-Dani Carvajal,LD,34,2,12000000
-Lucas Vazquez,LD,34,17,4000000
-Aurelien Tchouameni,MCD,26,14,100000000
-Eduardo Camavinga,MCD,23,6,100000000
+Thibaut Courtois,POR,33,1,18000000
+Andriy Lunin,POR,27,13,15000000
+Fran Gonzalez,POR,20,26,3000000
+Dean Huijsen,CT,20,24,65000000
+Eder Militao,CT,28,3,25000000
+Raul Asencio,CT,23,17,25000000
+Antonio Rudiger,CT,33,22,9000000
+David Alaba,CT,33,4,3500000
+Alvaro Carreras,LI,23,18,60000000
+Fran Garcia,LI,26,20,12000000
+Ferland Mendy,LI,30,23,6000000
+Trent Alexander-Arnold,LD,27,12,65000000
+Daniel Carvajal,LD,34,2,6000000
+Aurelien Tchouameni,MC,26,14,75000000
 Federico Valverde,MC,27,8,120000000
-Jude Bellingham,MO,22,5,180000000
-Dani Ceballos,MC,29,15,4000000
-Arda Guler,MO,21,15,45000000
-Brahim Diaz,MO,26,21,40000000
-Vinicius Junior,EI,25,7,200000000
-Rodrygo,ED,25,11,110000000
-Kylian Mbappe,DC,27,9,180000000
-Endrick,DC,19,16,60000000
+Eduardo Camavinga,MC,23,6,50000000
+Thiago Pitarch,MC,18,45,20000000
+Dani Ceballos,MC,29,19,8000000
+Jorge Cestero,MC,20,28,7500000
+Manuel Angel,MC,22,37,5000000
+Jude Bellingham,MO,22,5,140000000
+Arda Guler,MO,21,15,90000000
+Vinicius Junior,EI,25,7,150000000
+Rodrygo,ED,25,11,50000000
+Franco Mastantuono,ED,18,30,45000000
+Brahim Diaz,ED,26,21,35000000
+Kylian Mbappe,DC,27,10,200000000
+Gonzalo Garcia,DC,22,16,30000000
