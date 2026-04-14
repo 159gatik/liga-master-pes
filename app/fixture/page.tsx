@@ -10,10 +10,11 @@ import FormularioReporte from "../components/FormularioReporte";
 import SeccionDisponibilidad from "../components/SeccionDisponibilidad";
 import Image from "next/image";
 
-// Interfaces (Mantenidas igual)
+// Interfaces
 interface Equipo { id: string; nombre: string; escudo?: string; }
 interface Reporte { id: string; local: string; visita: string; equipoId: string; rivalId: string; score: string; dtUid: string; nombreDT: string; resultado: string; comentario: string; captura1: string; captura2: string; captura3: string; fechaTorneo: number; fecha: Timestamp; }
 interface Disponibilidad { id: string; equipoId: string; nombreEquipo: string; fechaTorneo: number; texto: string; fecha: Timestamp; }
+interface PartidoProgramado { id: string; localNombre: string; visitaNombre: string; fechaTorneo: number; localId: string; visitaId: string; }
 
 export default function FixturePage() {
     const { userData } = useAuth();
@@ -22,7 +23,8 @@ export default function FixturePage() {
     const [reportesFecha, setReportesFecha] = useState<Reporte[]>([]);
     const [fechasAbiertas, setFechasAbiertas] = useState<Record<string, boolean>>({});
     const [listaHorarios, setListaHorarios] = useState<Disponibilidad[]>([]);
-    const totalFechas = 19;
+    const [partidosProgramados, setPartidosProgramados] = useState<PartidoProgramado[]>([]);
+    const totalFechas = 18;
 
     // 1. Carga de datos iniciales (Equipos y Config)
     useEffect(() => {
@@ -50,9 +52,17 @@ export default function FixturePage() {
         return () => { unsubEquipos(); unsubEstado(); };
     }, []);
 
-    // 2. Reportes Sincronizados con Manejo de Error
+    // 2. Carga de Partidos Programados (Cruces) y Reportes
     useEffect(() => {
         const numFecha = Number(fechaActiva);
+
+        // Carga de cruces programados
+        const qCruces = query(collection(db, "partidos"), where("fechaTorneo", "==", numFecha));
+        const unsubCruces = onSnapshot(qCruces, (snap) => {
+            setPartidosProgramados(snap.docs.map(d => ({ id: d.id, ...d.data() } as PartidoProgramado)));
+        });
+
+        // Carga de reportes procesados
         const qReportes = query(
             collection(db, "reportes"),
             where("fechaTorneo", "==", numFecha),
@@ -64,19 +74,17 @@ export default function FixturePage() {
                 setReportesFecha(snap.docs.map(d => ({ id: d.id, ...d.data() } as Reporte)));
             },
             (err) => {
-                console.warn("Fixture: Acceso denegado a reportes. Intentando fallback sin orden...");
-                // Fallback sin orderBy para evitar errores de índices o permisos de ordenamiento
                 const qFallBack = query(collection(db, "reportes"), where("fechaTorneo", "==", numFecha));
                 onSnapshot(qFallBack, (s) => {
                     setReportesFecha(s.docs.map(d => ({ id: d.id, ...d.data() } as Reporte)));
-                }, (e) => console.error("Error crítico en reportes:", e));
+                });
             }
         );
 
-        return () => unsubReportes();
+        return () => { unsubCruces(); unsubReportes(); };
     }, [fechaActiva]);
 
-    // 3. Disponibilidad con Manejo de Error
+    // 3. Disponibilidad
     useEffect(() => {
         const q = query(
             collection(db, "disponibilidad"),
@@ -87,13 +95,11 @@ export default function FixturePage() {
                 setListaHorarios(snap.docs.map(d => ({ id: d.id, ...d.data() } as Disponibilidad)));
             },
             (error) => {
-                console.warn("Fixture: Acceso denegado a disponibilidad (Modo invitado)");
+                console.warn("Fixture: Acceso denegado a disponibilidad");
             }
         );
         return () => unsub();
     }, [fechaActiva]);
-
-    // ... (El resto del código de lógica y JSX se mantiene igual)
 
     const estaAbierta = fechasAbiertas[`fecha_${fechaActiva}`] === true;
 
@@ -101,7 +107,6 @@ export default function FixturePage() {
         if (window.confirm("¿Estás seguro de eliminar este reporte?")) {
             try {
                 await deleteDoc(doc(db, "reportes", reporteId));
-                alert("Reporte eliminado.");
             } catch (error) {
                 console.error(error);
             }
@@ -111,7 +116,6 @@ export default function FixturePage() {
     return (
         <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-10 font-barlow-condensed text-white">
             <div className="max-w-6xl mx-auto space-y-10">
-                {/* ... (Todo tu JSX de cabecera, carrusel y grilla) ... */}
                 <div className="border-l-4 border-[#c9a84c] pl-6">
                     <h1 className="font-bebas text-7xl italic tracking-tighter uppercase leading-none">
                         Calendario <span className="text-[#c9a84c]">Oficial</span>
@@ -135,33 +139,78 @@ export default function FixturePage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     <section className="lg:col-span-2 space-y-12">
+
+                        {/* CRONOGRAMA DE PARTIDOS (Lo que agregamos) */}
+                        <div className="space-y-6">
+                            <h3 className="font-bebas text-3xl text-[#c9a84c] uppercase italic tracking-widest border-b border-[#222] pb-2">
+                                Partidos Programados
+                            </h3>
+                            <div className="grid grid-cols-1 gap-4">
+                                {partidosProgramados.length > 0 ? (
+                                    partidosProgramados.map((p) => {
+                                        // Buscamos los escudos en el array de equipos cargado en el estado
+                                        const escudoLocal = equipos.find(e => e.id === p.localId)?.escudo || "/escudo-default.png";
+                                        const escudoVisita = equipos.find(e => e.id === p.visitaId)?.escudo || "/escudo-default.png";
+
+                                        return (
+                                            <div key={p.id} className="bg-[#050505] border border-[#222] p-4 flex justify-between items-center px-6 italic hover:border-[#c9a84c]/30 transition-all shadow-lg">
+                                                {/* LOCAL */}
+                                                <div className="flex items-center gap-3 flex-1">
+                                                    <div className="relative w-8 h-8 flex-shrink-0">
+                                                        <Image src={escudoLocal} alt={p.localNombre} fill className="object-contain" />
+                                                    </div>
+                                                    <span className="font-bebas text-xl text-white uppercase truncate">{p.localNombre}</span>
+                                                </div>
+
+                                                {/* SEPARADOR */}
+                                                <span className="text-[#c9a84c] font-bebas text-xl mx-4">VS</span>
+
+                                                {/* VISITA */}
+                                                <div className="flex items-center gap-3 flex-1 justify-end text-right">
+                                                    <span className="font-bebas text-xl text-white uppercase truncate">{p.visitaNombre}</span>
+                                                    <div className="relative w-8 h-8 flex-shrink-0">
+                                                        <Image src={escudoVisita} alt={p.visitaNombre} fill className="object-contain" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <p className="col-span-2 text-center text-gray-700 italic text-sm py-4 border border-dashed border-[#222]">
+                                        No hay enfrentamientos cargados para esta fecha.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* RESULTADOS PROCESADOS */}
                         <div className="space-y-6">
                             <h3 className="font-bebas text-3xl text-[#c9a84c] uppercase italic tracking-widest border-b border-[#222] pb-2">Resultados Procesados</h3>
                             <div className="grid gap-4">
                                 {reportesFecha.length > 0 ? (
                                     reportesFecha.map((rep) => (
                                         <div key={rep.id} className="bg-[#111] border border-[#222] p-6 flex flex-col group hover:border-[#c9a84c]/40 transition-all shadow-xl">
-                                            <div className="flex justify-between items-center mb-6">
-                                                <div className="flex-1 flex items-center justify-start gap-4">
-                                                    <div className="relative w-12 h-12 md:w-14 md:h-14 flex-shrink-0 bg-black/40 rounded-full p-2 border border-[#222] overflow-hidden">
+                                            <div className="flex justify-between items-center mb-6 text-center">
+                                                <div className="flex-1 flex flex-col items-center gap-2">
+                                                    <div className="relative w-12 h-12 flex-shrink-0 bg-black/40 rounded-full p-2 border border-[#222] overflow-hidden">
                                                         <Image src={equipos.find(e => e.id === rep.equipoId)?.escudo || "/escudo-default.png"} alt="Local" fill className="object-contain p-2" />
                                                     </div>
-                                                    <p className="font-bebas text-3xl text-white uppercase italic tracking-wider">{rep.local}</p>
+                                                    <p className="font-bebas text-2xl text-white uppercase italic tracking-wider line-clamp-1">{rep.local}</p>
                                                 </div>
-                                                <div className="px-8">
+                                                <div className="px-4">
                                                     <div className="bg-black border border-[#333] px-6 py-2 font-bebas text-4xl text-[#c9a84c] rounded">{rep.score}</div>
                                                 </div>
-                                                <div className="flex-1 flex items-center justify-start gap-4">
-                                                    <div className="relative w-12 h-12 md:w-14 md:h-14 flex-shrink-0 bg-black/40 rounded-full p-2 border border-[#222] overflow-hidden">
+                                                <div className="flex-1 flex flex-col items-center gap-2">
+                                                    <div className="relative w-12 h-12 flex-shrink-0 bg-black/40 rounded-full p-2 border border-[#222] overflow-hidden">
                                                         <Image src={equipos.find(e => e.id === rep.rivalId)?.escudo || "/escudo-default.png"} alt="Visita" fill className="object-contain p-2" />
                                                     </div>
-                                                    <p className="font-bebas text-3xl text-white uppercase italic tracking-wider">{rep.visita}</p>
+                                                    <p className="font-bebas text-2xl text-white uppercase italic tracking-wider line-clamp-1">{rep.visita}</p>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col md:flex-row justify-between items-center pt-4 border-t border-[#222]/50 gap-4">
                                                 <div className="flex items-center gap-4 text-[11px] uppercase tracking-widest font-bold">
                                                     <div className="text-[#c9a84c]">DT {rep.nombreDT}</div>
-                                                    <div className="text-gray-500 italic lowercase font-normal italic">{rep.comentario || "Sin comentarios"}</div>
+                                                    <div className="text-gray-500 italic lowercase font-normal">{rep.comentario || "Sin comentarios"}</div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex gap-1">

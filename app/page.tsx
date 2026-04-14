@@ -24,8 +24,13 @@ interface Noticia {
     fecha: Timestamp;
 }
 
+interface StatCard {
+    value: React.ReactNode; // <--- Esto permite texto, spans, divs, etc.
+    label: string;
+}
+
 export default function Page() {
-    const { user, userData, loading, isAdmin } = useAuth(); // Agregué isAdmin
+    const { user, userData, loading } = useAuth(); // Agregué isAdmin
     const [yaPostulado, setYaPostulado] = useState(false);
     const [equipos, setEquipos] = useState([]);
     const [resultados, setResultados] = useState<Reporte[]>([]);
@@ -95,9 +100,7 @@ export default function Page() {
             {/* HEADER DE SECCIÓN */}
             <div className="max-w-6xl mx-auto mb-10 border-l-4 border-[#c9a84c] pl-5 flex items-baseline gap-4">
                 <h1 className="font-bebas text-5xl md:text-7xl tracking-[5px] uppercase">Inicio</h1>
-                <span className="font-barlow-condensed text-sm tracking-[3px] text-[#c9a84c] uppercase">
-                    Liga Master Online · El Legado
-                </span>
+
             </div>
 
             {/* HERO SECTION */}
@@ -107,14 +110,14 @@ export default function Page() {
                 </div>
 
                 <div className="relative z-10">
-                    <div className="font-barlow-condensed text-xs tracking-[5px] text-[#c9a84c] uppercase mb-4">
-                        Bienvenido a la plataforma oficial
+                    <div className="font-barlow-condensed text-s tracking-[5px] text-[#c9a84c] uppercase mb-4">
+                        Bienvenidos a la liga master online
                     </div>
                     <h2 className="font-bebas text-6xl md:text-8xl tracking-[8px] leading-[0.9] mb-6 uppercase">
                         El <span className="text-[#c9a84c]">Legado</span>
                     </h2>
                     <p className="text-[#888888] max-w-lg leading-relaxed mb-8">
-                        La liga de PES 6 online más competitiva. Gestiona tu equipo, coordina tus partidos y escribe tu propia historia.
+                        Organizá tu equipo, coordina tus partidos y escribe tu propia historia.
                     </p>
 
                     <div className="flex flex-wrap gap-4 items-center">
@@ -160,8 +163,11 @@ export default function Page() {
             <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-3 mb-10">
                 <StatCard value={`${equipos.length}`} label="Clubes" />
                 <StatCard value={`${resultados.length}`} label="Reportes" />
-                <StatCard value="ONLINE" label="Estado" />
-                <StatCard value="19" label="Fechas" />
+                <StatCard
+                    value={<span className="text-green-500">ACTIVO</span>}
+                    label="Estado"
+                />
+                <StatCard value="18" label="Fechas" />
                 <StatCard value="I" label="Edición" />
             </div>
 
@@ -170,8 +176,8 @@ export default function Page() {
                 {/* PANEL: ÚLTIMOS RESULTADOS */}
                 <div className="bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden">
                     <div className="flex justify-between items-center p-4 bg-[#222222] border-b border-[#2a2a2a]">
-                        <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Últimos Resultados</h3>
-                        <Link href="/fixture" className="font-barlow-condensed text-[10px] tracking-[2px] text-[#888888] uppercase hover:text-[#c9a84c]">
+                        <h3 className="font-bebas text-2xl tracking-[3px] text-[#c9a84c]">Últimos Resultados</h3>
+                        <Link href="/fixture" className="font-barlow-condensed text-[13px] tracking-[2px] text-[#888888] uppercase hover:text-[#c9a84c]">
                             Ver todo el fixture →
                         </Link>
                     </div>
@@ -185,9 +191,9 @@ export default function Page() {
                                     { local: "Local", visita: "Visitante" },
                                     { local: "Local", visita: "Visitante" }
                                 ].map((ejemplo, i) => (
-                                    <div key={i} className="grid grid-cols-3 items-center p-4 opacity-20 select-none grayscale">
+                                    <div key={i} className="grid grid-cols-3 items-center p-4 opacity-80 select-none grayscale">
                                         <div className="text-right pr-2">
-                                            <span className="font-barlow-condensed font-bold uppercase tracking-wider text-sm text-[#555]">
+                                            <span className="font-barlow-condensed font-bold uppercase tracking-wider text-m text-[#555]">
                                                 {ejemplo.local}
                                             </span>
                                         </div>
@@ -247,14 +253,14 @@ export default function Page() {
                 {/* PANEL: TABLA (Simulada) */}
                 <div className="bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden">
                     <div className="flex justify-between items-center p-4 bg-[#222222] border-b border-[#2a2a2a]">
-                        <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Tabla de Posiciones</h3>
-                        <Link href="/positions" className="font-barlow-condensed text-[10px] tracking-[2px] text-[#888888] uppercase hover:text-[#c9a84c]">
+                        <h3 className="font-bebas text-2xl tracking-[3px] text-[#c9a84c]">Tabla de Posiciones</h3>
+                        <Link href="/positions" className="font-barlow-condensed text-[13px] tracking-[2px] text-[#888888] uppercase hover:text-[#c9a84c]">
                             Ver completa →
                         </Link>
                     </div>
                     <table className="w-full text-center border-collapse">
                         <thead>
-                            <tr className="bg-[#222] font-barlow-condensed text-[10px] tracking-[2px] text-[#888888] uppercase">
+                            <tr className="bg-[#222] font-barlow-condensed text-[13px] tracking-[2px] text-[#888888] uppercase">
                                 <th className="p-3">#</th>
                                 <th className="p-3 text-left">Equipo</th>
                                 <th className="p-3">PJ</th>
@@ -323,14 +329,14 @@ export default function Page() {
                 </h3>
 
                 <Link href="/noticias" className="font-bebas text-xl bg-[#222] border border-[#333] px-6 py-2 text-gray-400 hover:text-[#c9a84c] hover:border-[#c9a84c] transition-all italic uppercase">
-                    Ir a sección noticias →
+                    Ir a noticias →
                 </Link>
             </div>
 
             <div className="max-w-6xl mx-auto bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden mb-10 font-barlow-condensed">
                 <div className="p-4 bg-[#222222] border-b border-[#2a2a2a] flex justify-between items-center">
                     <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Últimas Novedades</h3>
-                    <span className="text-[10px] text-gray-500 uppercase tracking-widest italic font-bold animate-pulse">En Vivo</span>
+                    <span className="text-[10px] text-gray-500 uppercase tracking-widest italic font-bold animate-pulse">EL LEGADO</span>
                 </div>
 
                 <div className="divide-y divide-[#1e1e1e]">
@@ -376,11 +382,16 @@ export default function Page() {
     );
 }
 
-function StatCard({ value, label }: { value: string, label: string }) {
+// Cambiamos string por React.ReactNode
+function StatCard({ value, label }: { value: React.ReactNode, label: string }) {
     return (
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] p-5 text-center relative overflow-hidden group">
-            <div className="font-bebas text-4xl text-[#c9a84c] tracking-[2px] mb-1">{value}</div>
-            <div className="font-barlow-condensed text-[10px] tracking-[3px] text-[#888888] uppercase">{label}</div>
+            <div className="font-bebas text-4xl text-[#c9a84c] tracking-[2px] mb-1">
+                {value}
+            </div>
+            <div className="font-barlow-condensed text-[15px] tracking-[3px] text-[#888888] uppercase">
+                {label}
+            </div>
             <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#c9a84c] opacity-30 group-hover:opacity-100 transition-opacity"></div>
         </div>
     );

@@ -32,7 +32,11 @@ export default function ComunidadPage({ equipoUsuario }) {
         if (user.uid === rivalUid) return alert("No puedes chatear contigo mismo");
 
         const chatId = user.uid < rivalUid ? `${user.uid}_${rivalUid}` : `${rivalUid}_${user.uid}`;
-        router.push(`/mensajes/${chatId}`);
+
+        // CAMBIA ESTA LÍNEA:
+        // Antes: router.push(`/mensajes/${chatId}`);
+        // Ahora:
+        router.push(`/mensajes?id=${chatId}`);
     };
 
     return (

@@ -1,23 +1,25 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
-import { db, auth } from "@/src/lib/firebase";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { db } from "@/src/lib/firebase";
 import {
     collection, addDoc, query, orderBy, onSnapshot,
-    Timestamp, serverTimestamp, doc, getDoc, writeBatch // Añadimos writeBatch y doc
+    Timestamp, serverTimestamp, doc, getDoc, writeBatch
 } from "firebase/firestore";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation"; // Cambiado useParams por useSearchParams
 import { useAuth } from "@/src/lib/hooks/useAuht";
 
 interface Mensaje {
     id: string;
     emisorId: string;
     texto: string;
-    leido: boolean; // Importante añadirlo a la interfaz
+    leido: boolean;
     fecha: Timestamp;
 }
 
-export default function ChatPrivado() {
-    const { id: chatId } = useParams();
+// Sub-componente que contiene la lógica del chat
+function ChatContent() {
+    const searchParams = useSearchParams();
+    const chatId = searchParams.get("id"); // Obtenemos el ID de la URL (?id=...)
     const { user } = useAuth();
     const [mensajes, setMensajes] = useState<Mensaje[]>([]);
     const [nuevoMsg, setNuevoMsg] = useState("");
@@ -25,7 +27,6 @@ export default function ChatPrivado() {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // 1. Cargar nombre del rival y escuchar mensajes
-    // 1. Cargar nombre del rival y escuchar mensajes con Scroll Reforzado
     useEffect(() => {
         if (!user || !chatId) return;
 
@@ -47,21 +48,19 @@ export default function ChatPrivado() {
             const nuevosMensajes = snap.docs.map(d => ({ id: d.id, ...d.data() } as Mensaje));
             setMensajes(nuevosMensajes);
 
-            // SCROLL REFORZADO: 
-            // Ejecutamos uno inmediato y otro con un pequeño delay para asegurar 
-            // que el DOM ya renderizó las burbujas nuevas.
-            
- // Intento 2 (por si tarda el render)
+            // Scroll al fondo
+            setTimeout(() => {
+                scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, 100);
         }, (err) => console.warn("Error permisos:", err));
 
         return () => unsub();
     }, [chatId, user]);
 
-    // 2. LÓGICA PARA MARCAR COMO LEÍDO (NUEVO)
+    // 2. Lógica para marcar como leído
     useEffect(() => {
         if (mensajes.length === 0 || !user || !chatId) return;
 
-        // Filtramos mensajes: que NO sean míos y que estén SIN LEER (false)
         const mensajesParaMarcar = mensajes.filter(
             (m) => m.emisorId !== user.uid && m.leido === false
         );
@@ -69,16 +68,12 @@ export default function ChatPrivado() {
         if (mensajesParaMarcar.length > 0) {
             const marcarComoLeidos = async () => {
                 const batch = writeBatch(db);
-
                 mensajesParaMarcar.forEach((m) => {
                     const msgRef = doc(db, "chats_privados", chatId as string, "mensajes", m.id);
                     batch.update(msgRef, { leido: true });
                 });
-
                 try {
                     await batch.commit();
-                    // Al actualizarse en Firestore, el TarjetaDT de tu rival 
-                    // se enterará solo y quitará el globito.
                 } catch (error) {
                     console.error("Error al marcar leídos:", error);
                 }
@@ -87,10 +82,10 @@ export default function ChatPrivado() {
         }
     }, [mensajes, user?.uid, chatId]);
 
-    // 3. Enviar mensaje (Mantenemos tu lógica pero aseguramos leido: false)
+    // 3. Enviar mensaje
     const enviarMensaje = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!nuevoMsg.trim() || !user) return;
+        if (!nuevoMsg.trim() || !user || !chatId) return;
 
         const textoTemp = nuevoMsg;
         setNuevoMsg("");
@@ -99,7 +94,7 @@ export default function ChatPrivado() {
             await addDoc(collection(db, "chats_privados", chatId as string, "mensajes"), {
                 emisorId: user.uid,
                 texto: textoTemp,
-                leido: false, // Siempre nace sin leer para el rival
+                leido: false,
                 fecha: serverTimestamp()
             });
         } catch (error) {
@@ -155,5 +150,14 @@ export default function ChatPrivado() {
                 </button>
             </form>
         </main>
+    );
+}
+
+// Componente principal envuelto en Suspense
+export default function ChatPrivado() {
+    return (
+        <Suspense fallback={<div className="p-10 text-center text-[#c9a84c]">Cargando Chat...</div>}>
+            <ChatContent />
+        </Suspense>
     );
 }

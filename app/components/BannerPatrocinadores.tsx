@@ -21,7 +21,7 @@ export default function BannerPatrocinadores() {
                 {/* Duplicamos la lista para que el loop sea infinito e imperceptible */}
                 {[...patrocinadores, ...patrocinadores].map((patro, index) => (
                     <div key={index} className="flex items-center mx-12 opacity-50 hover:opacity-100 transition-opacity grayscale hover:grayscale-0">
-                        <span className="font-bebas text-xl text-gray-500 mr-4 tracking-tighter italic">OFFICIAL PARTNER</span>
+                        <span className="font-bebas text-xl text-gray-500 mr-4 tracking-tighter italic">PATROCINADORES</span>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {/* <img
                             src={patro.logo}

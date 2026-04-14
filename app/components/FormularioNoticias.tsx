@@ -3,7 +3,7 @@ import { useState } from "react";
 import { db } from "@/src/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/src/lib/hooks/useAuht";
-import { Alert, Toast } from "@/src/lib/alerts";
+import { Toast } from "@/src/lib/alerts";
 
 export default function FormularioNoticia() {
     const { user, userData } = useAuth();

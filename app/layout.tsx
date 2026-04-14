@@ -25,7 +25,7 @@ const barlow = Barlow({
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${bebas.variable} ${barlowCond.variable} ${barlow.variable}`}>
-      <body className="font-sans bg-[#0a0a0a]">
+      <body className="font-mono bg-[#0a0a0a]">
         <AuthGuard>
         <Navbar /> {/* <--- EL NAV APARECERÁ ARRIBA DE TODO */}
         {children}

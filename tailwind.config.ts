@@ -12,6 +12,7 @@ export default {
                 bebas: ['var(--font-bebas)'],
                 'barlow-condensed': ['var(--font-barlow-cond)'],
                 sans: ['var(--font-barlow)'],
+                mono: ["var(--font-jetbrains-mono)", "ui-monospace", "SFMono-Regular"],
             },
         },
     },
