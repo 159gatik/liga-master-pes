@@ -8,10 +8,11 @@ import { Alert, Toast } from "@/src/lib/alerts";
 interface Props {
     fechaNumero: number;
     rivales: { id: string, nombre: string }[];
-    equipoNombre: string; // <--- Agregamos esto// Lista de equipos para el select
+    equipoNombre: string;
+    esCopa?: boolean; // <--- Agrégalo aquí
 }
 
-export default function FormularioReporte({ fechaNumero, rivales, equipoNombre }: Props) {
+export default function FormularioReporte({ fechaNumero, rivales, equipoNombre, esCopa = false }: Props) {
     const { userData, user } = useAuth();
     const [subiendo, setSubiendo] = useState(false);
     const [formData, setFormData] = useState({
@@ -46,7 +47,9 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre }
         setSubiendo(true);
         try {
             const batch = writeBatch(db);
-            const reporteRef = collection(db, "reportes");
+            // En lugar de const reporteRef = collection(db, "reportes");
+            const nombreColeccion = esCopa ? "reportes_copa" : "reportes";
+            const reporteRef = collection(db, nombreColeccion);
             const userRef = doc(db, "users", user.uid);
             const equipoRef = doc(db, "equipos", userData.equipoId);
 
@@ -61,7 +64,10 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre }
                 nombreDT: userData.nombre,
                 fechaTorneo: Number(fechaNumero),
 
-                // AGREGAMOS ESTOS VALORES DE RESPALDO (Backups)
+                // Si es copa, guardamos la ronda en lugar de fechaTorneo (o ambos)
+                ronda: esCopa ? Number(fechaNumero) : null,
+                torneo: esCopa ? "copa" : "liga", 
+
                 local: equipoNombre || userData?.nombre || "Equipo Local",
                 visita: nombreRival,
                 score: `${formData.golesPro}-${formData.golesRival}`,

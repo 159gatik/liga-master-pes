@@ -106,7 +106,7 @@ export default function FormularioPostulacion({
                 },
                 'qK8p-VpJF5iDs8kPJ'
             );
-
+            //AGREGAR SWEET ALERT
             alert("¡Postulación enviada con éxito!");
             window.location.reload();
         } catch (error) {
@@ -186,17 +186,17 @@ export default function FormularioPostulacion({
                             onChange={(e) => setFormData({ ...formData, internet: e.target.value })} />
                     </div>
                     <div className="flex flex-col gap-2 bg-[#0a0a0a] p-4 border-l-2 border-[#c9a84c]">
-                        <label className="text-[10px] tracking-[2px] text-[#c9a84c] uppercase font-bold italic">
+                        <label className="text-[15px] tracking-[4px] text-[#c9a84c] uppercase font-bold italic">
                             Link de Speedtest
                         </label>
-                        <p className="text-[10px] text-gray-500 uppercase">
+                        <p className="text-[13px] text-gray-500 uppercase">
                             Realizá el test en <a href="https://www.speedtest.net" target="_blank" className="underline text-white">Speedtest.net</a>, hacé clic en Compartir y pegá el link acá.
                         </p>
                         <input
                             type="url"
                             required
                             placeholder="https://www.speedtest.net/result/..."
-                            className="bg-[#1a1a1a] border border-[#333] p-2 text-xs outline-none focus:border-[#c9a84c]"
+                            className="bg-[#1a1a1a] border border-[#333] p-2 text-s outline-none focus:border-[#c9a84c]"
                             onChange={(e) => setFormData({ ...formData, linkSpeedtest: e.target.value })}
                             value={formData.linkSpeedtest}
                         />

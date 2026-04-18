@@ -5,7 +5,7 @@ import { useAuth } from "@/src/lib/hooks/useAuht";
 import { db } from "@/src/lib/firebase";
 import {
     collection, query, onSnapshot, doc, writeBatch,
-    orderBy, where, updateDoc, setDoc, addDoc
+    orderBy, where, updateDoc, setDoc, addDoc, serverTimestamp
 } from "firebase/firestore";
 import { Alert, Toast } from "@/src/lib/alerts";
 import SeccionAdminMercado from "../components/SeccionAdminMercado";
@@ -21,7 +21,7 @@ export default function AdminPage() {
     const { isAdmin, loading } = useAuth();
     const router = useRouter();
 
-    // ESTADOS
+    // ESTADOS GENERALES
     const [equiposOcupados, setEquiposOcupados] = useState<Equipo[]>([]);
     const [todosLosEquipos, setTodosLosEquipos] = useState<Equipo[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
@@ -31,93 +31,76 @@ export default function AdminPage() {
         liberacionesAbiertas: false
     });
 
-    // ESTADOS PARA CARGA DE FIXTURE
+    // ESTADOS FIXTURE LIGA
     const [fechaSel, setFechaSel] = useState(1);
     const [local, setLocal] = useState("");
     const [visita, setVisita] = useState("");
 
-    // REDIRECCIÓN SI NO ES ADMIN
+    // ESTADOS FIXTURE COPA
+    const [rondaCopaSel, setRondaCopaSel] = useState(1);
+    const [localCopa, setLocalCopa] = useState("");
+    const [visitaCopa, setVisitaCopa] = useState("");
+
     useEffect(() => {
         if (!loading && !isAdmin) router.push("/");
     }, [isAdmin, loading, router]);
 
-    // LISTENERS DE FIREBASE
     useEffect(() => {
         if (!isAdmin) return;
-
-        // Equipos Ocupados (Staff)
         const qOcupados = query(collection(db, "equipos"), where("estado", "==", "Ocupado"), orderBy("nombre", "asc"));
-        const unsubOcupados = onSnapshot(qOcupados, (snaps) => {
-            setEquiposOcupados(snaps.docs.map(d => ({ id: d.id, ...d.data() } as Equipo)));
-        });
+        const unsubOcupados = onSnapshot(qOcupados, (snaps) => setEquiposOcupados(snaps.docs.map(d => ({ id: d.id, ...d.data() } as Equipo))));
 
-        // Todos los Equipos (para el Select del Fixture)
         const qTodos = query(collection(db, "equipos"), orderBy("nombre", "asc"));
-        const unsubTodos = onSnapshot(qTodos, (snaps) => {
-            setTodosLosEquipos(snaps.docs.map(d => ({ id: d.id, ...d.data() } as Equipo)));
-        });
+        const unsubTodos = onSnapshot(qTodos, (snaps) => setTodosLosEquipos(snaps.docs.map(d => ({ id: d.id, ...d.data() } as Equipo))));
 
-        // Configuración Mercado
         const unsubConfig = onSnapshot(doc(db, "configuracion", "mercado"), (docSnap) => {
-            if (docSnap.exists()) {
-                setConfigMercado(docSnap.data() as ConfigMercado);
-            } else {
-                setDoc(doc(db, "configuracion", "mercado"), { fichajesAbiertos: false, liberacionesAbiertas: false });
-            }
+            if (docSnap.exists()) setConfigMercado(docSnap.data() as ConfigMercado);
         });
 
         return () => { unsubOcupados(); unsubTodos(); unsubConfig(); };
     }, [isAdmin]);
 
-    // --- LÓGICA DE FIXTURE ---
     const guardarPartido = async () => {
-        if (!local || !visita || local === visita) {
-            return Alert.fire("Error", "Selecciona dos equipos diferentes", "error");
-        }
+        if (!local || !visita || local === visita) return Alert.fire("Error", "Selecciona equipos diferentes", "error");
+        const lD = todosLosEquipos.find(e => e.id === local);
+        const vD = todosLosEquipos.find(e => e.id === visita);
+        await addDoc(collection(db, "partidos"), { fechaTorneo: Number(fechaSel), localId: local, localNombre: lD?.nombre, visitaId: visita, visitaNombre: vD?.nombre });
+        Toast.fire({ icon: 'success', title: 'Cruce Liga registrado' });
+    };
 
-        const localData = todosLosEquipos.find(e => e.id === local);
-        const visitaData = todosLosEquipos.find(e => e.id === visita);
-
+    const guardarCruceCopa = async () => {
+        if (!localCopa || !visitaCopa || localCopa === visitaCopa) return Alert.fire("Error", "Selecciona equipos diferentes", "error");
+        const lD = todosLosEquipos.find(e => e.id === localCopa);
+        const vD = todosLosEquipos.find(e => e.id === visitaCopa);
         try {
-            await addDoc(collection(db, "partidos"), {
-                fechaTorneo: Number(fechaSel),
-                localId: local,
-                localNombre: localData?.nombre,
-                visitaId: visita,
-                visitaNombre: visitaData?.nombre,
+            await addDoc(collection(db, "partidos_copa"), {
+                ronda: Number(rondaCopaSel),
+                localId: localCopa,
+                localNombre: lD?.nombre,
+                visitaId: visitaCopa,
+                visitaNombre: vD?.nombre,
+                fecha: serverTimestamp()
             });
-            Toast.fire({ icon: 'success', title: 'Cruce registrado' });
-            setLocal("");
-            setVisita("");
-        } catch (error) {
-            Alert.fire("Error", "No se pudo guardar", "error");
-        }
+            Toast.fire({ icon: 'success', title: 'Cruce Copa registrado' });
+            setLocalCopa(""); setVisitaCopa("");
+        } catch (e) { Alert.fire("Error", "No se pudo guardar la Copa", "error"); }
     };
 
-    // --- LÓGICA DE MERCADO ---
     const toggleMercado = async (campo: keyof ConfigMercado) => {
-        try {
-            const nuevoEstado = !configMercado[campo];
-            await updateDoc(doc(db, "configuracion", "mercado"), { [campo]: nuevoEstado });
-        } catch (error) { console.error(error); }
+        await updateDoc(doc(db, "configuracion", "mercado"), { [campo]: !configMercado[campo] });
     };
 
-    // --- LÓGICA DE DESTITUCIÓN ---
     const confirmarEliminacion = async () => {
         if (!seleccionado) return;
-        try {
-            const batch = writeBatch(db);
-            batch.update(doc(db, "users", seleccionado.uid), { rol: "invitado", equipoId: null, nombreEquipo: null });
-            batch.update(doc(db, "equipos", seleccionado.id), { estado: "Libre", dt: "Vacante", dtUid: null });
-            await batch.commit();
-            setModalOpen(false);
-            Toast.fire({ icon: 'success', title: 'DT Destituido' });
-        } catch (error) { console.error(error); }
+        const batch = writeBatch(db);
+        batch.update(doc(db, "users", seleccionado.uid), { rol: "invitado", equipoId: null });
+        batch.update(doc(db, "equipos", seleccionado.id), { estado: "Libre", dt: "Vacante", dtUid: null });
+        await batch.commit();
+        setModalOpen(false);
+        Toast.fire({ icon: 'success', title: 'DT Destituido' });
     };
 
-    if (loading) return <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center font-bebas text-[#c9a84c] text-2xl tracking-[5px] animate-pulse uppercase">Cargando Panel...</div>;
-    if (!isAdmin) return null;
-
+    if (loading || !isAdmin) return null;
     return (
         <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-10 font-barlow-condensed text-white">
             <div className="max-w-7xl mx-auto space-y-10">
@@ -161,6 +144,16 @@ export default function AdminPage() {
                                 + Guardar Cruce
                             </button>
                         </div>
+                    </div>
+                </section>
+
+                <section className="bg-[#111] border border-[#222] p-8 space-y-6">
+                    <h3 className="font-bebas text-4xl italic uppercase">Programar Copa</h3>
+                    <div className="grid grid-cols-4 gap-6">
+                        <select className="bg-black p-3" value={rondaCopaSel} onChange={e => setRondaCopaSel(Number(e.target.value))}>{[1, 2, 3, 4].map(r => <option key={r} value={r}>Ronda {r}</option>)}</select>
+                        <select className="bg-black p-3" value={localCopa} onChange={e => setLocalCopa(e.target.value)}><option value="">Local...</option>{todosLosEquipos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</select>
+                        <select className="bg-black p-3" value={visitaCopa} onChange={e => setVisitaCopa(e.target.value)}><option value="">Visita...</option>{todosLosEquipos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</select>
+                        <button onClick={guardarCruceCopa} className="bg-[#c9a84c] text-black font-bebas text-2xl uppercase italic">Guardar Copa</button>
                     </div>
                 </section>
 
