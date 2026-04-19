@@ -259,12 +259,12 @@ export default function GuiasPage() {
                                 <div className="grid md:grid-cols-2 gap-8">
                                     {/* PASO 1: HORARIOS */}
                                     <div className="bg-[#151515] p-6 border border-[#222] relative overflow-hidden group">
-                                        <div className="absolute top-0 right-0 p-2 bg-[#c9a84c] text-black font-bebas text-xs">PASO 01</div>
-                                        <h3 className="font-bebas text-2xl text-white mb-2 uppercase italic">1. Cargar Disponibilidad</h3>
-                                        <p className="text-gray-500 text-sm mb-4">
+                                        <div className="absolute top-0 right-0 p-2 bg-[#c9a84c] text-black font-bebas text-s">PASO 01</div>
+                                        <h3 className="font-bebas text-2xl text-white mb-2 uppercase italic">Cargar Disponibilidad</h3>
+                                        <p className="text-gray-300 text-[18px] mb-4">
                                             Dentro de la sección <strong>Fixture</strong>, seleccioná la fecha actual y buscá el recuadro dorado.
                                         </p>
-                                        <ul className="text-[11px] text-[#c9a84c] space-y-1 uppercase font-bold">
+                                        <ul className="text-[13px] text-[#c9a84c] space-y-1 uppercase font-bold">
                                             <li>• Sé específico (Ej: Lunes a Jueves de 20 a 22hs).</li>
                                             <li>• El rival usará esto para contactarte por privado.</li>
                                             <li>• Si no cargás horario, perdés el derecho a reclamo.</li>
@@ -273,17 +273,17 @@ export default function GuiasPage() {
 
                                     {/* PASO 2: REPORTE */}
                                     <div className="bg-[#151515] p-6 border border-[#222] relative overflow-hidden group">
-                                        <div className="absolute top-0 right-0 p-2 bg-[#c9a84c] text-black font-bebas text-xs">PASO 02</div>
-                                        <h3 className="font-bebas text-2xl text-white mb-2 uppercase italic">2. Subir Reporte Oficial</h3>
-                                        <p className="text-gray-500 text-sm mb-4">
+                                        <div className="absolute top-0 right-0 p-2 bg-[#c9a84c] text-black font-bebas text-s">PASO 02</div>
+                                        <h3 className="font-bebas text-2xl text-white mb-2 uppercase italic"> Subir Reporte Oficial</h3>
+                                        <p className="text-gray-300 text-[18px] mb-4">
                                             Una vez jugado el partido, el <strong>ganador</strong> (o el local en caso de empate) debe informar el resultado.
                                         </p>
                                         <div className="bg-black/50 p-3 rounded border border-white/5">
-                                            <p className="text-[10px] text-gray-400 uppercase mb-2 italic">Capturas obligatorias:</p>
+                                            <p className="text-[15px] text-gray-300 uppercase mb-2 italic">Capturas obligatorias:</p>
                                             <div className="flex gap-2">
-                                                <span className="bg-[#222] px-2 py-1 text-[9px] text-white">1. Resultado</span>
-                                                <span className="bg-[#222] px-2 py-1 text-[9px] text-white">2. Estadísticas</span>
-                                                <span className="bg-[#222] px-2 py-1 text-[9px] text-white">3. Fair Play</span>
+                                                <span className="bg-[#222] px-2 py-1 text-[12px] text-white">1. Resultado</span>
+                                                <span className="bg-[#222] px-2 py-1 text-[12px] text-white">2. Estadísticas</span>
+                                                <span className="bg-[#222] px-2 py-1 text-[12px] text-white">3. Fair Play</span>
                                             </div>
                                         </div>
                                     </div>
@@ -292,8 +292,8 @@ export default function GuiasPage() {
 
                             {/* NOTA SOBRE EL CHAT PRIVADO */}
                             <div className="bg-[#c9a84c]/5 border-l-4 border-[#c9a84c] p-6">
-                                <h4 className="font-bebas text-xl text-[#c9a84c] mb-1">Coordinación por Mensajería</h4>
-                                <p className="text-gray-500 text-xs">
+                                <h4 className="font-bebas text-[25px] uppercase text-[#c9a84c] mb-1">Coordinación por Mensajería</h4>
+                                <p className="text-gray-300 text-x">
                                     Usá el sistema de <strong>Mensajes Privados</strong> en la pestaña Comunidad para hablar con tu rival. No se aceptarán capturas de WhatsApp externo como prueba de No presentación si no hubo contacto previo en la plataforma oficial.
                                 </p>
                             </div>

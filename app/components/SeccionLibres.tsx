@@ -4,7 +4,7 @@ import { db } from "../../src/lib/firebase";
 import { useAuth } from "@/src/lib/hooks/useAuht";
 import {
     collection, addDoc, query, orderBy, onSnapshot,
-    serverTimestamp, Timestamp, where, limit
+    serverTimestamp, Timestamp, where, limit, doc
 } from "firebase/firestore";
 
 interface FichajeConfirmado {
@@ -15,24 +15,41 @@ interface FichajeConfirmado {
     estado: string;
 }
 
+interface MercadoConfig {
+    fichajesAbiertos: boolean;
+    liberacionesAbiertas: boolean; // Agregué este porque lo vi en tu captura
+    fechaCierre: Timestamp;
+}
+
 export default function SeccionLibres() {
     const { user, userData } = useAuth();
     const [confirmados, setConfirmados] = useState<FichajeConfirmado[]>([]);
     const [nuevoPedido, setNuevoPedido] = useState("");
     const [enviando, setEnviando] = useState(false);
+    const [mercado, setMercado] = useState<MercadoConfig>({
+        fichajesAbiertos: false,
+        liberacionesAbiertas: false,
+        fechaCierre: null
+    });
+
 
     // 1. Escuchar solo los fichajes ACEPTADOS para mostrar como historial oficial
     useEffect(() => {
-        const q = query(
-            collection(db, "pedidos_libres"),
-            where("estado", "==", "aceptado"),
-            orderBy("fecha", "desc"),
-            limit(20)
-        );
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unsub = onSnapshot(doc(db, "configuracion", "mercado"), (docSnap) => {
+            if (docSnap.exists()) {
+                // Firestore data() devuelve un objeto, lo forzamos a nuestro tipo
+                const data = docSnap.data() as MercadoConfig;
+                setMercado(data);
+            }
+        });
+        return () => unsub();
+    }, []);
+    // 2. Escuchar fichajes aceptados (igual que antes)
+    useEffect(() => {
+        const q = query(collection(db, "pedidos_libres"), where("estado", "==", "aceptado"), orderBy("fecha", "desc"), limit(20));
+        return onSnapshot(q, (snapshot) => {
             setConfirmados(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FichajeConfirmado)));
         });
-        return () => unsubscribe();
     }, []);
 
     const enviarSolicitud = async (e: React.FormEvent) => {
@@ -60,31 +77,40 @@ export default function SeccionLibres() {
 
     return (
         <div className="max-w-5xl mx-auto space-y-10 pb-20 font-barlow-condensed">
-            {/* ... Bloque de Consideraciones y Tabla de Ejemplo (Mantenelos igual) ... */}
 
-            {/* --- FORMULARIO DE PEDIDO --- */}
+            {/* --- FORMULARIO O AVISO DE CIERRE --- */}
             {user && userData?.equipoId && (
                 <div className="bg-[#111] p-6 border border-[#222]">
-                    <h4 className="font-bebas text-2xl text-[#c9a84c] mb-4">Enviar Pedido al Comité</h4>
-                    <form onSubmit={enviarSolicitud} className="flex flex-col md:flex-row gap-4">
-                        <input
-                            type="text"
-                            value={nuevoPedido}
-                            onChange={(e) => setNuevoPedido(e.target.value)} // Corregí el setter aquí
-                            placeholder="JUGADOR - EX EQUIPO (Ej: Rodrygo - Real Madrid)"
-                            className="flex-1 bg-black border border-[#333] p-3 text-white uppercase text-sm focus:border-[#c9a84c] outline-none"
-                            required
-                        />
-                        <button
-                            disabled={enviando}
-                            className="bg-[#c9a84c] text-black font-bebas px-10 py-3 text-xl hover:bg-white transition-all disabled:opacity-50"
-                        >
-                            {enviando ? "ENVIANDO..." : "SOLICITAR FICHAJE"}
-                        </button>
-                    </form>
+                    {mercado.fichajesAbiertos ? (
+                        <>
+                            <h4 className="font-bebas text-2xl text-[#c9a84c] mb-4">Enviar Pedido al Comité</h4>
+                            <form onSubmit={enviarSolicitud} className="flex flex-col md:flex-row gap-4">
+                                <input
+                                    type="text"
+                                    value={nuevoPedido}
+                                    onChange={(e) => setNuevoPedido(e.target.value)}
+                                    placeholder="JUGADOR - EX EQUIPO"
+                                    className="flex-1 bg-black border border-[#333] p-3 text-white uppercase text-sm focus:border-[#c9a84c] outline-none"
+                                    required
+                                />
+                                <button disabled={enviando} className="bg-[#c9a84c] text-black font-bebas px-10 py-3 text-xl hover:bg-white transition-all disabled:opacity-50">
+                                    {enviando ? "ENVIANDO..." : "SOLICITAR FICHAJE"}
+                                </button>
+                            </form>
+                        </>
+                    ) : (
+                        <div className="text-center py-6 border border-red-900 bg-red-950/20">
+                            <h4 className="font-bebas text-2xl text-red-500">MERCADO CERRADO</h4>
+                            <p className="text-gray-400 mt-2">El periodo de fichajes se encuentra inhabilitado en este momento.</p>
+                            {mercado.fechaCierre && (
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Última actualización: {mercado.fechaCierre.toDate().toLocaleDateString()}
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
-
             {/* --- HISTORIAL DE FICHAJES CONFIRMADOS --- */}
             <div className="space-y-6 pt-10 border-t border-[#222]">
                 <div className="flex items-center justify-between">

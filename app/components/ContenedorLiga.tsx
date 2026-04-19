@@ -118,7 +118,7 @@ export default function ContenedorLiga() {
             <div className="max-w-6xl mx-auto space-y-10">
                 <div className="border-l-4 border-[#c9a84c] pl-6">
                     <h1 className="font-bebas text-7xl italic tracking-tighter uppercase leading-none">
-                        Calendario <span className="text-[#c9a84c]">Oficial</span>
+                        fixture <span className="text-[#c9a84c]">Oficial</span>
                     </h1>
                     <p className="text-gray-500 uppercase tracking-[4px] text-sm italic">Temporada 1 · El Legado PES 6</p>
                 </div>
@@ -148,30 +148,35 @@ export default function ContenedorLiga() {
                             <div className="grid grid-cols-1 gap-4">
                                 {partidosProgramados.length > 0 ? (
                                     partidosProgramados.map((p) => {
-                                        // Buscamos los escudos en el array de equipos cargado en el estado
                                         const escudoLocal = equipos.find(e => e.id === p.localId)?.escudo || "/escudo-default.png";
                                         const escudoVisita = equipos.find(e => e.id === p.visitaId)?.escudo || "/escudo-default.png";
 
                                         return (
-                                            <div key={p.id} className="bg-[#050505] border border-[#222] p-4 flex justify-between items-center px-6 italic hover:border-[#c9a84c]/30 transition-all shadow-lg">
-                                                {/* LOCAL */}
-                                                <div className="flex items-center gap-3 flex-1">
-                                                    <div className="relative w-8 h-8 flex-shrink-0">
-                                                        <Image src={escudoLocal} alt={p.localNombre} fill className="object-contain" />
+                                            <div key={p.id} className="bg-[#050505] border border-[#222] p-4 flex flex-col md:flex-row justify-between items-center px-4 md:px-6 italic hover:border-[#c9a84c]/30 transition-all shadow-lg">
+
+                                                {/* --- CONTENEDOR DE PARTIDO --- */}
+                                                <div className="flex w-full justify-between items-center gap-2">
+
+                                                    {/* LOCAL */}
+                                                    <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+                                                        <div className="relative w-7 h-7 md:w-8 md:h-8 flex-shrink-0">
+                                                            <Image src={escudoLocal} alt={p.localNombre} fill className="object-contain" />
+                                                        </div>
+                                                        <span className="font-bebas text-sm md:text-xl text-white uppercase truncate">{p.localNombre}</span>
                                                     </div>
-                                                    <span className="font-bebas text-xl text-white uppercase truncate">{p.localNombre}</span>
+
+                                                    {/* SEPARADOR (Visible siempre) */}
+                                                    <span className="text-[#c9a84c] font-bebas text-lg md:text-xl px-2">VS</span>
+
+                                                    {/* VISITA */}
+                                                    <div className="flex items-center gap-2 md:gap-3 flex-1 justify-end text-right min-w-0">
+                                                        <span className="font-bebas text-sm md:text-xl text-white uppercase truncate">{p.visitaNombre}</span>
+                                                        <div className="relative w-7 h-7 md:w-8 md:h-8 flex-shrink-0">
+                                                            <Image src={escudoVisita} alt={p.visitaNombre} fill className="object-contain" />
+                                                        </div>
+                                                    </div>
                                                 </div>
 
-                                                {/* SEPARADOR */}
-                                                <span className="text-[#c9a84c] font-bebas text-xl mx-4">VS</span>
-
-                                                {/* VISITA */}
-                                                <div className="flex items-center gap-3 flex-1 justify-end text-right">
-                                                    <span className="font-bebas text-xl text-white uppercase truncate">{p.visitaNombre}</span>
-                                                    <div className="relative w-8 h-8 flex-shrink-0">
-                                                        <Image src={escudoVisita} alt={p.visitaNombre} fill className="object-contain" />
-                                                    </div>
-                                                </div>
                                             </div>
                                         );
                                     })
@@ -229,7 +234,7 @@ export default function ContenedorLiga() {
                                     ))
                                 ) : (
                                         <div className="bg-[#0f0f0f] border border-[#1a1a1a] p-16 text-center">
-                                            <p className="text-gray-700 font-bebas text-2xl uppercase tracking-[5px] italic opacity-30">No hay resultados procesados aún</p>
+                                            <p className="text-gray-300 font-bebas text-2xl uppercase tracking-[5px] italic ">No hay resultados procesados aún</p>
                                     </div>
                                 )}
                             </div>
@@ -247,8 +252,8 @@ export default function ContenedorLiga() {
                                 )
                             ) : (
                                 <div className="py-12 text-center">
-                                    <div className="text-red-700 text-5xl font-bebas italic leading-none mb-2">Bloqueado</div>
-                                    <p className="text-gray-600 text-[10px] uppercase tracking-[3px]">Jornada no habilitada</p>
+                                        <div className="text-red-700 text-5xl font-bebas italic leading-none mb-2">BLOQUEADO</div>
+                                        <p className="text-gray-100 text-[10px] uppercase tracking-[5px]">Jornada no habilitada</p>
                                 </div>
                             )}
                         </div>
@@ -263,7 +268,7 @@ export default function ContenedorLiga() {
                                         </div>
                                     ))
                                 ) : (
-                                        <p className="text-gray-600 text-xs italic">Nadie cargó horarios todavía para esta fecha.</p>
+                                        <p className="text-gray-200 text-xs italic uppercase">Nadie cargó horarios todavía para esta fecha.</p>
                                 )}
                             </div>
                         </div>

@@ -6,6 +6,7 @@ import { db } from "@/src/lib/firebase";
 import { collection, query, where, onSnapshot, orderBy, limit, Timestamp } from "firebase/firestore";
 import BannerPatrocinadores from "./components/BannerPatrocinadores";
 import Image from "next/image";
+import ReporteAusencia from "./ausencias/page";
 interface Reporte {
     id: string;
     local: string;
@@ -29,11 +30,22 @@ interface StatCard {
     label: string;
 }
 
+interface ReporteAusencia {
+    id: string;
+    dt: string;
+    equipo: string;
+    motivo: string;
+    fecha: Timestamp;
+}
+
+
 export default function Page() {
     const { user, userData, loading } = useAuth(); // Agregué isAdmin
     const [yaPostulado, setYaPostulado] = useState(false);
     const [equipos, setEquipos] = useState([]);
     const [resultados, setResultados] = useState<Reporte[]>([]);
+    const [reportesAusencia, setReportesAusencia] = useState<ReporteAusencia[]>([]); // Tipa esto como necesites
+
 
     // UNIFICAMOS EN UN SOLO ESTADO DE NOTICIAS
     const [noticias, setNoticias] = useState<Noticia[]>([]);
@@ -95,6 +107,24 @@ export default function Page() {
 
         return () => unsubReportes();
     }, []);
+
+    useEffect(() => {
+        const q = query(collection(db, "reportes_ausencias"), orderBy("fecha", "desc"), limit(5));
+
+        const unsub = onSnapshot(q, (snap) => {
+            // Mapeamos los datos y casteamos a nuestra interfaz
+            const data = snap.docs.map(d => ({
+                id: d.id,
+                ...d.data()
+            })) as ReporteAusencia[];
+
+            // Esta es la función que debe coincidir con la de arriba
+            setReportesAusencia(data);
+        });
+
+        return () => unsub();
+    }, []);
+
     return (
         <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] font-sans p-6 md:p-10">
             {/* HEADER DE SECCIÓN */}
@@ -374,6 +404,62 @@ export default function Page() {
                     }) : (
                         <div className="p-10 text-center text-gray-600 italic uppercase text-xs tracking-[4px]">
                                 No hay noticias recientes...
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="max-w-6xl mx-auto mb-6 flex justify-between items-center px-2">
+                <h3 className="font-bebas text-3xl tracking-[3px] text-white italic uppercase">
+
+                </h3>
+
+                <Link href="/ausencias" className="font-bebas text-xl bg-[#222] border border-[#333] px-6 py-2 text-gray-400 hover:text-[#c9a84c] hover:border-[#c9a84c] transition-all italic uppercase">
+                    Ir a Ausencias →
+                </Link>
+            </div>
+            <div className="max-w-6xl mx-auto bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden mb-10 font-barlow-condensed ">
+
+                {/* CABECERA ROJA */}
+
+                <div className="p-4 bg-[#222222] border-b border-[#2a2a2a] flex justify-between items-center">
+                    <h3 className="font-bebas text-xl tracking-[3px] text-red-500">Reportes de Ausencia</h3>
+                    <span className="text-[10px] text-gray-500 uppercase tracking-widest italic font-bold">Comité Disciplinario</span>
+                </div>
+
+                <div className="divide-y divide-[#1e1e1e]">
+                    {reportesAusencia.length > 0 ? reportesAusencia.map((rep) => {
+                        const fecha = rep.fecha?.toDate() || new Date();
+                        const dia = fecha.getDate().toString().padStart(2, '0');
+                        const mes = fecha.toLocaleString('es-AR', { month: 'short' }).toUpperCase().replace('.', '');
+
+                        return (
+                            <div key={rep.id} className="flex gap-6 p-5 transition-colors group">
+                                {/* FECHA */}
+                                <div className="text-center min-w-[50px] border-r border-[#222] pr-4">
+                                    <div className="font-bebas text-3xl text-red-500 leading-none">{dia}</div>
+                                    <div className="font-barlow-condensed text-[11px] tracking-[2px] text-gray-500 font-bold">{mes}</div>
+                                </div>
+
+                                {/* CONTENIDO */}
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase border bg-red-900/20 border-red-500/50 text-red-400">
+                                            {rep.equipo}
+                                        </span>
+                                        <h4 className="font-bold text-lg uppercase tracking-wider text-white">
+                                            {rep.dt} - Ausencia Reportada
+                                        </h4>
+                                    </div>
+                                    <p className="text-sm leading-relaxed text-[#888] italic">
+                                        {rep.motivo}
+                                    </p>
+                                </div>
+                            </div>
+                        );
+                    }) : (
+                        <div className="p-10 text-center text-gray-700 italic uppercase text-xs tracking-[4px]">
+                            Sin reportes de ausencia actualmente...
                         </div>
                     )}
                 </div>

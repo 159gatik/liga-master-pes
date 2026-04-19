@@ -15,7 +15,7 @@ export default function ContenedorCopa() {
     const [equipos, setEquipos] = useState<Equipo[]>([]);
     const [reportesRonda, setReportesRonda] = useState<Reporte[]>([]);
     const [partidosProgramados, setPartidosProgramados] = useState<PartidoProgramado[]>([]);
-
+    const totalRondas = 4;
     useEffect(() => {
         const unsubEquipos = onSnapshot(query(collection(db, "equipos"), orderBy("nombre", "asc")),
             (snap) => setEquipos(snap.docs.map(d => ({ id: d.id, ...d.data() } as Equipo))));
@@ -48,13 +48,16 @@ export default function ContenedorCopa() {
                 <p className="text-gray-500 uppercase tracking-[4px] text-sm italic">Temporada 1 · El Legado PES 6</p>
             </div>
             {/* Selector de Ronda */}
-            <div className="flex justify-center gap-4 py-4 bg-[#111] border-y border-[#222]">
-                {[1, 2, 3, 4].map(r => (
-                    <button key={r} onClick={() => setRondaActiva(r)}
-                        className={`px-6 py-2 font-bebas text-2xl transition-all ${rondaActiva === r ? "text-[#c9a84c] border-b-2 border-[#c9a84c]" : "text-gray-600"}`}>
-                        RONDA {r}
-                    </button>
-                ))}
+
+            <div className="relative group bg-[#111] border-y border-[#222] py-2">
+                <button onClick={() => document.getElementById('carrusel-fechas')?.scrollBy({ left: -200, behavior: 'smooth' })} className="absolute left-0 top-0 bottom-0 z-10 px-2 bg-gradient-to-r from-[#111] to-transparent text-[#c9a84c]"><span className="font-bebas text-4xl">‹</span></button>
+                <div id="carrusel-fechas" className="flex overflow-x-auto gap-4 px-10 no-scrollbar scroll-smooth items-center" style={{ scrollbarWidth: 'none' }}>
+                    {Array.from({ length: totalRondas }, (_, i) => i + 1).map((f) => (
+                        <button key={f} onClick={() => setRondaActiva(f)} className={`px-8 py-3 font-bebas text-3xl transition-all flex-shrink-0 italic tracking-widest relative ${rondaActiva === f ? "text-[#c9a84c] scale-110" : "text-[#333] hover:text-gray-400"}`}>
+                            FECHA {f} </button>
+                    ))}
+                </div>
+                <button onClick={() => document.getElementById('carrusel-fechas')?.scrollBy({ left: 200, behavior: 'smooth' })} className="absolute right-0 top-0 bottom-0 z-10 px-2 bg-gradient-to-l from-[#111] to-transparent text-[#c9a84c]"><span className="font-bebas text-4xl">›</span></button>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">

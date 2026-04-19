@@ -21,7 +21,7 @@ export default function Navbar() {
     ];
 
     if (user) {
-        links.push({ name: 'Fichajes', href: '/fichajes' });
+        links.push({ name: 'Mercado', href: '/fichajes' });
         if (isAdmin) {
             links.push({ name: 'Admin', href: '/admin' });
         } else {
