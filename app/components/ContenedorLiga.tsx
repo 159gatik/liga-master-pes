@@ -24,7 +24,13 @@ export default function ContenedorLiga() {
     const [fechasAbiertas, setFechasAbiertas] = useState<Record<string, boolean>>({});
     const [listaHorarios, setListaHorarios] = useState<Disponibilidad[]>([]);
     const [partidosProgramados, setPartidosProgramados] = useState<PartidoProgramado[]>([]);
+    const [cargandoConfig, setCargandoConfig] = useState(true);
+
+
+
     const totalFechas = 18;
+
+
 
     // 1. Carga de datos iniciales (Equipos y Config)
     useEffect(() => {
@@ -38,12 +44,12 @@ export default function ContenedorLiga() {
             }
         );
 
-        const unsubEstado = onSnapshot(doc(db, "torneo", "configuracion"),
-            (docSnap) => {
-                if (docSnap.exists()) {
-                    setFechasAbiertas(docSnap.data().fechasStatus || {});
-                }
-            },
+        const unsubEstado = onSnapshot(doc(db, "torneo", "configuracion"), (docSnap) => {
+            if (docSnap.exists()) {
+                setFechasAbiertas(docSnap.data().fechasStatus || {});
+            }
+            setCargandoConfig(false); // Una vez que Firestore responde, quitamos el estado de carga
+        },
             (error) => {
                 console.warn("Fixture: Error en config (Modo invitado)", error);
             }
@@ -94,15 +100,14 @@ export default function ContenedorLiga() {
             (snap) => {
                 setListaHorarios(snap.docs.map(d => ({ id: d.id, ...d.data() } as Disponibilidad)));
             },
-            (error) => {
+            (_error) => {
                 console.warn("Fixture: Acceso denegado a disponibilidad");
             }
         );
         return () => unsub();
     }, [fechaActiva]);
-
+    // Convertimos el número a string explícitamente y nos aseguramos de que sea estricto
     const estaAbierta = fechasAbiertas[`fecha_${fechaActiva}`] === true;
-
     const eliminarReporte = async (reporteId: string) => {
         if (window.confirm("¿Estás seguro de eliminar este reporte?")) {
             try {
@@ -242,21 +247,35 @@ export default function ContenedorLiga() {
                     </section>
 
                     <aside className="space-y-6">
-                        <div className={`p-6 border-t-2 transition-all shadow-2xl ${estaAbierta ? "bg-[#0f0f0f] border-[#c9a84c]" : "bg-[#0f0f0f] border-red-900 opacity-60"}`}>
+                        {/* Contenedor de Reporte con estado de carga */}
+                        <div className={`p-6 border-t-2 transition-all shadow-2xl ${cargandoConfig ? "bg-[#0f0f0f] border-gray-500" : (estaAbierta ? "bg-[#0f0f0f] border-[#c9a84c]" : "bg-[#0f0f0f] border-red-900 opacity-60")}`}>
                             <h4 className="font-bebas text-3xl text-white mb-4 italic uppercase">Reportar partido</h4>
-                            {estaAbierta ? (
-                                userData?.rol === "dt" ? (
-                                    <FormularioReporte fechaNumero={fechaActiva} rivales={equipos.filter(e => e.id !== userData.equipoId)} equipoNombre={equipos.find(e => e.id === userData.equipoId)?.nombre || "Mi Equipo"} />
-                                ) : (
-                                    <p className="text-[#c9a84c] font-bold text-xs uppercase text-center py-6 border border-dashed border-[#222]">Acceso restringido a DTs</p>
-                                )
+
+                            {cargandoConfig ? (
+                                <div className="py-12 text-center text-gray-500 italic">
+                                    Cargando configuración de la jornada...
+                                </div>
                             ) : (
-                                <div className="py-12 text-center">
+                                estaAbierta ? (
+                                    userData?.rol === "dt" ? (
+                                            <FormularioReporte
+                                                fechaNumero={fechaActiva}
+                                                rivales={equipos.filter(e => e.id !== userData.equipoId)}
+                                                equipoNombre={equipos.find(e => e.id === userData.equipoId)?.nombre || "Mi Equipo"}
+                                            />
+                                        ) : (
+                                            <p className="text-[#c9a84c] font-bold text-xs uppercase text-center py-6 border border-dashed border-[#222]">Acceso restringido a DTs</p>
+                                        )
+                                    ) : (
+                                        <div className="py-12 text-center">
                                         <div className="text-red-700 text-5xl font-bebas italic leading-none mb-2">BLOQUEADO</div>
                                         <p className="text-gray-100 text-[10px] uppercase tracking-[5px]">Jornada no habilitada</p>
-                                </div>
+                                            </div>
+                                        )
                             )}
                         </div>
+
+                        {/* Horarios de los DTs */}
                         <div className="bg-[#0f0f0f] border border-[#222] p-5 space-y-4">
                             <h4 className="font-bebas text-2xl text-white uppercase italic border-b border-[#222] pb-2">Horarios de los DTs</h4>
                             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -272,8 +291,14 @@ export default function ContenedorLiga() {
                                 )}
                             </div>
                         </div>
+
+                        {/* Sección de disponibilidad propia del DT */}
                         {userData?.rol === "dt" && (
-                            <SeccionDisponibilidad equipoId={userData.equipoId!} nombreEquipo={userData.nombreEquipo!} fechaActiva={fechaActiva} />
+                            <SeccionDisponibilidad
+                                equipoId={userData.equipoId!}
+                                nombreEquipo={userData.nombreEquipo!}
+                                fechaActiva={fechaActiva}
+                            />
                         )}
                     </aside>
                 </div>

@@ -11,15 +11,13 @@ export default function SeccionReglamentoMercado() {
                     </h3>
                     <p className="text-gray-500 font-barlow-condensed text-xs uppercase tracking-[3px]">Ciclo: Torneo Apertura + Torneo Clausura</p>
                 </div>
-                <div className="bg-[#c9a84c] text-black px-3 py-1 font-bebas text-xl italic tracking-tighter">
-                    VENTANA ÚNICA ANUAL
-                </div>
+
             </div>
 
             {/* AVISO IMPORTANTE SOBRE APERTURA */}
             <div className="bg-red-900/10 border-l-4 border-red-600 p-6 italic">
-                <p className="text-red-500 font-bold uppercase text-sm mb-1 tracking-widest">⚠️ Restricción de Calendario:</p>
-                <p className="text-gray-400 text-sm font-barlow-condensed">
+                <p className="text-red-500 font-bold uppercase text-m mb-1 tracking-widest">Restricción de Calendario:</p>
+                <p className="text-gray-400 text-m font-barlow-condensed">
                     El mercado **permanecerá cerrado** durante el transcurso de los dos torneos. Las negociaciones, altas y bajas solo se habilitarán una vez finalizada la temporada completa (tras el Clausura).
                 </p>
             </div>
@@ -29,12 +27,12 @@ export default function SeccionReglamentoMercado() {
 
                 {/* REGLA 1: TRASPASOS */}
                 <div className="bg-[#111] border border-[#2a2a2a] p-6 hover:border-[#27ae60] transition-colors relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 bg-[#27ae60] text-black font-bold px-2 py-0.5 text-[9px] uppercase">Post-Clausura</div>
+                    <div className="absolute top-0 right-0 bg-[#27ae60] text-black font-bold px-2 py-0.5 text-[13px] uppercase">Post-Clausura</div>
                     <div className="flex items-center gap-3 mb-4">
                         <span className="bg-[#27ae60] text-black font-bold px-2 py-1 text-xs uppercase">Compra</span>
                         <h4 className="text-xl text-white font-bold uppercase tracking-wider">Traspaso Directo</h4>
                     </div>
-                    <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                    <p className="text-gray-400 text-m leading-relaxed mb-4">
                         Compra definitiva entre clubes. El dinero sale del presupuesto del comprador y va **íntegro** al vendedor.
                     </p>
                     <div className="bg-black/50 p-3 border border-white/5 space-y-1">
@@ -45,12 +43,12 @@ export default function SeccionReglamentoMercado() {
 
                 {/* REGLA 2: PRÉSTAMOS */}
                 <div className="bg-[#111] border border-[#2a2a2a] p-6 hover:border-blue-500 transition-colors relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 bg-blue-600 text-white font-bold px-2 py-0.5 text-[9px] uppercase">Anual</div>
+                    <div className="absolute top-0 right-0 bg-blue-600 text-white font-bold px-2 py-0.5 text-[13px] uppercase">Anual</div>
                     <div className="flex items-center gap-3 mb-4">
                         <span className="bg-blue-600 text-white font-bold px-2 py-1 text-xs uppercase">Préstamo</span>
                         <h4 className="text-xl text-white font-bold uppercase tracking-wider">Cesión por 1 Temp.</h4>
                     </div>
-                    <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                    <p className="text-gray-400 text-m leading-relaxed mb-4">
                         Uso del jugador por el ciclo completo (2 torneos). Al finalizar, el jugador **vuelve solo** a su dueño original.
                     </p>
                     <div className="bg-black/50 p-3 border border-white/5 space-y-1">
@@ -65,7 +63,7 @@ export default function SeccionReglamentoMercado() {
                         <span className="bg-orange-500 text-white font-bold px-2 py-1 text-xs uppercase">Sueldos</span>
                         <h4 className="text-xl text-white font-bold uppercase tracking-wider">Mantenimiento Final</h4>
                     </div>
-                    <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                    <p className="text-gray-400 text-m leading-relaxed mb-4">
                         El costo de mantener la plantilla se liquida **una sola vez** al terminar el segundo torneo de la temporada.
                     </p>
                     <div className="bg-orange-900/10 p-3 border border-orange-500/20">
@@ -75,12 +73,12 @@ export default function SeccionReglamentoMercado() {
 
                 {/* REGLA 4: JUGADORES LIBRES */}
                 <div className="bg-[#111] border border-[#2a2a2a] p-6 border-t-2 border-t-[#c9a84c] shadow-[0_0_15px_rgba(201,168,76,0.05)] relative group">
-                    <div className="absolute top-0 right-0 bg-[#c9a84c] text-black font-bold px-2 py-0.5 text-[9px] uppercase">Post-Temporada</div>
+                    <div className="absolute top-0 right-0 bg-[#c9a84c] text-black font-bold px-2 py-0.5 text-[13px] uppercase">Post-Temporada</div>
                     <div className="flex items-center gap-3 mb-4">
                         <span className="bg-[#c9a84c] text-black font-bold px-2 py-1 text-xs uppercase">Libres</span>
                         <h4 className="text-xl text-white font-bold uppercase tracking-wider">Fichaje del Mercado</h4>
                     </div>
-                    <ul className="text-gray-400 text-[11px] space-y-1 mb-4">
+                    <ul className="text-gray-400 text-[15px] space-y-1 mb-4">
                         <li className="flex justify-between"><span>Límite de fichajes:</span> <span className="text-white">2 por DT</span></li>
                         <li className="flex justify-between"><span>Orden de prioridad:</span> <span className="text-white font-bold italic">El más rápido</span></li>
                         <li className="flex justify-between"><span>Costo de alta:</span> <span className="text-[#c9a84c] font-bold">80% de su valor</span></li>
@@ -171,8 +169,8 @@ export default function SeccionReglamentoMercado() {
             {/* NOTA FINAL */}
             <div className="bg-blue-900/10 border border-blue-900/30 p-6 flex items-start gap-4">
                 <div className="font-barlow-condensed">
-                    <h5 className="text-blue-400 font-bold uppercase tracking-widest text-m mb-1">📅 Estructura de la Temporada</h5>
-                    <p className="text-blue-200/60 text-xs leading-relaxed italic">
+                    <h5 className="text-blue-400 font-bold uppercase tracking-widest text-m mb-1">Estructura de la Temporada</h5>
+                    <p className="text-blue-200/60 text-m leading-relaxed italic">
                         Los premios por puesto se entregan al finalizar **cada torneo** (Apertura y Clausura). Sin embargo, la posibilidad de modificar la plantilla se reserva exclusivamente para el receso entre temporadas. ¡Gestioná tu presupuesto con inteligencia!
                     </p>
                 </div>

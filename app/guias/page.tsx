@@ -309,11 +309,11 @@ export default function GuiasPage() {
                         <article className="space-y-10">
                             <div className="flex items-center gap-4 border-b border-[#c9a84c]/20 pb-4">
                                 <h2 className="font-bebas text-4xl text-[#c9a84c] italic uppercase">El Despacho Oficial</h2>
-                                <span className="bg-[#c9a84c] text-black text-[10px] font-bold px-2 py-0.5 uppercase">Auditoría & Finanzas</span>
+
                             </div>
 
                             <p className="text-gray-400 text-2xl leading-relaxed italic">
-                                El Despacho no es un chat común; es el <span className="text-white font-bold underline decoration-[#c9a84c]">Libro Contable</span> de tu club. Cada mensaje aquí representa una transacción oficial que debe ser validada para impactar en tu presupuesto.
+                                El Despacho no es un chat común; es el <span className="text-white font-bold underline decoration-[#c9a84c]">Libro Contable</span> de tu club. Cada mensaje ahí representa una transacción oficial que debe ser validada para impactar en tu presupuesto.
                             </p>
 
                             <div className="grid md:grid-cols-2 gap-12 items-start">
