@@ -1,6 +1,20 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import Swal from 'sweetalert2'
+
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'center',
+    iconColor: 'green',
+    customClass: {
+        popup: 'colored-toast',
+    },
+    showConfirmButton: false,
+    timer: 1500,
+    timerProgressBar: true,
+})
 
 // Componente para los botones de las pestañas
 interface TabButtonProps {
@@ -129,13 +143,19 @@ export default function GuiasPage() {
                                 {/* SECCIÓN DEL CÓDIGO DE INSTALACIÓN */}
                                 <div className="bg-[#c9a84c]/10 border-2 border-[#c9a84c] p-6 relative overflow-hidden">
                                     <div className="absolute top-0 right-0 bg-[#c9a84c] text-black font-black px-3 py-1 text-[15px] uppercase">
-                                        Dato Vital
+                                        importante
                                     </div>
                                     <h3 className="font-bebas text-4xl text-white mb-2 tracking-tighter">Código de Instalación & Online</h3>
                                     <p className="text-[16px] text-gray-400 uppercase mb-4 leading-tight">
                                         Este código es necesario para la instalación y será el mismo que utilizarás para ingresar al modo Online.
                                     </p>
-                                    <div className="bg-black p-4 text-center border border-[#c9a84c]/30 group hover:border-[#c9a84c] transition-all cursor-copy">
+                                    <div onClick={() => {
+                                        navigator.clipboard.writeText("DAYX7MVSENUXR2DWLXER");
+                                        Toast.fire({
+                                            icon: 'success',
+                                            title: 'SERIAL COPIADO CON ÉXITO'
+                                        });// opcional: mostrar un toast "¡Copiado!"
+                                    }} className="bg-black p-4 text-center border border-[#c9a84c]/30 group hover:border-[#c9a84c] transition-all cursor-copy">
                                         <code className="font-mono text-[#c9a84c] text-lg md:text-2xl font-bold tracking-widest select-all">
                                             DAYX7MVSENUXR2DWLXER
                                         </code>
@@ -178,10 +198,10 @@ export default function GuiasPage() {
                                     </a>
 
                                     <div className="mt-4 border border-[#222] p-2 bg-[#050505]">
-                                        <img
-                                            src="..//img/registro-servidor.png"
+                                        <Image
+                                            src="../img/registro-servidor.png"
                                             alt="Interfaz de Registro Servidor"
-                                            className="w-full opacity-80 hover:opacity-100 transition-opacity"
+                                            className="w-full opacity-80 hover:opacity-100 transition-opacity" width={800} height={600}
                                         />
                                     </div>
                                 </div>

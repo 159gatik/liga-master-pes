@@ -51,7 +51,7 @@ function ChatContent() {
             // Scroll al fondo
             setTimeout(() => {
                 scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-            }, 100);
+            }, 0);
         }, (err) => console.warn("Error permisos:", err));
 
         return () => unsub();

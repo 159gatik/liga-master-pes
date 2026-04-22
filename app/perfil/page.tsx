@@ -113,7 +113,7 @@ export default function PerfilDT() {
                     ...jugador,
                     exEquipo: userData.nombreEquipo,
                     fechaLiberacion: serverTimestamp(),
-                    tipo: "Descarte de DT"
+                    tipo: "Rescindió contrato"
                 });
 
                 await batch.commit();

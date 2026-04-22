@@ -6,6 +6,7 @@ import { useAuth } from "@/src/lib/hooks/useAuht";
 import { db } from "@/src/lib/firebase";
 import { collection, onSnapshot, query, orderBy, where, limit } from "firebase/firestore";
 import TarjetaDT from "../components/TarjetaDT";
+import ChatPrivadoFlotante from "../components/ChatPrivadoFlotante";
 
 interface Usuario {
     uid: string;
@@ -18,7 +19,7 @@ export default function ComunidadPage({ equipoUsuario }) {
     const { user } = useAuth();
     const router = useRouter();
     const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-
+    const [chatAbierto, setChatAbierto] = useState<string | null>(null);
     useEffect(() => {
         const q = query(collection(db, "users"), orderBy("nombre", "asc"));
         const unsub = onSnapshot(q, (snap) => {
@@ -30,13 +31,10 @@ export default function ComunidadPage({ equipoUsuario }) {
     const contactarDT = (rivalUid: string) => {
         if (!user) return alert("Debes iniciar sesión");
         if (user.uid === rivalUid) return alert("No puedes chatear contigo mismo");
-
-        const chatId = user.uid < rivalUid ? `${user.uid}_${rivalUid}` : `${rivalUid}_${user.uid}`;
-
-        // CAMBIA ESTA LÍNEA:
-        // Antes: router.push(`/mensajes/${chatId}`);
-        // Ahora:
-        router.push(`/mensajes?id=${chatId}`);
+        const chatId = user.uid < rivalUid
+            ? `${user.uid}_${rivalUid}`
+            : `${rivalUid}_${user.uid}`;
+        setChatAbierto(chatId);
     };
 
     return (
@@ -83,7 +81,13 @@ export default function ComunidadPage({ equipoUsuario }) {
                         </div>
                     </div>
                     <div className="flex-1 overflow-hidden flex flex-col">
-                        <ChatDTs equipoUsuario={equipoUsuario} />
+                        <ChatDTs />
+                        {chatAbierto && (
+                            <ChatPrivadoFlotante
+                                chatId={chatAbierto}
+                                onCerrar={() => setChatAbierto(null)}
+                            />
+                        )}
                     </div>
                 </div>
             </div>

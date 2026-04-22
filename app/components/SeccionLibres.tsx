@@ -21,6 +21,17 @@ interface MercadoConfig {
     fechaCierre: Timestamp;
 }
 
+interface JugadorLibre {
+    id: string;
+    nombre: string;
+    pos: string;
+    exEquipo: string;
+    valor?: number;
+    tipo: string;
+    fechaLiberacion: Timestamp;
+}
+
+
 export default function SeccionLibres() {
     const { user, userData } = useAuth();
     const [confirmados, setConfirmados] = useState<FichajeConfirmado[]>([]);
@@ -31,7 +42,17 @@ export default function SeccionLibres() {
         liberacionesAbiertas: false,
         fechaCierre: null
     });
+    const [jugadoresLibres, setJugadoresLibres] = useState<JugadorLibre[]>([]);
 
+    useEffect(() => {
+        const q = query(
+            collection(db, "jugadores_libres"),
+            orderBy("fechaLiberacion", "desc")
+        );
+        return onSnapshot(q, (snap) => {
+            setJugadoresLibres(snap.docs.map(d => ({ id: d.id, ...d.data() } as JugadorLibre)));
+        });
+    }, []);
 
     // 1. Escuchar solo los fichajes ACEPTADOS para mostrar como historial oficial
     useEffect(() => {
@@ -111,6 +132,44 @@ export default function SeccionLibres() {
                     )}
                 </div>
             )}
+            {/* JUGADORES DISPONIBLES EN EL MERCADO */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h4 className="font-bebas text-3xl text-white tracking-[2px] uppercase">
+                        Jugadores Disponibles
+                    </h4>
+                    <span className="text-[10px] text-[#c9a84c] font-mono uppercase tracking-widest">
+                        {jugadoresLibres.length} en el mercado
+                    </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {jugadoresLibres.length === 0 ? (
+                        <p className="text-gray-600 italic">No hay jugadores libres en este momento.</p>
+                    ) : (
+                        jugadoresLibres.map((j) => (
+                            <div key={j.id} className="bg-black/40 border border-[#222] p-4 flex items-center justify-between group hover:border-[#c9a84c] transition-all">
+                                <div>
+                                    <p className="text-gray-500 text-[10px] uppercase tracking-widest">
+                                        Ex {j.exEquipo} · {j.pos}
+                                    </p>
+                                    <p className="text-white font-bebas text-2xl uppercase tracking-tighter group-hover:text-[#c9a84c]">
+                                        {j.nombre}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    {j.valor && (
+                                        <span className="text-[#c9a84c] font-bebas text-xl block">
+                                            ${j.valor.toLocaleString()}
+                                        </span>
+                                    )}
+                                    <span className="text-[8px] text-gray-600 uppercase">{j.tipo}</span>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
             {/* --- HISTORIAL DE FICHAJES CONFIRMADOS --- */}
             <div className="space-y-6 pt-10 border-t border-[#222]">
                 <div className="flex items-center justify-between">
