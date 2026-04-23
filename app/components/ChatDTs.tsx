@@ -67,11 +67,6 @@ export default function ChatDTs() {
 
     return (
         <div className="flex flex-col h-[85vh] bg-[#111] border border-[#222] shadow-2xl">
-            <div className="p-4 border-b border-[#222] bg-[#0a0a0a] flex justify-between items-center">
-                <h3 className="font-bebas text-2xl text-[#c9a84c] italic">Muro de DTs</h3>
-                <span className="text-[10px] text-gray-500 uppercase tracking-widest">En vivo</span>
-            </div>
-
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar scroll-smooth">
                 {messages.map((msg) => (
                     <div key={msg.id} className="flex flex-col mb-1">

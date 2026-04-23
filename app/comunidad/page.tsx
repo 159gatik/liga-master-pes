@@ -74,7 +74,7 @@ export default function ComunidadPage({ equipoUsuario }) {
 
                 <div className="lg:col-span-3 bg-[#111] border border-[#222] flex flex-col h-[700px]">
                     <div className="p-4 bg-[#1a1a1a] border-b border-[#222] flex justify-between items-center">
-                        <h3 className="font-bebas text-2xl text-white italic tracking-widest">FORO GENERAL DE DTs</h3>
+                        <h3 className="font-bebas text-2xl text-white italic tracking-widest">CHAT EL LEGADO</h3>
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                             <span className="text-[10px] text-gray-500 uppercase font-bold">En Vivo</span>

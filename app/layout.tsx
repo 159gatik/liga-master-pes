@@ -1,9 +1,10 @@
 import { Bebas_Neue, Barlow_Condensed, Barlow } from 'next/font/google';
-import "./globals.css"; // <--- ESTA LÍNEA ES VITAL
+import "./globals.css";
 import Navbar from "./components/Navbar";
 import Footer from './components/Footer';
 import AuthGuard from './components/Auth/AuthGuard';
-
+import { LigaProvider } from "@/src/lib/context/LigaContext";
+import SelectorLiga from "./components/SelectorLiga";
 const bebas = Bebas_Neue({
   weight: '400',
   subsets: ['latin'],
@@ -27,9 +28,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <html lang="es" className={`${bebas.variable} ${barlowCond.variable} ${barlow.variable}`}>
       <body className="font-mono bg-[#0a0a0a]">
         <AuthGuard>
-        <Navbar /> {/* <--- EL NAV APARECERÁ ARRIBA DE TODO */}
-        {children}
-          <Footer />
+          <LigaProvider liga="pes6">
+            <Navbar />
+            {children}
+            <SelectorLiga /> 
+            <Footer />
+          </LigaProvider>
         </AuthGuard>
       </body>
     </html>

@@ -14,7 +14,7 @@ export default function Footer() {
                     El Legado 
                     </h2>
                     <h2 className="font-bebas text-4xl text-white italic tracking-tighter uppercase">
-                        <span className="text-[#c9a84c]">PES 6</span>
+                        <span className="text-[#c9a84c]">PES</span>
                     </h2>
                 </div>
 
@@ -60,11 +60,11 @@ export default function Footer() {
 
             {/* BARRA INFERIOR DE CRÉDITOS */}
             <div className="max-w-7xl mx-auto pt-8 border-t border-[#111] flex flex-col md:flex-row justify-between items-center gap-4">
-                <p className="text-gray-600 text-[10px] uppercase tracking-widest italic">
-                    © {year} El Legado PES 6 - Todos los derechos reservados.
+                <p className="text-gray-200 text-[10px] uppercase tracking-widest italic">
+                    © {year} El Legado PES - Todos los derechos reservados.
                 </p>
-                <p className="text-gray-600 text-[10px] uppercase tracking-widest">
-                    Desarrollado por G.Rojas para la comunidad de <span className="text-white">PES 6</span>
+                <p className="text-gray-200 text-[10px] uppercase tracking-widest">
+                    Desarrollado por G.Rojas para la comunidad de <span className="text-white">PES</span>
                 </p>
             </div>
         </footer>

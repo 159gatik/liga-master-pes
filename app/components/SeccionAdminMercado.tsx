@@ -10,7 +10,7 @@ import {
     updateDoc,
     Timestamp,
     orderBy,
-    writeBatch, increment, serverTimestamp
+    writeBatch, increment, serverTimestamp, getDoc
 } from "firebase/firestore";
 
 import { Alert } from "@/src/lib/alerts";
@@ -56,7 +56,6 @@ export default function SeccionAdminMercado() {
     const gestionarSolicitud = async (solId: string, nuevoEstado: 'aprobado' | 'rechazado') => {
         setProcesando(solId);
 
-        // Buscamos la solicitud completa en nuestro estado local
         const solicitud = pendientes.find(s => s.id === solId);
         if (!solicitud) return;
 
@@ -66,49 +65,46 @@ export default function SeccionAdminMercado() {
                 return;
             }
 
+            // --- CORRECCIÓN: OBTENER DATOS COMPLETOS DEL JUGADOR ---
+            // Necesitamos leer el documento original antes de borrarlo para copiar todos sus datos
+            const refOrigen = doc(db, `equipos/${solicitud.vendedorId}/plantilla`, solicitud.jugadorId);
+            const docSnap = await getDoc(refOrigen); // Necesitas importar getDoc de firestore
+
+            if (!docSnap.exists()) {
+                throw new Error("El jugador no existe en la plantilla de origen");
+            }
+            const datosJugador = docSnap.data();
+
             // --- INICIO DE OPERACIÓN AUTOMÁTICA ---
             const batch = writeBatch(db);
 
-            // 1. Marcar solicitud como aprobada
-            const solRef = doc(db, "solicitudes_mercado", solId);
-            batch.update(solRef, {
+            // 1. Marcar solicitud
+            batch.update(doc(db, "solicitudes_mercado", solId), {
                 estado: 'aprobado',
                 fechaValidacion: serverTimestamp()
             });
 
-            // 2. Mover Dinero (incremento positivo y negativo)
-            const compradorRef = doc(db, "equipos", solicitud.compradorId);
-            const vendedorRef = doc(db, "equipos", solicitud.vendedorId);
+            // 2. Mover Dinero
+            batch.update(doc(db, "equipos", solicitud.compradorId), { presupuesto: increment(-solicitud.monto) });
+            batch.update(doc(db, "equipos", solicitud.vendedorId), { presupuesto: increment(solicitud.monto) });
 
-            batch.update(compradorRef, { presupuesto: increment(-solicitud.monto) });
-            batch.update(vendedorRef, { presupuesto: increment(solicitud.monto) });
-
-            // 3. Transferencia de Jugador (Baja y Alta)
-            // Referencia en la plantilla del que vende
-            const refOrigen = doc(db, `equipos/${solicitud.vendedorId}/plantilla`, solicitud.jugadorId);
-            // Referencia en la plantilla del que compra
+            // 3. Transferencia de Jugador
             const refDestino = doc(db, `equipos/${solicitud.compradorId}/plantilla`, solicitud.jugadorId);
 
-            // Clonamos el jugador al nuevo equipo y lo borramos del anterior
-            // Nota: Aquí se asume que pasas los datos básicos, puedes expandir según tu DB
+            // AHORA COPIAMOS TODO EL OBJETO ORIGINAL
             batch.set(refDestino, {
-                nombre: solicitud.jugador,
-                id: solicitud.jugadorId,
-                fechaFichaje: serverTimestamp()
+                ...datosJugador,
+                fechaFichaje: serverTimestamp() // Actualizamos la fecha
             });
 
             batch.delete(refOrigen);
 
-            // Ejecutar todos los cambios juntos
             await batch.commit();
+            Alert.fire("Éxito", "Traspaso realizado con éxito", "success");
 
         } catch (error) {
-            console.error("Error en la validación automática:", error);
-            Alert.fire({
-                icon: 'warning',
-                title: 'ERROR CRÍTICO',
-                text: 'No se pudo realizar el traspaso.',
-            });
+            console.error(error);
+            Alert.fire("Error", "No se pudo completar el traspaso", "error");
         } finally {
             setProcesando(null);
         }

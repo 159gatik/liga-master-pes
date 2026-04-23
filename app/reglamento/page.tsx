@@ -7,7 +7,7 @@ export default function ReglamentoPage() {
 
             {/* HEADER */}
             <div className="max-w-5xl mx-auto mb-10 border-l-4 border-[#c9a84c] pl-5 flex items-baseline gap-4">
-                <h1 className="font-bebas text-5xl md:text-7xl tracking-[5px] uppercase text-white">Reglamento</h1>
+                <h1 className="font-bebas text-4xl md:text-6xl tracking-[5px] uppercase text-white">Reglamento</h1>
             </div>
 
             <div className="max-w-5xl mx-auto space-y-12">

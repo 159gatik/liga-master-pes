@@ -203,7 +203,7 @@ export default function PerfilDT() {
                             </h1>
                         </div>
                         <p className="text-[#c9a84c] text-3xl uppercase tracking-[8px] italic ml-2">
-                            MÁNAGER: {userData.nombre}
+                            DT: {userData.nombre}
                         </p>
                     </div>
 

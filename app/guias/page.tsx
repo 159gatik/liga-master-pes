@@ -247,7 +247,7 @@ export default function GuiasPage() {
                                         </div>
                                         <div>
                                             <p className="text-white font-bold text-xl uppercase">Descargar Archivo Hosts</p>
-                                            <p className="text-[15px] text-gray-500 italic uppercase">Servidor Oficial El Legado</p>
+                                            <p className="text-[15px] text-gray-500 italic uppercase">Servidor Oficial Del Torneo</p>
                                         </div>
                                     </a>
 

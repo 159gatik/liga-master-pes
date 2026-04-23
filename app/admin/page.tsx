@@ -150,7 +150,7 @@ export default function AdminPage() {
                 <section className="bg-[#111] border border-[#222] p-8 space-y-6">
                     <h3 className="font-bebas text-4xl italic uppercase">Programar Copa</h3>
                     <div className="grid grid-cols-4 gap-6">
-                        <select className="bg-black p-3" value={rondaCopaSel} onChange={e => setRondaCopaSel(Number(e.target.value))}>{[1, 2, 3, 4].map(r => <option key={r} value={r}>Ronda {r}</option>)}</select>
+                        <select className="bg-black p-3" value={rondaCopaSel} onChange={e => setRondaCopaSel(Number(e.target.value))}>{[1, 2, 3, 4, 5].map(r => <option key={r} value={r}>Ronda {r}</option>)}</select>
                         <select className="bg-black p-3" value={localCopa} onChange={e => setLocalCopa(e.target.value)}><option value="">Local...</option>{todosLosEquipos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</select>
                         <select className="bg-black p-3" value={visitaCopa} onChange={e => setVisitaCopa(e.target.value)}><option value="">Visita...</option>{todosLosEquipos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</select>
                         <button onClick={guardarCruceCopa} className="bg-[#c9a84c] text-black font-bebas text-2xl uppercase italic">Guardar Copa</button>

@@ -4,8 +4,8 @@ import { db } from "@/src/lib/firebase";
 import { collection, query, onSnapshot, orderBy, where } from "firebase/firestore";
 import { useAuth } from "@/src/lib/hooks/useAuht";
 import FormularioReporte from "./FormularioReporte";
-
-interface Equipo { id: string; nombre: string; grupo?: 'A' | 'B'; }
+import Image from "next/image";
+interface Equipo { id: string; nombre: string; grupo?: 'A' | 'B'; escudo: string; }
 interface Reporte { id: string; local: string; visita: string; score: string; ronda: number; }
 interface PartidoProgramado { id: string; localNombre: string; visitaNombre: string; ronda: number; }
 
@@ -63,11 +63,20 @@ export default function ContenedorCopa() {
                     ))}
                 </div>
             ) : subTab === 'jornadas' ? (
-                <div className="space-y-10">
-                        <div className="relative group bg-[#111] border-y border-[#222] py-2">
-                            <div className="flex overflow-x-auto gap-4 px-10 no-scrollbar scroll-smooth items-center justify-center">
+                    <div className="space-y-10">
+                        {/* Selector de Ronda */}
+                        <div className="relative bg-[#111] border-y border-[#222] py-4">
+                            {/* Ajustamos el scroll para que sea más intuitivo */}
+                            <div className="flex overflow-x-auto gap-2 px-4 no-scrollbar snap-x snap-mandatory">
                                 {Array.from({ length: totalRondas }, (_, i) => i + 1).map((f) => (
-                                    <button key={f} onClick={() => setRondaActiva(f)} className={`px-8 py-3 font-bebas text-3xl transition-all italic ${rondaActiva === f ? "text-[#c9a84c] scale-110" : "text-[#333]"}`}>
+                                    <button
+                                        key={f}
+                                        onClick={() => setRondaActiva(f)}
+                                        className={`snap-center flex-shrink-0 px-6 py-2 font-bebas text-2xl transition-all italic border ${rondaActiva === f
+                                            ? "border-[#c9a84c] text-[#c9a84c] bg-white/5"
+                                            : "border-transparent text-[#333] hover:text-gray-500"
+                                            }`}
+                                    >
                                         JORNADA {f}
                                     </button>
                                 ))}
@@ -76,17 +85,51 @@ export default function ContenedorCopa() {
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                             <section className="lg:col-span-2 space-y-12">
-                                <h3 className="font-bebas text-3xl text-[#c9a84c] border-b border-[#222] pb-2 uppercase italic tracking-widest">Enfrentamientos</h3>
-                                <div className="grid gap-4">
-                                    {partidosProgramados.length > 0 ? partidosProgramados.map(p => (
-                                        <div key={p.id} className="bg-[#050505] border border-[#222] p-4 flex justify-between items-center px-6 italic text-lg">
-                                            <span>{p.localNombre}</span>
-                                            <span className="text-[#c9a84c] font-bold">VS</span>
-                                            <span>{p.visitaNombre}</span>
-                                        </div>
-                                    )) : <p className="text-gray-700 text-center py-4 italic border border-dashed border-[#222]">No hay partidos programados para esta jornada.</p>}
-                                </div>
+                                <h3 className="font-bebas text-3xl text-[#c9a84c] border-b border-[#222] pb-2 uppercase italic tracking-widest">
+                                    PARTIDOS
+                                </h3>
+                                <div className="grid gap-6">
+                                    {partidosProgramados.length > 0 ? partidosProgramados.map(p => {
+                                        const eqLocal = equipos.find(e => e.nombre === p.localNombre);
+                                        const eqVisita = equipos.find(e => e.nombre === p.visitaNombre);
 
+                                        return (
+                                            <div key={p.id} className="bg-[#050505] border border-[#222] p-4 shadow-lg">
+                                                {/* Etiqueta de Grupo */}
+                                                <div className="text-[#c9a84c] font-bebas text-xs tracking-[2px] mb-3 uppercase italic text-center md:text-left">
+                                                    GRUPO {eqLocal?.grupo || 'A'}
+                                                </div>
+
+                                                {/* Contenedor principal: Vertical en móvil, Horizontal en md */}
+                                                <div className="flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-4">
+
+                                                    {/* LOCAL */}
+                                                    <div className="flex items-center justify-center md:justify-end gap-3 w-full">
+                                                        <span className="font-bebas text-lg md:text-xl uppercase italic truncate">{p.localNombre}</span>
+                                                        <div className="relative w-8 h-8 flex-shrink-0">
+                                                            <img src={eqLocal?.escudo || "/escudo-default.png"} alt={p.localNombre} className="object-contain w-full h-full" />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* VS */}
+                                                    <span className="text-[#c9a84c] font-black italic text-md">VS</span>
+
+                                                    {/* VISITA */}
+                                                    <div className="flex items-center justify-center md:justify-start gap-3 w-full">
+                                                        <div className="relative w-8 h-8 flex-shrink-0">
+                                                            <img src={eqVisita?.escudo || "/escudo-default.png"} alt={p.visitaNombre} className="object-contain w-full h-full" />
+                                                        </div>
+                                                        <span className="font-bebas text-lg md:text-xl uppercase italic truncate">{p.visitaNombre}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    }) : (
+                                        <p className="text-gray-700 text-center py-4 italic border border-dashed border-[#222]">
+                                            No hay partidos programados.
+                                        </p>
+                                    )}
+                                </div>
                                 <div className="space-y-6">
                                     <h3 className="font-bebas text-3xl text-[#c9a84c] border-b border-[#222] pb-2 uppercase italic tracking-widest">Resultados</h3>
                                     {reportesRonda.map(rep => (
@@ -109,7 +152,7 @@ export default function ContenedorCopa() {
                                 </div>
                             </aside>
                         </div>
-                </div>
+                    </div>
             ) : (
                 /* SECCIÓN PLAYOFFS */
                 <div className="space-y-8 animate-in fade-in duration-500">
