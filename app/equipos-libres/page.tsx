@@ -23,7 +23,7 @@ interface Equipo {
     presupuesto?: number;
 }
 
-export default function EquiposLibresPage() {
+export default function EquiposLibresPage({ juego = 'pes6' }: { juego?: 'pes6' | 'pes2013' }) {
     const { user, userData, loading: authLoading } = useAuth();
     const [equipos, setEquipos] = useState<Equipo[]>([]);
     const [selectedTeam, setSelectedTeam] = useState("");
@@ -56,7 +56,10 @@ export default function EquiposLibresPage() {
 
     // 2. ESCUCHAR EQUIPOS EN TIEMPO REAL
     useEffect(() => {
-        const q = query(collection(db, "equipos"), orderBy("nombre", "asc"));
+        const q = query(
+            collection(db, "equipos"),
+            where("juego", "==", juego),
+            orderBy("nombre", "asc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const listaEquipos = snapshot.docs.map(doc => ({
                 id: doc.id,
@@ -71,7 +74,7 @@ export default function EquiposLibresPage() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [juego]);
 
     if (authLoading) return (
         <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center font-bebas text-[#c9a84c] text-2xl animate-pulse">
@@ -177,6 +180,8 @@ export default function EquiposLibresPage() {
                                 key={selectedTeam} // Esto reinicia el form al cambiar equipo
                                 equipoPreseleccionado={selectedTeam}
                                 equipoIdPreseleccionado={equipos.find(e => e.nombre === selectedTeam)?.id} // <--- Pasamos el ID real
+                                coleccionPostulacion="postulaciones"
+                                tituloLiga="PES 6"
                             />
                     </>
                 )}

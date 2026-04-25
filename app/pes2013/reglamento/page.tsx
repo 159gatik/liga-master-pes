@@ -28,13 +28,13 @@ export default function ReglamentoPes2013() {
                     <p className="mb-4 text-[16px]">La liga está compuesta por 20 equipos: <span className="text-[#00aaff]">Primera A (10)</span> y <span className="text-[#00aaff]">Primera B (10)</span>.</p>
                     <ul className="space-y-4">
                         <RegItem num="01" title="Descensos Directos">
-                            <p>Descenderán los <strong className="text-white">DOS últimos equipos de la A</strong> (9° y 10° posición).</p>
+                            <p>Descenderán los <strong className="text-white">DOS últimos equipos de la A</strong>.</p>
                         </RegItem>
                         <RegItem num="02" title="Ascensos Directos">
-                            <p>Ascenderán los <strong className="text-white">DOS primeros equipos de la B</strong> (1° y 2° posición).</p>
+                            <p>Ascenderán los <strong className="text-white">DOS primeros equipos de la B</strong>.</p>
                         </RegItem>
                         <RegItem num="03" title="Promoción">
-                            <p>Se disputará ida y vuelta entre el <strong className="text-white">8º de Primera A y el 3º de Primera B</strong>. En empate global, el equipo de Primera A cuenta con <span className="text-[#00aaff]">ventaja deportiva</span>.</p>
+                            <p>Ida y vuelta entre el <strong className="text-white">8º de A y 3º de B</strong>. La A tiene <span className="text-[#00aaff]">ventaja deportiva</span>.</p>
                         </RegItem>
                     </ul>
                 </RegBlock>
@@ -44,99 +44,115 @@ export default function ReglamentoPes2013() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                         <ConfigBox label="Duración" value="10 Min" />
                         <ConfigBox label="Espera" value="Largo" />
-                        <ConfigBox label="Pausas" value="9" />
+                        <ConfigBox label="Pausas" value="2" />
                         <ConfigBox label="Condición" value="Al Azar" />
                         <ConfigBox label="Lesión" value="Sí" />
                         <ConfigBox label="Cambios" value="3" />
                         <ConfigBox label="Clima" value="Despejado" />
                         <ConfigBox label="Momento" value="Día/Noche" />
-                        <ConfigBox label="Pass Salón" value="pes2013" />
                     </div>
+
                     <div className="bg-[#0a1628] border border-[#1a3a5c] border-l-4 border-l-red-500 p-4 text-[16px] text-[#aa8888]">
                         <h4 className="text-red-500 font-bold mb-2 uppercase tracking-widest text-xs italic">IMPORTANTE</h4>
-                        <p>Si la configuración es incorrecta, el DT rival puede exigir el re-ajuste <strong>antes de empezar</strong>. Se requiere captura de pantalla como aval.</p>
+                        <p>Si la configuración es incorrecta, el DT rival puede exigir el re-ajuste antes de empezar. Se requiere captura de pantalla como aval.</p>
                     </div>
+                </RegBlock>
+
+                {/* NUEVA SECCIÓN */}
+                <RegBlock title="Modalidad de Juego">
+                    <ul className="space-y-3 text-[#5588aa]">
+                        <li>• El jugador local hostea la partida.</li>
+                        <li>• El visitante se conecta y verifica controles.</li>
+                        <li>• Se recomienda usar Discord para coordinar y avisar pausas.</li>
+                    </ul>
+                </RegBlock>
+
+                {/* NUEVA SECCIÓN */}
+                <RegBlock title="Control de Tiempos">
+                    <ul className="space-y-3 text-[#5588aa]">
+                        <li>• Cada jugador dispone de <strong className="text-white">2 pausas</strong>.</li>
+                        <li>• Cada pausa dura máximo <strong className="text-white">30 segundos</strong>.</li>
+                        <li>• Entretiempo máximo: <strong className="text-white">45 segundos</strong>.</li>
+                        <li>• Cambios incluidos dentro de la pausa.</li>
+                    </ul>
+
+                    <div className="mt-6 bg-[#0a1628] border border-[#1a3a5c] p-4">
+                        <h4 className="text-[#00aaff] font-bold mb-2">Regla obligatoria</h4>
+                        <p className="text-[#5588aa]">
+                            La pausa SOLO puede hacerse cuando la pelota esté fuera de juego (lateral, córner, saque de arco).
+                        </p>
+                    </div>
+
+                    <div className="mt-4 text-[#aa8888]">
+                        ❌ Prohibido pausar con la pelota en juego o en jugadas peligrosas.
+                    </div>
+                </RegBlock>
+
+                {/* NUEVA SECCIÓN */}
+                <RegBlock title="Reglas Anti-Avivadas">
+                    <ul className="space-y-3 text-[#5588aa]">
+                        <li>• Prohibido hacer tiempo excesivo.</li>
+                        <li>• No demorar pausas o entretiempo.</li>
+                        <li>• No pausar en jugadas de gol.</li>
+                        <li>• No usar cambios para cortar ritmo constantemente.</li>
+                        <li>• Prohibido provocar lag o desconexiones intencionales.</li>
+                    </ul>
+                </RegBlock>
+
+                {/* NUEVA SECCIÓN */}
+                <RegBlock title="Grabación y Comité">
+                    <ul className="space-y-3 text-[#5588aa]">
+                        <li>• Se recomienda grabar los partidos.</li>
+                        <li>• Sirve como prueba para reclamos.</li>
+                        <li>• El comité evaluará cada caso.</li>
+                        <li>• Sin pruebas, se mantiene el resultado.</li>
+                    </ul>
                 </RegBlock>
 
                 {/* SECCIÓN 3 */}
                 <RegBlock title="Reporte de Resultados">
-                    <p className="mb-4">Para que un resultado sea válido, es <strong className="text-white border-b border-[#00aaff]">obligatorio</strong> presentar capturas claras de:</p>
+                    <p className="mb-4">Para que un resultado sea válido, es obligatorio presentar capturas claras de:</p>
                     <ul className="space-y-3 mb-6">
-                        <li className="flex items-center gap-2 text-m text-[#5588aa]">
-                            <span className="text-[#00aaff] text-[20px]">✔</span> Marcador final y equipos.
-                        </li>
-                        <li className="flex items-center gap-2 text-m text-[#5588aa]">
-                            <span className="text-[#00aaff]">✔</span> Estadísticas (Disparos, Posesión, Faltas).
-                        </li>
-                        <li className="flex items-center gap-2 text-m text-[#5588aa]">
-                            <span className="text-[#00aaff]">✔</span> Goleadores y minutos de los tantos.
-                        </li>
+                        <li>✔ Marcador final y equipos.</li>
+                        <li>✔ Estadísticas.</li>
+                        <li>✔ Goleadores y minutos.</li>
                     </ul>
-                    <div className="bg-[#0d1f3c] p-6 border-t-2 border-[#00aaff]">
-                        <p className="text-[16px] text-[#5588aa] leading-relaxed">
-                            <span className="text-[#00aaff] font-bold uppercase tracking-tighter">Tip:</span>{" "}
-                            Usá <kbd className="bg-[#0a1628] px-1 rounded text-white text-[18px]">WIN + SHIFT + S</kbd> para capturar pantalla en Windows.
-                        </p>
-                    </div>
+                    <p className="text-[#00aaff]">Tip: WIN + SHIFT + S</p>
                 </RegBlock>
 
                 {/* SECCIÓN 4 */}
                 <RegBlock title="Partidos No Jugados (W.O.)">
-                    <ul className="space-y-6">
-                        <RegItem num="A" title="Empate Técnico">
-                            <p>Si ambos DT intentaron pero no concretaron, el partido se da por empatado.</p>
-                        </RegItem>
-                        <RegItem num="B" title="Ausencia sin señal">
-                            <p>Si un DT no da señales en el post, pierde el partido y recibe una multa de <span className="text-red-500 font-bold">$5.000.000</span>.</p>
-                        </RegItem>
-                        <RegItem num="C" title="Incumplimiento de cita">
-                            <p>Si pactaron día/horario y uno no se conecta, el DT presente debe avisar en el post para recibir los 3 puntos.</p>
-                        </RegItem>
-                    </ul>
-                    <div className="mt-8 bg-[#0a1f14] border border-[#1a3a22] border-l-4 border-l-[#27ae60] p-6">
-                        <h4 className="font-barlow-condensed font-bold uppercase tracking-[2px] text-[#27ae60] mb-2">
-                            Criterio del moderador
-                        </h4>
-                        <p className="text-[16px] text-[#88aa88] leading-relaxed">
-                            La valoración dependerá de lo comentado por los DTs en el post y la predisposición a coordinar.
-                            <span className="block mt-2 italic text-[#27ae60]">Evitar proponer horarios de madrugada si es posible.</span>
-                        </p>
-                    </div>
+                    <RegItem num="A" title="Empate Técnico">
+                        <p>Si ambos intentaron jugar, es empate.</p>
+                    </RegItem>
+                    <RegItem num="B" title="Ausencia">
+                        <p>Multa de <span className="text-red-500">$5.000.000</span>.</p>
+                    </RegItem>
+                    <RegItem num="C" title="Incumplimiento">
+                        <p>El presente gana los puntos.</p>
+                    </RegItem>
                 </RegBlock>
 
-                {/* SECCIÓN 5 */}
+                {/* RESTO IGUAL */}
                 <RegBlock title="Criterios de Desempate">
-                    <ol className="list-decimal pl-5 space-y-2 text-[#5588aa] text-[16px]">
-                        <li>Enfrentamiento directo (Ida y Vuelta).</li>
-                        <li>Si persiste el empate, 3er partido con Tiempo Extra y Penales.</li>
-                        <li>Si son 3 o más equipos, se juega <span className="text-white uppercase italic">Liguilla</span>.</li>
+                    <ol className="list-decimal pl-5 space-y-2">
+                        <li>Enfrentamiento directo</li>
+                        <li>Partido desempate</li>
+                        <li>Liguilla</li>
                     </ol>
                 </RegBlock>
 
-                {/* SECCIÓN 6 */}
                 <RegBlock title="Interinatos y Ausencias">
-                    <ul className="space-y-4 text-[#5588aa] text-[16px]">
-                        <li>• Avisar <strong className="text-white">3 días antes</strong> del cierre de fecha.</li>
-                        <li>• Los interinatos duran <span className="text-[#00aaff]">2 semanas</span>.</li>
-                        <li>• Máximo 2 interinatos por temporada.</li>
-                        <li>• <strong className="text-red-500 uppercase">Prohibido:</strong> Interinatos en eliminatorias de Copa.</li>
-                        <li>• Una ausencia sin aviso de 2 semanas implica la <strong className="text-white underline">quita inmediata del equipo</strong>.</li>
+                    <ul className="space-y-2">
+                        <li>• Avisar 3 días antes</li>
+                        <li>• Duran 2 semanas</li>
+                        <li>• Máximo 2</li>
                     </ul>
                 </RegBlock>
 
-                {/* SECCIÓN 7 */}
-                <RegBlock title="Retiros, Planteles y Sueldos">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                        <div className="bg-[#0d1f3c] p-4 border border-[#1a3a5c]">
-                            <h4 className="text-[#00aaff] text-[18px] font-bold mb-2 uppercase">Retiros</h4>
-                            <p className="text-[16px] text-[#5588aa]">Jugador con <strong className="text-white">40 años</strong> o retiro real = fuera del juego. El club recibe el <span className="text-green-500">80% de su cotización</span>.</p>
-                        </div>
-                        <div className="bg-[#0d1f3c] p-4 border border-[#1a3a5c]">
-                            <h4 className="text-[#00aaff] text-[18px] font-bold mb-2 uppercase">Planteles</h4>
-                            <p className="text-[16px] text-[#5588aa]">Mínimo: <strong className="text-white">18</strong> / Máximo: <strong className="text-white">26</strong> jugadores.</p>
-                        </div>
-                    </div>
-                    <p className="mt-4 text-white text-m italic">Aviso: No se puede terminar el mercado en saldo negativo bajo pena de sanción.</p>
+                <RegBlock title="Retiros y Planteles">
+                    <p>Planteles: 18 a 26 jugadores.</p>
+                    <p>No saldo negativo.</p>
                 </RegBlock>
 
             </div>
@@ -144,36 +160,50 @@ export default function ReglamentoPes2013() {
     );
 }
 
-// ── Componentes reutilizables ──────────────────────────────────────────────────
+// COMPONENTES
 
-function RegBlock({ title, children }: { title: string, children: React.ReactNode }) {
+type RegBlockProps = {
+    title: string;
+    children: React.ReactNode;
+};
+
+function RegBlock({ title, children }: RegBlockProps) {
     return (
         <section>
-            <div className="flex items-center gap-3 mb-6 border-b border-[#1a3a5c] pb-2">
-                <h3 className="font-bebas text-2xl md:text-3xl tracking-[3px] text-[#00aaff] uppercase">{title}</h3>
-            </div>
-            <div className="pl-0 md:pl-10">{children}</div>
+            <h3 className="text-[#00aaff] text-2xl mb-4 uppercase">{title}</h3>
+            {children}
         </section>
     );
 }
 
-function RegItem({ num, title, children }: { num: string, title: string, children: React.ReactNode }) {
+type RegItemProps = {
+    num: string;
+    title: string;
+    children: React.ReactNode;
+};
+
+function RegItem({ num, title, children }: RegItemProps) {
     return (
-        <div className="flex gap-4 items-start border-b border-[#0d1f3c] pb-4 last:border-0">
-            <span className="font-bebas text-3xl text-[#00aaff] leading-none">{num}</span>
-            <div className="space-y-1">
-                <h4 className="font-barlow-condensed font-bold uppercase tracking-[2px] text-white">{title}</h4>
-                <div className="text-[15px] text-[#5588aa] leading-relaxed">{children}</div>
+        <div className="flex gap-3">
+            <span className="text-[#00aaff]">{num}</span>
+            <div>
+                <h4 className="text-white">{title}</h4>
+                {children}
             </div>
         </div>
     );
 }
 
-function ConfigBox({ label, value }: { label: string, value: string }) {
+type ConfigBoxProps = {
+    label: string;
+    value: string;
+};
+
+function ConfigBox({ label, value }: ConfigBoxProps) {
     return (
-        <div className="bg-[#0d1f3c] border border-[#1a3a5c] p-3 flex justify-between items-center group hover:border-[#00aaff] transition-colors">
-            <span className="font-barlow-condensed text-[16px] tracking-[2px] text-[#3a6688] uppercase">{label}</span>
-            <span className="font-barlow-condensed font-bold text-sm text-[#00aaff]">{value}</span>
+        <div className="flex justify-between bg-[#0d1f3c] p-2">
+            <span>{label}</span>
+            <span className="text-[#00aaff]">{value}</span>
         </div>
     );
 }

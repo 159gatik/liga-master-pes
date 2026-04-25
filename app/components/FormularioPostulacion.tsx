@@ -10,11 +10,15 @@ import { Alert } from "@/src/lib/alerts";
 interface FormularioProps {
     equipoPreseleccionado?: string;
     equipoIdPreseleccionado?: string;
+    coleccionPostulacion?: string; // NUEVO: "postulaciones" o "pes2013_postulaciones"
+    tituloLiga?: string;           // NUEVO: "PES 6" o "PES 2013"
 }
 
 export default function FormularioPostulacion({
     equipoPreseleccionado = "",
-    equipoIdPreseleccionado = ""
+    equipoIdPreseleccionado = "",
+    coleccionPostulacion = "postulaciones", // Default a PES 6
+    tituloLiga = "PES 6"
 }: FormularioProps) {
     const { user, userData } = useAuth();
     const [enviando, setEnviando] = useState(false);
@@ -80,8 +84,9 @@ export default function FormularioPostulacion({
         setEnviando(true);
 
         try {
-            await addDoc(collection(db, "postulaciones"), {
+            await addDoc(collection(db, coleccionPostulacion), {
                 uid: user.uid,
+                juego: coleccionPostulacion === "pes2013_postulaciones" ? "pes2013" : "pes6",
                 nombre: userData.nombre,
                 equipoNombre: formData.equipoNombre,
                 equipoId: formData.equipoId,

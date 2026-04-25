@@ -9,7 +9,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const [loading, setLoading] = useState(true);
 
-    const rutasPublicas = ["/", "/equipos", "/reglamento", "/guias", "/login", "/register"]
+    const rutasPublicas = [
+        "/", "/equipos", "/reglamento", "/guias", "/login", "/register",
+        "/pes2013", "/pes2013/equipos", "/pes2013/reglamento", "/pes2013/guias", // ← nuevas
+    ];
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -22,7 +26,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
             }
             else {
                 // si HAY USUARIO PERO NO ESTÁ VERIFICADO.- LO MANDAMOS A VERIFICAR SI INTENTA ENTRAR A RUTAS PRIVADAS.
-                const rutasPrivadasVerificadas = ["/perfil", "/admin", "/fichajes", "/comunidad"];
+                const rutasPrivadasVerificadas = [
+                    "/perfil", "/admin", "/fichajes", "/comunidad",
+                    "/pes2013/perfil", "/pes2013/fichajes", "/pes2013/comunidad", // ← nuevas
+                ];
+
                 const intentaEntrarAPrivada = rutasPrivadasVerificadas.includes(pathname)
 
                 if (!user.emailVerified && intentaEntrarAPrivada) {

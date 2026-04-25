@@ -45,7 +45,7 @@ export default function Page() {
     const [equipos, setEquipos] = useState([]);
     const [resultados, setResultados] = useState<Reporte[]>([]);
     const [reportesAusencia, setReportesAusencia] = useState<ReporteAusencia[]>([]); // Tipa esto como necesites
-
+    const cantidadPes6 = equipos.filter(e => e.juego === 'pes6').length;
 
     // UNIFICAMOS EN UN SOLO ESTADO DE NOTICIAS
     const [noticias, setNoticias] = useState<Noticia[]>([]);
@@ -158,24 +158,27 @@ export default function Page() {
                         {!loading && (
                             <>
                                 {!user ? (
-                                    <Link href="/register" className="bg-[#c9a84c] border-2 border-[#c9a84c] text-[#0a0a0a] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:border-white transition-all shadow-[0_0_15px_rgba(201,168,76,0.3)]">
+                                    <Link href="/register" className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
                                         Registrate
                                     </Link>
                                 ) : (
                                         <>
-                                            {userData?.equipoId ? (
+                                            {/* BLOQUE DE BOTONES DINÁMICOS */}
+                                            {userData?.ligas?.pes6?.estado === "aprobado" ? (
                                                 <Link href="/perfil" className="bg-[#27ae60] border-2 border-[#27ae60] text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-[#27ae60] transition-all font-bold">
                                                     Ir a mi Oficina
                                                 </Link>
                                             ) : yaPostulado ? (
-                                                <button disabled className="bg-[#333] border-2 border-[#333] text-[#888] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 cursor-not-allowed opacity-70">
-                                                    Postulación en revisión
-                                                </button>
-                                            ) : (
-                                                        <Link href="/equipos-libres" className="bg-[#c9a84c] border-2 border-[#c9a84c] text-[#0a0a0a] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:border-white transition-all shadow-[0_0_15px_rgba(201,168,76,0.3)]">
-                                                            Postulate ahora
+                                                    <button disabled className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
+                                                        Postulación en revisión
+                                                    </button>
+                                                ) : (
+                                                        <Link href="/equipos-libres" className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
+                                                            Postularse
                                                 </Link>
                                             )}
+
+                                            {/* BOTÓN DESPACHOS (Fuera del ternario, pero dentro del usuario logueado) */}
                                         <Link href="/despachos" className="border-2 border-white text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-black transition-all italic">
                                             Despachos
                                         </Link>
@@ -191,7 +194,7 @@ export default function Page() {
 
             {/* ESTADÍSTICAS RÁPIDAS */}
             <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-3 mb-10">
-                <StatCard value={`${equipos.length}`} label="Clubes" />
+                <StatCard value={`${cantidadPes6}`} label="Clubes PES 6" />
                 <StatCard value={`${resultados.length}`} label="Reportes" />
                 <StatCard
                     value={<span className="text-green-500">ACTIVO</span>}

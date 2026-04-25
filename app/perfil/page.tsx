@@ -40,7 +40,7 @@ interface ConfigMercado {
 }
 
 export default function PerfilDT() {
-    const { user, userData, loading: authLoading } = useAuth();
+    const { user, userData, loading: authLoading, equipoIdActivo, nombreEquipoActivo } = useAuth();
     const [equipoDoc, setEquipoDoc] = useState<Equipo | null>(null);
     const [plantilla, setPlantilla] = useState<Jugador[]>([]);
     const [configMercado, setConfigMercado] = useState<ConfigMercado>({ liberacionesAbiertas: false, fichajesAbiertos: false });
@@ -51,13 +51,13 @@ export default function PerfilDT() {
 
     useEffect(() => {
         if (authLoading) return;
-        if (!userData?.equipoId) {
+        if (!equipoIdActivo) {
             const timer = setTimeout(() => setLoadingData(false), 0);
             return () => clearTimeout(timer);
         }
 
         // Listener: Datos del Equipo
-        const unsubEquipo = onSnapshot(doc(db, "equipos", userData.equipoId), (docSnap) => {
+        const unsubEquipo = onSnapshot(doc(db, "equipos", equipoIdActivo), (docSnap) => {
             if (docSnap.exists()) {
                 setEquipoDoc({ id: docSnap.id, ...docSnap.data() } as Equipo);
             }
@@ -70,7 +70,7 @@ export default function PerfilDT() {
 
         // Listener: Plantilla
         const q = query(
-            collection(db, "equipos", userData.equipoId, "plantilla"),
+            collection(db, "equipos", equipoIdActivo, "plantilla"),
             orderBy("nombre", "asc")
         );
 
@@ -85,7 +85,7 @@ export default function PerfilDT() {
             unsubConfig();
             unsubPlantilla();
         };
-    }, [userData?.equipoId, authLoading]);
+    }, [equipoIdActivo, authLoading]);
 
     // --- FUNCIÓN PARA LIBERAR JUGADOR ---
     const liberarJugador = async (jugador: Jugador) => {
@@ -99,19 +99,19 @@ export default function PerfilDT() {
 
         const confirmar = confirm(`¿Estás seguro de rescindir el contrato de ${jugador.nombre}? El jugador pasará a la lista de LIBRES.`);
 
-        if (confirmar && userData?.equipoId) {
+        if (confirmar && equipoIdActivo) {
             try {
                 const batch = writeBatch(db);
 
                 // A. Referencia para eliminar del equipo
-                const jugadorRef = doc(db, "equipos", userData.equipoId, "plantilla", jugador.id);
+                const jugadorRef = doc(db, "equipos", equipoIdActivo, "plantilla", jugador.id);
                 batch.delete(jugadorRef);
 
                 // B. Referencia para añadir a Jugadores Libres
                 const libreRef = doc(collection(db, "jugadores_libres"));
                 batch.set(libreRef, {
                     ...jugador,
-                    exEquipo: userData.nombreEquipo,
+                    exEquipo: nombreEquipoActivo,
                     fechaLiberacion: serverTimestamp(),
                     tipo: "Rescindió contrato"
                 });
@@ -138,7 +138,7 @@ export default function PerfilDT() {
     if (!user || !userData) return null;
 
     // Vista para Invitados / Sin Equipo (Mismo diseño tuyo)
-    if (userData.rol === "invitado" || !userData.equipoId) {
+    if (userData.rol === "invitado" || !equipoIdActivo) {
         return (
             <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-10 flex flex-col items-center justify-center font-barlow-condensed">
                 <div className="bg-[#111] border-2 border-[#c9a84c] p-8 md:p-16 max-w-3xl w-full text-center shadow-[0_0_60px_rgba(201,168,76,0.05)] relative overflow-hidden">
