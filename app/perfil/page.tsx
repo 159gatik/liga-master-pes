@@ -138,7 +138,9 @@ export default function PerfilDT() {
     if (!user || !userData) return null;
 
     // Vista para Invitados / Sin Equipo (Mismo diseño tuyo)
-    if (userData.rol === "invitado" || !equipoIdActivo) {
+    // En lugar de: if (userData.rol === "invitado" || !equipoIdActivo)
+    // Usa esto:
+    if (userData.rol !== "admin" && (userData.rol === "invitado" || !equipoIdActivo)) {
         return (
             <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-10 flex flex-col items-center justify-center font-barlow-condensed">
                 <div className="bg-[#111] border-2 border-[#c9a84c] p-8 md:p-16 max-w-3xl w-full text-center shadow-[0_0_60px_rgba(201,168,76,0.05)] relative overflow-hidden">
@@ -163,7 +165,8 @@ export default function PerfilDT() {
             </main>
         );
     }
-
+    // En lugar de: if (userData.rol === "invitado" || !equipoIdActivo)
+    // Usa esto:
     return (
         <main className="min-h-screen bg-[#0a0a0a] text-white p-6 md:p-10 font-barlow-condensed">
             <div className="max-w-7xl mx-auto space-y-12">

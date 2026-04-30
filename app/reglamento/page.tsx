@@ -19,10 +19,10 @@ export default function ReglamentoPage() {
                         El desconocimiento de las normas no exime de su cumplimiento. Ante cualquier duda, consultar con los organizadores
                         <strong className="text-[#c9a84c]"> antes </strong> de jugar el partido.
                     </p>
-                </section> 
-
+                </section>
                 {/* SECCIÓN 1: ASCENSOS Y DESCENSOS */}
-                <RegBlock icon="" title="Ascensos, Descensos y Promoción">
+                <RegBlock icon="" title="Ascensos, Descensos y Promoción (Proximamente)">
+
                     <p className="mb-4 text-[16px]">La liga está compuesta por 20 equipos: <span className="text-[#c9a84c]">Primera A (10)</span> y <span className="text-[#c9a84c]">Primera B (10)</span>.</p>
                     <ul className="space-y-4 ">
                         <RegItem num="01" title="Descensos Directos">
@@ -34,6 +34,7 @@ export default function ReglamentoPage() {
                         <RegItem num="03" title="Promoción">
                             <p>Se disputará ida y vuelta entre el <strong className="text-white">8º de Primera A y el 3º de Primera B</strong>. En caso de empate global, el equipo de Primera A cuenta con <span className="text-[#c9a84c]">ventaja deportiva</span>.</p>
                         </RegItem>
+
                     </ul>
                 </RegBlock>
 

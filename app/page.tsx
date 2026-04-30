@@ -7,6 +7,15 @@ import { collection, query, where, onSnapshot, orderBy, limit, Timestamp } from 
 import BannerPatrocinadores from "./components/BannerPatrocinadores";
 import Image from "next/image";
 import ReporteAusencia from "./ausencias/page";
+import UltimosUsuarios from "./components/UltimosUsuarios";
+
+interface Equipo {
+    id: string;
+    juego: string;
+    nombre: string;
+    [key: string]: any; // Para permitir otros campos
+}
+
 interface Reporte {
     id: string;
     local: string;
@@ -42,11 +51,12 @@ interface ReporteAusencia {
 export default function Page() {
     const { user, userData, loading } = useAuth(); // Agregué isAdmin
     const [yaPostulado, setYaPostulado] = useState(false);
-    const [equipos, setEquipos] = useState([]);
+    const [equipos, setEquipos] = useState<Equipo[]>([]);
     const [resultados, setResultados] = useState<Reporte[]>([]);
     const [reportesAusencia, setReportesAusencia] = useState<ReporteAusencia[]>([]); // Tipa esto como necesites
-    const cantidadPes6 = equipos.filter(e => e.juego === 'pes6').length;
-
+    const cantidadPes6 = equipos.filter(e =>
+        e.juego && e.juego.toString().toLowerCase() === 'pes6'
+    ).length;
     // UNIFICAMOS EN UN SOLO ESTADO DE NOTICIAS
     const [noticias, setNoticias] = useState<Noticia[]>([]);
 
@@ -73,7 +83,13 @@ export default function Page() {
     useEffect(() => {
         const qEquipos = query(collection(db, "equipos"), orderBy("nombre", "asc"));
         const unsubEquipos = onSnapshot(qEquipos, (snapshot) => {
-            setEquipos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            // Mapeamos explícitamente para asegurar que 'juego' exista
+            const equiposData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as Equipo[];
+
+            setEquipos(equiposData);
         });
 
         let unsubPostulacion = () => { };
@@ -125,12 +141,24 @@ export default function Page() {
         return () => unsub();
     }, []);
 
+    useEffect(() => {
+        if (equipos.length > 0) {
+            console.log("Primer equipo de la lista:", equipos[0]);
+            console.log("Valores de 'juego' encontrados:", equipos.map(e => e.juego));
+        }
+    }, [equipos]);
+
     return (
         <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] font-sans p-6 md:p-10">
             {/* HEADER DE SECCIÓN */}
-            <div className="max-w-6xl mx-auto mb-10 border-l-4 border-[#c9a84c] pl-5 flex items-baseline gap-4">
+            <div className="max-w-6xl mx-auto mb-10 border-l-4 border-[#c9a84c] pl-5 flex flex-wrap justify-between items-center gap-6">
+                {/* Título */}
                 <h1 className="font-bebas text-5xl md:text-7xl tracking-[5px] uppercase">Inicio</h1>
 
+                {/* Componente de Usuarios alineado a la derecha */}
+                <div className="flex-shrink-0">
+                    <UltimosUsuarios />
+                </div>
             </div>
 
             {/* HERO SECTION */}
@@ -162,23 +190,23 @@ export default function Page() {
                                         Registrate
                                     </Link>
                                 ) : (
-                                        <>
-                                            {/* BLOQUE DE BOTONES DINÁMICOS */}
-                                            {userData?.ligas?.pes6?.estado === "aprobado" ? (
-                                                <Link href="/perfil" className="bg-[#27ae60] border-2 border-[#27ae60] text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-[#27ae60] transition-all font-bold">
-                                                    Ir a mi Oficina
-                                                </Link>
-                                            ) : yaPostulado ? (
-                                                    <button disabled className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
-                                                        Postulación en revisión
-                                                    </button>
-                                                ) : (
-                                                        <Link href="/equipos-libres" className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
-                                                            Postularse
-                                                </Link>
-                                            )}
+                                    <>
+                                        {/* BLOQUE DE BOTONES DINÁMICOS */}
+                                        {userData?.ligas?.pes6?.estado === "aprobado" ? (
+                                            <Link href="/perfil" className="bg-[#27ae60] border-2 border-[#27ae60] text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-[#27ae60] transition-all font-bold">
+                                                Ir a mi Oficina
+                                            </Link>
+                                        ) : yaPostulado ? (
+                                            <button disabled className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
+                                                Postulación en revisión
+                                            </button>
+                                        ) : (
+                                            <Link href="/equipos-libres" className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
+                                                Postularse
+                                            </Link>
+                                        )}
 
-                                            {/* BOTÓN DESPACHOS (Fuera del ternario, pero dentro del usuario logueado) */}
+                                        {/* BOTÓN DESPACHOS (Fuera del ternario, pero dentro del usuario logueado) */}
                                         <Link href="/despachos" className="border-2 border-white text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-black transition-all italic">
                                             Despachos
                                         </Link>
@@ -194,7 +222,7 @@ export default function Page() {
 
             {/* ESTADÍSTICAS RÁPIDAS */}
             <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-3 mb-10">
-                <StatCard value={`${cantidadPes6}`} label="Clubes PES 6" />
+                <StatCard value={`${cantidadPes6}`} label="Clubes" />
                 <StatCard value={`${resultados.length}`} label="Reportes" />
                 <StatCard
                     value={<span className="text-green-500">ACTIVO</span>}
@@ -251,8 +279,8 @@ export default function Page() {
                                 </div>
                             </div>
                         ) : (
-                                /* RENDERIZADO REAL DE RESULTADOS */
-                                resultados.map((partido) => {
+                            /* RENDERIZADO REAL DE RESULTADOS */
+                            resultados.map((partido) => {
                                 const [gL, gV] = (partido.score || "0-0").split('-').map(Number);
                                 const localGana = gL > gV;
                                 const visitaGana = gV > gL;
@@ -340,7 +368,7 @@ export default function Page() {
                                         <td className="p-3 font-bebas text-2xl">—</td>
                                     </tr>
                                 ))}
-                                </tbody>
+                            </tbody>
                         )}
                     </table>
 
@@ -406,7 +434,7 @@ export default function Page() {
                         );
                     }) : (
                         <div className="p-10 text-center text-gray-600 italic uppercase text-xs tracking-[4px]">
-                                No hay noticias recientes...
+                            No hay noticias recientes...
                         </div>
                     )}
                 </div>
@@ -467,6 +495,7 @@ export default function Page() {
                     )}
                 </div>
             </div>
+
         </main>
     );
 }

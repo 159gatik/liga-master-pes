@@ -7,7 +7,6 @@ import { auth } from '@/src/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { Menu, X, LogOut, User as UserIcon } from 'lucide-react';
 
-// ─── CONFIGURACIÓN POR LIGA ───────────────────────────────────────────────────
 const LIGA_CONFIG = {
     pes6: {
         nombre: "EL LEGADO",
@@ -15,8 +14,6 @@ const LIGA_CONFIG = {
         acento: "#c9a84c",
         acentoHover: "hover:text-[#c9a84c]",
         acentoActivo: "text-[#c9a84c] border-[#c9a84c]",
-        acentoBg: "bg-[#c9a84c]",
-        acentoBorder: "border-[#c9a84c]",
         navBg: "bg-[#111111] border-[#c9a84c]",
         mobileBg: "bg-[#0f0f0f]",
         rolColor: "text-[#c9a84c]",
@@ -42,12 +39,10 @@ const LIGA_CONFIG = {
     },
     pes2013: {
         nombre: "PES 2013",
-        href: "/pes2013",
+        href: "/pes2013/proximamente",
         acento: "#00aaff",
         acentoHover: "hover:text-[#00aaff]",
         acentoActivo: "text-[#00aaff] border-[#00aaff]",
-        acentoBg: "bg-[#00aaff]",
-        acentoBorder: "border-[#00aaff]",
         navBg: "bg-[#0a1628] border-[#00aaff]",
         mobileBg: "bg-[#0d1f3c]",
         rolColor: "text-[#00aaff]",
@@ -72,15 +67,14 @@ const LIGA_CONFIG = {
         },
     },
 };
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default function Navbar() {
     const pathname = usePathname();
     const { user, userData, isAdmin } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    // Detecta la liga según la URL
     const esPes2013 = pathname.startsWith("/pes2013");
+    const esProximamente = pathname === "/pes2013/proximamente";
     const config = esPes2013 ? LIGA_CONFIG.pes2013 : LIGA_CONFIG.pes6;
     const links = config.links(!!user, isAdmin);
 
@@ -106,48 +100,55 @@ export default function Navbar() {
                             {config.nombre}
                         </Link>
 
-                        {/* LINKS DESKTOP */}
+                        {/* LINKS DESKTOP — ocultos en proximamente */}
                         <div className="hidden lg:flex items-center">
-                            {links.map((link) => {
-                                const isActive = pathname === link.href;
-                                return (
-                                    <Link
-                                        key={link.name}
-                                        href={link.href}
-                                        className={`font-semibold text-[13px] tracking-[2px] uppercase px-4 py-8 border-b-4 transition-all duration-200 h-20 flex items-center ${isActive
-                                            ? `${config.acentoActivo} bg-white/5`
-                                            : `text-[#888888] border-transparent ${config.acentoHover}`
-                                            }`}
-                                    >
-                                        {link.name}
-                                    </Link>
-                                );
-                            })}
+                            {esProximamente ? (
+                                <span className="font-barlow-condensed text-xs uppercase tracking-[4px] text-[#1a3a5c] ml-4">
+                                    Próximamente disponible
+                                </span>
+                            ) : (
+                                links.map((link) => {
+                                    const isActive = pathname === link.href;
+                                    return (
+                                        <Link
+                                            key={link.name}
+                                            href={link.href}
+                                            className={`font-semibold text-[13px] tracking-[2px] uppercase px-4 py-8 border-b-4 transition-all duration-200 h-20 flex items-center ${isActive
+                                                ? `${config.acentoActivo} bg-white/5`
+                                                : `text-[#888888] border-transparent ${config.acentoHover}`
+                                                }`}
+                                        >
+                                            {link.name}
+                                        </Link>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
 
-                    {/* DERECHA: USUARIO */}
+                    {/* DERECHA: USUARIO — oculto en proximamente */}
                     <div className="flex items-center gap-4">
-                        <div className="hidden md:flex items-center gap-6">
-                            {user ? (
-                                <div className="flex items-center gap-4 border-l border-white/10 pl-6 py-2">
-                                    <div className="text-right hidden sm:block">
-                                        <p className="font-bebas text-lg leading-none text-white tracking-wider uppercase italic">
-                                            {userData?.nombre || user.displayName || "Usuario"}
-                                        </p>
-                                        <p className={`text-[9px] uppercase font-bold tracking-[2px] ${isAdmin ? 'text-red-500' : config.rolColor}`}>
-                                            {isAdmin ? "ADMINISTRADOR" : userData?.rol === 'dt' ? "DT OFICIAL" : "INVITADO"}
-                                        </p>
+                        {!esProximamente && (
+                            <div className="hidden md:flex items-center gap-6">
+                                {user ? (
+                                    <div className="flex items-center gap-4 border-l border-white/10 pl-6 py-2">
+                                        <div className="text-right hidden sm:block">
+                                            <p className="font-bebas text-lg leading-none text-white tracking-wider uppercase italic">
+                                                {userData?.nombre || user.displayName || "Usuario"}
+                                            </p>
+                                            <p className={`text-[9px] uppercase font-bold tracking-[2px] ${isAdmin ? 'text-red-500' : config.rolColor}`}>
+                                                {isAdmin ? "ADMINISTRADOR" : userData?.rol === 'dt' ? "DT OFICIAL" : "INVITADO"}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={handleLogout}
+                                            style={{ borderColor: `${config.acento}50`, color: config.acento }}
+                                            className="bg-white/5 border hover:opacity-80 transition-all px-3 py-1.5 rounded-sm text-xs font-bold uppercase tracking-widest"
+                                        >
+                                            Salir
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={handleLogout}
-                                        style={{ borderColor: `${config.acento}50`, color: config.acento }}
-                                        className="bg-white/5 border hover:opacity-80 transition-all px-3 py-1.5 rounded-sm text-xs font-bold uppercase tracking-widest"
-                                    >
-                                        Salir
-                                    </button>
-                                </div>
-                            ) : (
+                                ) : (
                                     <div className="flex items-center gap-4">
                                         <Link href="/login" className="text-[13px] font-bold text-[#888] hover:text-white transition-colors tracking-[2px] uppercase">
                                             Login
@@ -157,26 +158,29 @@ export default function Navbar() {
                                             style={{ background: config.acento }}
                                             className="text-black px-4 py-2 font-bebas text-lg tracking-widest hover:opacity-80 transition-all italic"
                                         >
-                                        Inscribirse
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
+                                            Inscribirse
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
-                        {/* HAMBURGUESA MÓVIL */}
-                        <button
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            style={{ color: config.acento }}
-                            className="lg:hidden p-2 rounded-md hover:bg-white/5 transition-colors"
-                        >
-                            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
-                        </button>
+                        {/* HAMBURGUESA — oculta en proximamente */}
+                        {!esProximamente && (
+                            <button
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                style={{ color: config.acento }}
+                                className="lg:hidden p-2 rounded-md hover:bg-white/5 transition-colors"
+                            >
+                                {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* MENÚ MÓVIL */}
-            {isMenuOpen && (
+            {/* MENÚ MÓVIL — no se muestra en proximamente */}
+            {isMenuOpen && !esProximamente && (
                 <div className={`lg:hidden ${config.mobileBg} border-t border-white/10 animate-in slide-in-from-top duration-300`}>
                     <div className="px-4 pt-4 pb-6 space-y-2">
                         {user && (

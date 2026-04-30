@@ -1,14 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import { db } from "@/src/lib/firebase";
-import { collection, query, onSnapshot, orderBy, where } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy, where, Timestamp } from "firebase/firestore";
 import { useAuth } from "@/src/lib/hooks/useAuht";
 import FormularioReporte from "./FormularioReporte";
+import SeccionDisponibilidad from "./SeccionDisponibilidad";
 
 interface Equipo { id: string; nombre: string; grupo?: 'A' | 'B'; escudo: string; }
 interface Reporte { id: string; local: string; visita: string; score: string; ronda: number; }
 interface PartidoProgramado { id: string; localNombre: string; visitaNombre: string; ronda: number; }
-
+interface Disponibilidad { id: string; equipoId: string; nombreEquipo: string; fechaTorneo: number; texto: string; fecha: Timestamp; }
 // ← NUEVO: Props
 interface Props {
     colEquipos?: string;
@@ -25,12 +26,13 @@ export default function ContenedorCopa({
     acento = "#c9a84c",
     temporada = "Temporada 1 · El Legado PES 6"
 }: Props) {
-    const { userData } = useAuth();
+    const { user, userData, isAdmin, loading, equipoIdActivo, nombreEquipoActivo } = useAuth()
     const [subTab, setSubTab] = useState<'grupos' | 'jornadas' | 'playoffs'>('grupos');
     const [rondaActiva, setRondaActiva] = useState<number>(1);
     const [equipos, setEquipos] = useState<Equipo[]>([]);
     const [reportesRonda, setReportesRonda] = useState<Reporte[]>([]);
     const [partidosProgramados, setPartidosProgramados] = useState<PartidoProgramado[]>([]);
+    const [listaHorarios, setListaHorarios] = useState<Disponibilidad[]>([]);
     const totalRondas = 5;
 
     useEffect(() => {
@@ -56,6 +58,18 @@ export default function ContenedorCopa({
 
         return () => { unsubCruces(); unsubReportes(); };
     }, [rondaActiva, colPartidos, colReportes]);
+
+    // 3. Disponibilidad por Ronda
+    useEffect(() => {
+        const q = query(
+            collection(db, "disponibilidad_copa"), // Asegúrate que la colección sea esta
+            where("ronda", "==", rondaActiva)      // Filtra por ronda, no por fechaTorneo
+        );
+        const unsub = onSnapshot(q, (snap) =>
+            setListaHorarios(snap.docs.map(d => ({ id: d.id, ...d.data() } as Disponibilidad)))
+        );
+        return () => unsub();
+    }, [rondaActiva]);
 
     return (
         <div className="space-y-10">
@@ -170,13 +184,49 @@ export default function ContenedorCopa({
                         <aside>
                             <div className="bg-[#0f0f0f] p-6 border border-[#222]">
                                 <h4 className="font-bebas text-2xl text-white mb-4 italic uppercase">Reportar Partido</h4>
-                                <FormularioReporte
-                                    fechaNumero={rondaActiva}
-                                    rivales={equipos}
-                                    equipoNombre={userData?.nombreEquipo || ""}
-                                    esCopa={true}
-                                />
+
+                                {/* Validamos que el usuario tenga el rol de DT */}
+                                {userData?.rol === "dt" ? (
+                                    <FormularioReporte
+                                        fechaNumero={rondaActiva}
+                                        rivales={equipos.filter(e => e.nombre !== userData?.nombreEquipo)}
+                                        equipoNombre={userData?.nombreEquipo || ""}
+                                        esCopa={true}
+                                    />
+                                ) : (
+                                    <div className="py-6 border border-dashed border-[#222] text-center">
+                                        <p className="font-bebas text-xl uppercase italic tracking-widest" style={{ color: acento }}>
+                                            Acceso restringido a DTs
+                                        </p>
+                                        <p className="text-gray-500 text-[10px] uppercase mt-1">
+                                            Debes tener un equipo asignado para reportar
+                                        </p>
+                                    </div>
+                                )}
                             </div>
+                            <div className="bg-[#0f0f0f] border border-[#222] p-5 space-y-4">
+                                <h4 className="font-bebas text-2xl text-white uppercase italic border-b border-[#222] pb-2">Horarios de los DTs</h4>
+                                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                                    {listaHorarios.length > 0 ? (
+                                        listaHorarios.map(h => (
+                                            <div key={h.id} className="border-b border-[#222]/50 pb-2 last:border-0">
+                                                <p className="text-[13px] font-bold uppercase tracking-wider" style={{ color: acento }}>{h.nombreEquipo}</p>
+                                                <p className="text-gray-400 text-[13px] leading-tight mt-1 italic font-light">{h.texto}</p>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-gray-200 text-xs italic uppercase">Nadie cargó horarios todavía.</p>
+                                    )}
+                                </div>
+                            </div>
+                            {/* DISPONIBILIDAD */}
+                            {userData?.rol === "dt" && (
+                                <SeccionDisponibilidad
+                                    equipoId={equipoIdActivo!}
+                                    nombreEquipo={nombreEquipoActivo!}
+                                    fechaActiva={rondaActiva}
+                                />
+                            )}
                         </aside>
                     </div>
                 </div>

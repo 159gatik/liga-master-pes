@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { db } from "@/src/lib/firebase";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, where } from "firebase/firestore";
 
 interface EquipoTabla {
     id: string;
@@ -19,30 +19,37 @@ export default function Positions() {
     const [equipos, setEquipos] = useState<EquipoTabla[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Reemplaza tu useEffect actual por este:
     useEffect(() => {
-        // Consultamos TODOS los equipos de la colección
-        const q = query(
-            collection(db, "equipos"),
-            orderBy("puntos", "desc"),
-            orderBy("pg", "desc")
-        );
+        // Quitamos los orderBy de la consulta para asegurarnos de que traiga TODO
+        const q = query(collection(db, "equipos"));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => {
                 const d = doc.data();
                 return {
                     id: doc.id,
-                    nombre: d.nombre || "Equipo Sin Nombre",
+                    nombre: d.nombre || "Sin nombre",
                     escudo: d.escudo || "",
-                    // Si el campo no existe en Firebase, forzamos que sea 0
-                    pj: d.pj ?? 0,
-                    pg: d.pg ?? 0,
-                    pe: d.pe ?? 0,
-                    pp: d.pp ?? 0,
-                    puntos: d.puntos ?? 0,
-                    df: d.df ?? 0
+                    pj: d.pj || 0,
+                    pg: d.pg || 0,
+                    pe: d.pe || 0,
+                    pp: d.pp || 0,
+                    puntos: d.puntos || 0,
+                    df: (d.gf || 0) - (d.gc || 0) // Diferencia calculada
                 } as EquipoTabla;
             });
+
+            // Ordenamos en el cliente para que no dependa de índices de Firebase
+            data.sort((a, b) => {
+                // 1. Primero por Puntos
+                if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+                // 2. Si empatan en puntos, por Diferencia de Gol (df)
+                if (b.df !== a.df) return b.df - a.df;
+                // 3. Si empatan en todo, por Partidos Ganados
+                return b.pg - a.pg;
+            });
+
             setEquipos(data);
             setLoading(false);
         });
@@ -80,7 +87,9 @@ export default function Positions() {
                                     <th className="px-4 py-4 font-bold text-center">PG</th>
                                     <th className="px-4 py-4 font-bold text-center">PE</th>
                                     <th className="px-4 py-4 font-bold text-center">PP</th>
+                                    <th className="px-4 py-4 font-bold text-center">DG</th>
                                     <th className="px-6 py-4 font-bold text-center text-[#c9a84c]">Pts</th>
+
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[#1a1a1a]">
@@ -121,7 +130,9 @@ export default function Positions() {
                                             <td className="px-4 py-4 text-center font-mono text-gray-400">{eq.pg}</td>
                                             <td className="px-4 py-4 text-center font-mono text-gray-400">{eq.pe}</td>
                                             <td className="px-4 py-4 text-center font-mono text-gray-400">{eq.pp}</td>
-
+                                            <td className="px-4 py-4 text-center font-mono text-gray-300 font-bold">
+                                                {eq.df > 0 ? `+${eq.df}` : eq.df}
+                                            </td>
                                             {/* PUNTOS TOTALES */}
                                             <td className="px-6 py-4 text-center">
                                                 <span className="font-bebas text-3xl text-[#c9a84c] tabular-nums">

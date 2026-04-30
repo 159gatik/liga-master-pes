@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import { auth } from "@/src/lib/firebase";
+import { auth, db } from "@/src/lib/firebase";
 import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -11,38 +12,58 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
     const rutasPublicas = [
         "/", "/equipos", "/reglamento", "/guias", "/login", "/register",
-        "/pes2013", "/pes2013/equipos", "/pes2013/reglamento", "/pes2013/guias", // ← nuevas
+        "/pes2013/proximamente",
     ];
 
+    const rutasPrivadasVerificadas = [
+        "/perfil", "/admin", "/fichajes", "/comunidad",
+        "/pes2013/perfil", "/pes2013/fichajes", "/pes2013/comunidad",
+    ];
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            const esRutaPublica = rutasPublicas.includes(pathname)
-            if (!user) {
-                // si no está logueado y la ruta no es publica, pal lobby chaval.
-                if (!esRutaPublica) {
-                    router.push("/login")
-                }
-            }
-            else {
-                // si HAY USUARIO PERO NO ESTÁ VERIFICADO.- LO MANDAMOS A VERIFICAR SI INTENTA ENTRAR A RUTAS PRIVADAS.
-                const rutasPrivadasVerificadas = [
-                    "/perfil", "/admin", "/fichajes", "/comunidad",
-                    "/pes2013/perfil", "/pes2013/fichajes", "/pes2013/comunidad", // ← nuevas
-                ];
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
 
-                const intentaEntrarAPrivada = rutasPrivadasVerificadas.includes(pathname)
+            // ── BLOQUE PES2013: si intenta entrar a cualquier ruta de pes2013
+            // que no sea proximamente, verificamos si es admin
+            if (pathname.startsWith("/pes2013") && pathname !== "/pes2013/proximamente") {
+                if (!user) {
+                    router.push("/pes2013/proximamente");
+                    setLoading(false);
+                    return;
+                }
+                const snap = await getDoc(doc(db, "users", user.uid));
+                const esAdmin = snap.exists() && snap.data().rol === "admin";
+                if (!esAdmin) {
+                    router.push("/pes2013/proximamente");
+                    setLoading(false);
+                    return;
+                }
+                setLoading(false);
+                return;
+            }
+
+            // ── BLOQUE NORMAL: lógica original para rutas de pes6
+            const esRutaPublica = rutasPublicas.includes(pathname);
+
+            if (!user) {
+                if (!esRutaPublica) {
+                    router.push("/login");
+                }
+            } else {
+                const intentaEntrarAPrivada = rutasPrivadasVerificadas.includes(pathname);
 
                 if (!user.emailVerified && intentaEntrarAPrivada) {
-                    router.push("/verificar-email")
+                    router.push("/verificar-email");
                 }
-                // 3. Si ya está verificado y está en la pagina de verificacion, pal inicio
+
                 if (user.emailVerified && pathname === "/verificar-email") {
                     router.push("/");
                 }
             }
+
             setLoading(false);
         });
+
         return () => unsubscribe();
     }, [pathname, router]);
 

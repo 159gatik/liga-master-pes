@@ -66,7 +66,7 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre, 
 
                 // Si es copa, guardamos la ronda en lugar de fechaTorneo (o ambos)
                 ronda: esCopa ? Number(fechaNumero) : null,
-                torneo: esCopa ? "copa" : "liga", 
+                torneo: esCopa ? "copa" : "liga",
 
                 local: equipoNombre || userData?.nombre || "Equipo Local",
                 visita: nombreRival,
@@ -91,7 +91,8 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre, 
                 pp: formData.resultado === "derrota" ? increment(1) : increment(0),
                 // También actualizamos goles en la tabla general
                 gf: increment(Number(formData.golesPro)),
-                gc: increment(Number(formData.golesRival))
+                gc: increment(Number(formData.golesRival)),
+                df: increment(Number(formData.golesPro) - Number(formData.golesRival))
             });
 
             await batch.commit();

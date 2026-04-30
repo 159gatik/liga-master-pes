@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { db } from "../../src/lib/firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
-
 interface Jugador {
     nombre: string;
     pos: string;
@@ -16,6 +15,7 @@ interface EquipoProps {
         id: string;
         nombre: string;
         dt: string;
+        dtUid?: string;
         presupuesto: number;
         valor_plantilla: number;
         titulos?: string[];
@@ -36,7 +36,9 @@ export default function DetalleEquipo({ equipo }: EquipoProps) {
                         {equipo.nombre}
                     </h2>
                     <p className="font-barlow-condensed text-[#c9a84c] uppercase tracking-[4px] text-sm">
-                        DT: <span className="text-white ml-2">{equipo.dt || "SIN ASIGNAR"}</span>
+                        DT:
+                        <span className="text-white ml-2">{equipo.dt || "SIN ASIGNAR"}</span>
+
                     </p>
                 </div>
 
@@ -189,8 +191,8 @@ function SeccionPlantilla({ equipoId }: { equipoId: string }) {
                             })
                         ) : (
                             <tr>
-                                    <td colSpan={6} className="py-10 text-center text-[#333] italic uppercase tracking-widest">
-                                        No hay jugadores registrados
+                                <td colSpan={6} className="py-10 text-center text-[#333] italic uppercase tracking-widest">
+                                    No hay jugadores registrados
                                 </td>
                             </tr>
                         )}

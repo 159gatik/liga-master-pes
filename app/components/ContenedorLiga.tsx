@@ -251,8 +251,8 @@ export default function ContenedorLiga({
                                         </div>
                                     ))
                                 ) : (
-                                        <div className="bg-[#0f0f0f] border border-[#1a1a1a] p-16 text-center">
-                                            <p className="text-gray-300 font-bebas text-2xl uppercase tracking-[5px] italic">No hay resultados procesados aún</p>
+                                    <div className="bg-[#0f0f0f] border border-[#1a1a1a] p-16 text-center">
+                                        <p className="text-gray-300 font-bebas text-2xl uppercase tracking-[5px] italic">No hay resultados procesados aún</p>
                                     </div>
                                 )}
                             </div>
@@ -270,19 +270,19 @@ export default function ContenedorLiga({
                                 userData?.rol === "dt" ? (
                                     <FormularioReporte
                                         fechaNumero={fechaActiva}
-                                            rivales={equipos.filter(e => e.id !== equipoIdActivo)}
-                                            equipoNombre={equipos.find(e => e.id === equipoIdActivo)?.nombre || "Mi Equipo"}
-                                        />
-                                    ) : (
-                                        <p className="font-bold text-xs uppercase text-center py-6 border border-dashed border-[#222]" style={{ color: acento }}>
-                                            Acceso restringido a DTs
-                                        </p>
-                                    )
+                                        rivales={equipos.filter(e => e.id !== equipoIdActivo)}
+                                        equipoNombre={equipos.find(e => e.id === equipoIdActivo)?.nombre || "Mi Equipo"}
+                                    />
                                 ) : (
-                                    <div className="py-12 text-center">
-                                        <div className="text-red-700 text-5xl font-bebas italic leading-none mb-2">BLOQUEADO</div>
-                                        <p className="text-gray-100 text-[10px] uppercase tracking-[5px]">Jornada no habilitada</p>
-                                        </div>
+                                    <p className="font-bold text-xs uppercase text-center py-6 border border-dashed border-[#222]" style={{ color: acento }}>
+                                        Acceso restringido a DTs
+                                    </p>
+                                )
+                            ) : (
+                                <div className="py-12 text-center">
+                                    <div className="text-red-700 text-5xl font-bebas italic leading-none mb-2">BLOQUEADO</div>
+                                    <p className="text-gray-100 text-[10px] uppercase tracking-[5px]">Jornada no habilitada</p>
+                                </div>
                             )}
                         </div>
 
@@ -298,7 +298,7 @@ export default function ContenedorLiga({
                                         </div>
                                     ))
                                 ) : (
-                                        <p className="text-gray-200 text-xs italic uppercase">Nadie cargó horarios todavía.</p>
+                                    <p className="text-gray-200 text-xs italic uppercase">Nadie cargó horarios todavía.</p>
                                 )}
                             </div>
                         </div>

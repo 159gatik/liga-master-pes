@@ -1,18 +1,28 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { auth, db } from "@/src/lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import ReCAPTCHA from "react-google-recaptcha";
 import Link from "next/link";
 
 export default function RegisterPage() {
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    const recaptchaRef = useRef<ReCAPTCHA>(null);
     const [formData, setFormData] = useState({ email: "", password: "", username: "", ligas: { pes6: false, pes2013: false } });
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!captchaToken) {
+            alert("Por favor, completa el desafío de seguridad (reCAPTCHA) para continuar.");
+            return;
+        }
+
+
         setLoading(true);
 
         try {
@@ -28,11 +38,11 @@ export default function RegisterPage() {
             await setDoc(doc(db, "users", user.uid), {
                 nombre: formData.username,
                 email: formData.email,
-                rol: "dt", // Ahora todos entran como dt
+                rol: "invitado", // Ahora todos entran como dt
                 // Nueva estructura:
                 ligas: {
-                    pes6: formData.ligas.pes6 ? { rol: "dt", equipoId: "" } : null,
-                    pes2013: formData.ligas.pes2013 ? { rol: "dt", equipoId: "" } : null
+                    pes6: formData.ligas.pes6 ? { rol: "pendiente", equipoId: "" } : null,
+                    pes2013: formData.ligas.pes2013 ? { rol: "pendiente", equipoId: "" } : null
                 },
                 // Mantén campos antiguos para compatibilidad si los necesitas
                 nombreEquipo: "Sin Equipo",
@@ -136,11 +146,18 @@ export default function RegisterPage() {
                             <span className="text-sm font-bold uppercase italic text-[#00aaff]">Jugar PES 2013</span>
                         </label>
                     </div>
-
+                    <div className="flex justify-center my-2">
+                        <ReCAPTCHA
+                            ref={recaptchaRef}
+                            sitekey="6Lc4B8wsAAAAAO0OCTlfTLqukUxTMuwFffafksXo" // Reemplaza con tu Site Key real
+                            onChange={(token) => setCaptchaToken(token)}
+                            theme="dark" // Para que combine con tu web oscura
+                        />
+                    </div>
                     <button
                         type="submit"
-                        disabled={loading}
-                        className="bg-[#c9a84c] text-black font-bebas text-3xl py-3 mt-4 tracking-[4px] uppercase hover:bg-white transition-all shadow-[0_0_20px_rgba(201,168,76,0.2)] disabled:opacity-50 italic"
+                        disabled={loading || !captchaToken} // 6. Bloqueado si no hay token o carga
+                        className="bg-[#c9a84c] text-black font-bebas text-3xl py-3 mt-4 tracking-[4px] uppercase hover:bg-white transition-all shadow-[0_0_20px_rgba(201,168,76,0.2)] disabled:opacity-30 italic"
                     >
                         {loading ? "Inscribiendo..." : "Finalizar Registro"}
                     </button>

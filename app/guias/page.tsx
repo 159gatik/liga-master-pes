@@ -104,38 +104,86 @@ export default function GuiasPage() {
 
                             <div className="space-y-6 text-gray-400 leading-relaxed">
                                 <p className="uppercase tracking-widest text-xl font-bold text-white/70">
-                                    Temporada Actual: <span className="text-[#c9a84c]">Infinitty Patch Final Season</span>
+                                    Temporada Actual: <span className="text-[#c9a84c]">PES 6 The Den</span>
                                 </p>
 
-                                <div className="space-y-4">
-                                    <div className="flex items-start gap-4 bg-[#111] p-4 border border-[#222]">
-                                        <span className="font-bebas text-4xl text-[#c9a84c]">01</span>
+                                <div className="space-y-6 max-w-4xl mx-auto">
+                                    {/* PASO 01 - DESCARGA MULTIPARTE */}
+                                    <div className="flex flex-col md:flex-row items-start gap-6 bg-[#111] p-6 border border-[#222] border-l-4 border-l-[#c9a84c] shadow-xl">
+                                        <span className="font-bebas text-6xl text-[#c9a84c] leading-none">01</span>
+                                        <div className="flex-1 w-full">
+                                            <h3 className="text-white font-bebas text-2xl tracking-wider uppercase mb-1">Descarga del Juego</h3>
+                                            <p className="text-gray-400 leading-relaxed">Descarga todas las partes antes de descomprimir.</p>
+
+                                            {/* GRILLA DE BOTONES */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {[
+                                                    { label: "Parte 1", url: "https://tinyurl.com/az2wjwv2" },
+                                                    { label: "Parte 2", url: "https://tinyurl.com/4fm8w4pc" },
+                                                    { label: "Parte 3", url: "https://tinyurl.com/36bpepn3" },
+                                                    { label: "Parte 4", url: "https://tinyurl.com/2nambvy5" },
+                                                ].map((part, i) => (
+                                                    <a
+                                                        key={i}
+                                                        href={part.url}
+                                                        target="_blank"
+                                                        className="flex justify-between items-center bg-[#1a1a1a] border border-[#333] px-4 py-3 text-sm font-bold text-gray-300 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-all group"
+                                                    >
+                                                        <span className="uppercase tracking-widest">{part.label}</span>
+                                                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* PASO 02 */}
+                                    <div className="flex items-start gap-6 bg-[#111] p-6 border border-[#222] shadow-lg">
+                                        <span className="font-bebas text-5xl text-[#c9a84c] opacity-50">02</span>
                                         <div>
-                                            <p className="text-white font-bold uppercase text-m">Descarga del Juego</p>
+                                            <h3 className="text-white font-bebas text-2xl tracking-wider uppercase mb-2">Preparación de archivos</h3>
+                                            <p className="text-gray-400 leading-relaxed">
+                                                Mueve todos los archivos descargados a una <span className="text-white font-bold">nueva carpeta exclusiva</span> para evitar errores de ruta durante la descompresión.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* PASO 03 */}
+                                    <div className="flex items-start gap-6 bg-[#111] p-6 border border-[#222] shadow-lg">
+                                        <span className="font-bebas text-5xl text-[#c9a84c] opacity-50">03</span>
+                                        <div>
+                                            <h3 className="text-white font-bebas text-2xl tracking-wider uppercase mb-2">Ejecución del instalador</h3>
+                                            <p className="text-gray-400 leading-relaxed">
+                                                Ejecuta el archivo <code className="bg-red-950/30 text-red-400 px-2 py-0.5 rounded border border-red-900/50">.exe</code>.
+                                                Si Windows Defender muestra una advertencia, pulsa en <span className="text-white italic underline underline-offset-4 decoration-[#c9a84c]">Más información</span> y luego <span className="text-white font-bold italic">Ejecutar de todas formas</span>.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* PASO 04 - OPTION FILE (DESTACADO) */}
+                                    <div className="flex flex-col md:flex-row items-start gap-6 bg-[#111] p-6 border border-[#c9a84c]/30 border-t-4 border-t-[#c9a84c] shadow-2xl relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 bg-[#c9a84c] text-black font-black px-3 py-1 text-[15px] uppercase">
+                                            obligatorio
+                                        </div>
+                                        <span className="font-bebas text-6xl text-[#c9a84c] leading-none">04</span>
+                                        <div className="flex-1 w-full">
+                                            <h3 className="text-white font-bebas text-2xl tracking-wider uppercase mb-2">Option File del Torneo</h3>
+                                            <p className="text-gray-400 mb-4">
+                                                Contiene los equipos actualizados a la <span className="text-white font-bold">Temporada 2026</span>. Sin esto, no podrás jugar la liga online.
+                                            </p>
+
                                             <a
-                                                href="https://bit.ly/INFINITTYFS2425"
+                                                href="https://www.mediafire.com/file/0eusxnt31bdohyy/KONAMI-WIN32PES6OPT.rar/file"
                                                 target="_blank"
-                                                className="text-[#c9a84c] text-m underline break-all hover:text-white transition-colors"
+                                                className="inline-block w-full text-center bg-[#c9a84c] text-black font-bebas text-xl py-3 px-8 hover:bg-white transition-colors tracking-[2px] mb-4"
                                             >
-                                                https://bit.ly/INFINITTYFS2425
+                                                Descargar OPTION FILE (OF)
                                             </a>
-                                            <p className="text-[16px] mt-1 italic text-gray-500">Dentro de la carpeta encontrarás los archivos para descargar uno por uno.</p>
-                                        </div>
-                                    </div>
 
-                                    <div className="flex items-start gap-4 bg-[#111] p-4 border border-[#222]">
-                                        <span className="font-bebas text-4xl text-[#c9a84c]">02</span>
-                                        <div>
-                                            <p className="text-white font-bold uppercase text-m">Preparación de archivos</p>
-                                            <p className="text-m">Mueve todos los archivos descargados a una nueva carpeta exclusiva para la instalación.</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-4 bg-[#111] p-4 border border-[#222]">
-                                        <span className="font-bebas text-4xl text-[#c9a84c]">03</span>
-                                        <div>
-                                            <p className="text-white font-bold uppercase text-m">Ejecución del instalador</p>
-                                            <p className="text-m">Ejecuta el archivo <code className="text-red-400">.exe</code>. Si Windows muestra un cartel de advertencia, selecciona <span className="text-white italic">Ejecutar de todas formas</span>.</p>
+                                            <div className="bg-black/50 p-3 border-l-2 border-gray-600 text-[13px]">
+                                                <p className="text-gray-500 uppercase font-bold mb-1 text-[10px] tracking-widest">Ruta de instalación:</p>
+                                                <code className="text-gray-300 break-all">Documents \ KONAMI \ PES 6 The Den Patch 29 \ save \ folder1</code>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -147,17 +195,17 @@ export default function GuiasPage() {
                                     </div>
                                     <h3 className="font-bebas text-4xl text-white mb-2 tracking-tighter">Código de Instalación & Online</h3>
                                     <p className="text-[16px] text-gray-400 uppercase mb-4 leading-tight">
-                                        Este código es necesario para la instalación y será el mismo que utilizarás para ingresar al modo Online.
+                                        Este código es necesario para ingresar al modo Online.
                                     </p>
                                     <div onClick={() => {
-                                        navigator.clipboard.writeText("DAYX7MVSENUXR2DWLXER");
+                                        navigator.clipboard.writeText("M7TUH9FPHH4XV2XWVAU3");
                                         Toast.fire({
                                             icon: 'success',
                                             title: 'SERIAL COPIADO CON ÉXITO'
                                         });// opcional: mostrar un toast "¡Copiado!"
                                     }} className="bg-black p-4 text-center border border-[#c9a84c]/30 group hover:border-[#c9a84c] transition-all cursor-copy">
                                         <code className="font-mono text-[#c9a84c] text-lg md:text-2xl font-bold tracking-widest select-all">
-                                            DAYX7MVSENUXR2DWLXER
+                                            M7TUH9FPHH4XV2XWVAU3
                                         </code>
                                     </div>
                                 </div>
@@ -220,7 +268,7 @@ export default function GuiasPage() {
                                         </div>
                                         <div className="bg-black/40 p-3 border border-white/5">
                                             <p className="text-[#c9a84c] font-bold mb-1">PES 6 Serial</p>
-                                            <p className="text-gray-300 italic">DAYX7MVSENUXR2DWLXER (Sin guiones)</p>
+                                            <p className="text-gray-300 italic">M7TUH9FPHH4XV2XWVAU3 (Sin guiones)</p>
                                         </div>
                                         <div className="bg-black/40 p-3 border border-white/5">
                                             <p className="text-[#c9a84c] font-bold mb-1">Validación</p>
