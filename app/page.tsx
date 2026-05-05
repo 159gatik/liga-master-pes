@@ -1,218 +1,116 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from 'next/link';
+import Image from "next/image";
 import { useAuth } from '@/src/lib/hooks/useAuht';
 import { db } from "@/src/lib/firebase";
 import { collection, query, where, onSnapshot, orderBy, limit, Timestamp } from "firebase/firestore";
+
+// Componentes
 import BannerPatrocinadores from "./components/BannerPatrocinadores";
-import Image from "next/image";
-import ReporteAusencia from "./ausencias/page";
 import UltimosUsuarios from "./components/UltimosUsuarios";
 
-interface Equipo {
-    id: string;
-    juego: string;
-    nombre: string;
-    [key: string]: any; // Para permitir otros campos
-}
-
-interface Reporte {
-    id: string;
-    local: string;
-    visita: string;
-    score: string;
-    fecha: Timestamp;
-}
-
-interface Noticia {
-    id: string;
-    titulo: string;
-    categoria: string;
-    contenido: string;
-    autor: string;
-    equipo?: string;
-    fecha: Timestamp;
-}
-
-interface StatCard {
-    value: React.ReactNode; // <--- Esto permite texto, spans, divs, etc.
-    label: string;
-}
-
-interface ReporteAusencia {
-    id: string;
-    dt: string;
-    equipo: string;
-    motivo: string;
-    fecha: Timestamp;
-}
-
+// Interfaces
+interface Equipo { id: string; juego: string; nombre: string; escudo?: string; pj?: number; pts?: number;[key: string]: any; }
+interface Reporte { id: string; local: string; visita: string; score: string; fecha: Timestamp; division: "A" | "B"; }
+interface Noticia { id: string; titulo: string; categoria: string; contenido: string; autor: string; fecha: Timestamp; }
+interface ReporteAusencia { id: string; dt: string; equipo: string; motivo: string; fecha: Timestamp; }
 
 export default function Page() {
-    const { user, userData, loading } = useAuth(); // Agregué isAdmin
+    const { user, userData, loading } = useAuth();
     const [yaPostulado, setYaPostulado] = useState(false);
     const [equipos, setEquipos] = useState<Equipo[]>([]);
     const [resultados, setResultados] = useState<Reporte[]>([]);
-    const [reportesAusencia, setReportesAusencia] = useState<ReporteAusencia[]>([]); // Tipa esto como necesites
-    const cantidadPes6 = equipos.filter(e =>
-        e.juego && e.juego.toString().toLowerCase() === 'pes6'
-    ).length;
-    // UNIFICAMOS EN UN SOLO ESTADO DE NOTICIAS
     const [noticias, setNoticias] = useState<Noticia[]>([]);
+    const [reportesAusencia, setReportesAusencia] = useState<ReporteAusencia[]>([]);
+    const [tabActiva, setTabActiva] = useState<"A" | "B">("A");
+    const cantidadPes6 = equipos.filter(e => e.juego?.toString().toLowerCase() === 'pes6').length;
 
-    // 1. CARGA DE NOTICIAS (CORREGIDA)
+    // --- CARGA DE DATOS ---
     useEffect(() => {
-        const q = query(
-            collection(db, "novedades"),
-            orderBy("fecha", "desc"),
-            limit(3)
-        );
+        const qNoticias = query(collection(db, "novedades"), orderBy("fecha", "desc"), limit(3));
+        const unsubN = onSnapshot(qNoticias, (snap) => setNoticias(snap.docs.map(d => ({ id: d.id, ...d.data() } as Noticia))));
 
-        const unsub = onSnapshot(q, (snap) => {
-            const docs = snap.docs.map(d => ({
-                id: d.id,
-                ...d.data()
-            } as Noticia));
-            setNoticias(docs);
-        });
+        const qEquipos = query(collection(db, "equipos"), orderBy("puntos", "desc"));
+        const unsubE = onSnapshot(qEquipos, (snap) => setEquipos(snap.docs.map(d => ({ id: d.id, ...d.data() } as Equipo))));
 
-        return () => unsub();
-    }, []);
+        const qReportes = query(collection(db, "reportes"), orderBy("fecha", "desc"), limit(4));
+        const unsubR = onSnapshot(qReportes, (snap) => setResultados(snap.docs.map(d => ({ id: d.id, ...d.data() } as Reporte))));
 
-    // 2. CARGA DE EQUIPOS Y POSTULACIÓN
-    useEffect(() => {
-        const qEquipos = query(collection(db, "equipos"), orderBy("nombre", "asc"));
-        const unsubEquipos = onSnapshot(qEquipos, (snapshot) => {
-            // Mapeamos explícitamente para asegurar que 'juego' exista
-            const equiposData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Equipo[];
+        const qAusencias = query(collection(db, "reportes_ausencias"), orderBy("fecha", "desc"), limit(5));
+        const unsubA = onSnapshot(qAusencias, (snap) => setReportesAusencia(snap.docs.map(d => ({ id: d.id, ...d.data() } as ReporteAusencia))));
 
-            setEquipos(equiposData);
-        });
-
-        let unsubPostulacion = () => { };
         if (user) {
-            const q = query(collection(db, "postulaciones"), where("uid", "==", user.uid));
-            unsubPostulacion = onSnapshot(q, (snapshot) => {
-                setYaPostulado(!snapshot.empty);
-            });
+            const qPost = query(collection(db, "postulaciones"), where("uid", "==", user.uid));
+            const unsubP = onSnapshot(qPost, (snap) => setYaPostulado(!snap.empty));
+            return () => { unsubN(); unsubE(); unsubR(); unsubA(); unsubP(); };
         }
 
-        return () => {
-            unsubEquipos();
-            unsubPostulacion();
-        };
+        return () => { unsubN(); unsubE(); unsubR(); unsubA(); };
     }, [user]);
 
-    // 3. CARGA DE REPORTES
-    useEffect(() => {
-        const qReportes = query(
-            collection(db, "reportes"),
-            orderBy("fecha", "desc"),
-            limit(4)
-        );
-
-        const unsubReportes = onSnapshot(qReportes, (snapshot) => {
-            setResultados(snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Reporte[]);
-        });
-
-        return () => unsubReportes();
-    }, []);
-
-    useEffect(() => {
-        const q = query(collection(db, "reportes_ausencias"), orderBy("fecha", "desc"), limit(5));
-
-        const unsub = onSnapshot(q, (snap) => {
-            // Mapeamos los datos y casteamos a nuestra interfaz
-            const data = snap.docs.map(d => ({
-                id: d.id,
-                ...d.data()
-            })) as ReporteAusencia[];
-
-            // Esta es la función que debe coincidir con la de arriba
-            setReportesAusencia(data);
-        });
-
-        return () => unsub();
-    }, []);
-
-    useEffect(() => {
-        if (equipos.length > 0) {
-            console.log("Primer equipo de la lista:", equipos[0]);
-            console.log("Valores de 'juego' encontrados:", equipos.map(e => e.juego));
-        }
-    }, [equipos]);
-
     return (
-        <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] font-sans p-6 md:p-10">
-            {/* HEADER DE SECCIÓN */}
-            <div className="max-w-6xl mx-auto mb-10 border-l-4 border-[#c9a84c] pl-5 flex flex-wrap justify-between items-center gap-6">
-                {/* Título */}
-                <h1 className="font-bebas text-5xl md:text-7xl tracking-[5px] uppercase">Inicio</h1>
+        <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] font-sans selection:bg-[#c9a84c] selection:text-black">
 
-                {/* Componente de Usuarios alineado a la derecha */}
-                <div className="flex-shrink-0">
-                    <UltimosUsuarios />
-                </div>
-            </div>
-
-            {/* HERO SECTION */}
-            <section className="max-w-6xl mx-auto relative bg-[#111111] border border-[#2a2a2a] border-t-4 border-t-[#c9a84c] p-10 md:p-16 mb-10 overflow-hidden shadow-2xl">
-                <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 font-bebas text-[10rem] text-[#c9a84c] opacity-[0.03] pointer-events-none whitespace-nowrap hidden lg:block">
-                    EL LEGADO
-                </div>
-
-                <div className="relative z-10">
-                    <div className="font-barlow-condensed text-s tracking-[5px] text-[#c9a84c] uppercase mb-4">
-                        Bienvenidos a la liga master online
+            {/* 1. NAV / HEADER MINIMALISTA (Estilo Webild) */}
+            <nav className="w-full border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-50 px-6 py-6">
+                <div className="max-w-[1400px] mx-auto flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <div className="w-2 h-8 bg-[#c9a84c]"></div>
+                        <span className="font-bebas text-3xl tracking-[4px] uppercase">El Legado</span>
                     </div>
-                    <h2 className="font-bebas text-6xl md:text-8xl tracking-[8px] leading-[0.9] mb-6 uppercase">
-                        El <span className="text-[#c9a84c]">Legado</span>
-                    </h2>
-                    <p className="text-[#888888] max-w-lg leading-relaxed mb-8">
-                        Organizá tu equipo, coordina tus partidos y escribe tu propia historia.
+                    <div className="hidden md:block">
+                        <UltimosUsuarios />
+                    </div>
+                </div>
+            </nav>
+
+            {/* 2. HERO SECTION MASIVA */}
+            <section className="relative min-h-[90vh] flex items-center px-6 overflow-hidden">
+                <div className="absolute right-[5%] top-1/2 -translate-y-1/2 font-bebas text-[25vw] text-white/[0.02] pointer-events-none select-none uppercase italic">
+                    PES 6
+                </div>
+
+                <div className="max-w-[1400px] mx-auto w-full relative z-10">
+                    <span className="text-[#c9a84c] font-barlow text-sm tracking-[10px] uppercase block mb-6 animate-pulse">Temporada Oficial 2026</span>
+
+                    <h1 className="font-bebas text-[15vw] lg:text-[11rem] leading-[0.8] tracking-tighter uppercase italic mb-8">
+                        El Legado <br />
+                        <span className="text-[#c9a84c] not-italic">Liga Master</span>
+                    </h1>
+
+                    <p className="max-w-xl text-gray-500 text-lg md:text-xl font-barlow leading-relaxed mb-12 italic">
+                        La liga de PES más importante de la región. <br /> Gestioná tu club, competí al más alto nivel y escribí tu historia.
                     </p>
 
-                    <div className="flex flex-wrap gap-4 items-center">
-                        <Link href="/equipos" className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
-                            Equipos
+                    <div className="flex flex-wrap gap-6">
+                        <Link href="/equipos" className="bg-white text-black font-bebas text-3xl px-12 py-5 skew-x-[-15deg] hover:bg-[#c9a84c] transition-all">
+                            <span className="inline-block skew-x-[15deg]">Ver Clubes</span>
                         </Link>
 
                         {!loading && (
-                            <>
+                            <div className="flex gap-4">
                                 {!user ? (
-                                    <Link href="/register" className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
-                                        Registrate
+                                    <Link href="/register" className="border-2 border-white/20 text-white font-bebas text-3xl px-12 py-5 skew-x-[-15deg] hover:bg-white hover:text-black transition-all">
+                                        <span className="inline-block skew-x-[15deg]">Registrate</span>
                                     </Link>
                                 ) : (
                                     <>
-                                        {/* BLOQUE DE BOTONES DINÁMICOS */}
                                         {userData?.ligas?.pes6?.estado === "aprobado" ? (
-                                            <Link href="/perfil" className="bg-[#27ae60] border-2 border-[#27ae60] text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-[#27ae60] transition-all font-bold">
-                                                Ir a mi Oficina
+                                            <Link href="/perfil" className="bg-[#27ae60] text-white font-bebas text-3xl px-12 py-5 skew-x-[-15deg] hover:scale-105 transition-all">
+                                                <span className="inline-block skew-x-[15deg]">Mi Oficina</span>
                                             </Link>
-                                        ) : yaPostulado ? (
-                                            <button disabled className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
-                                                Postulación en revisión
-                                            </button>
                                         ) : (
-                                            <Link href="/equipos-libres" className="border-2 border-[#c9a84c] text-[#c9a84c] font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-[#c9a84c] hover:text-[#0a0a0a] transition-all">
-                                                Postularse
+                                            <Link href={yaPostulado ? "#" : "/equipos-libres"} className={`border-2 border-[#c9a84c] text-[#c9a84c] font-bebas text-3xl px-12 py-5 skew-x-[-15deg] ${yaPostulado ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#c9a84c] hover:text-black'}`}>
+                                                <span className="inline-block skew-x-[15deg]">{yaPostulado ? "En Revisión" : "Postularse"}</span>
                                             </Link>
                                         )}
-
-                                        {/* BOTÓN DESPACHOS (Fuera del ternario, pero dentro del usuario logueado) */}
-                                        <Link href="/despachos" className="border-2 border-white text-white font-barlow-condensed font-bold tracking-[3px] uppercase py-2.5 px-7 hover:bg-white hover:text-black transition-all italic">
-                                            Despachos
+                                        <Link href="/despachos" className="bg-white/5 border border-white/10 italic font-bebas text-3xl px-12 py-5 skew-x-[-15deg] hover:bg-white/10 transition-all">
+                                            <span className="inline-block skew-x-[15deg]">Despachos</span>
                                         </Link>
                                     </>
                                 )}
-                            </>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -220,297 +118,184 @@ export default function Page() {
 
             <BannerPatrocinadores />
 
-            {/* ESTADÍSTICAS RÁPIDAS */}
-            <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-3 mb-10">
-                <StatCard value={`${cantidadPes6}`} label="Clubes" />
-                <StatCard value={`${resultados.length}`} label="Reportes" />
-                <StatCard
-                    value={<span className="text-green-500">ACTIVO</span>}
-                    label="Estado"
-                />
-                <StatCard value="18" label="Fechas" />
-                <StatCard value="I" label="Edición" />
-            </div>
+            {/* 3. SECCIÓN ESTADÍSTICAS LIMPIAS */}
+            <section className="py-32 bg-[#0d0d0d] border-y border-white/5">
+                <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-2 lg:grid-cols-5 gap-12">
+                    <StatCard value={cantidadPes6} label="Clubes Registrados" />
+                    <StatCard value={resultados.length} label="Partidos Reportados" />
+                    <StatCard value="ACTIVO" label="Estado Servidor" isGold />
+                    <StatCard value="18" label="Jornadas Liga" />
+                    <StatCard value="I" label="Edición Actual" />
+                </div>
+            </section>
 
-            {/* GRILLA: RESULTADOS Y TABLA */}
-            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
-                {/* PANEL: ÚLTIMOS RESULTADOS */}
-                <div className="bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden">
-                    <div className="flex justify-between items-center p-4 bg-[#222222] border-b border-[#2a2a2a]">
-                        <h3 className="font-bebas text-2xl tracking-[3px] text-[#c9a84c]">Últimos Resultados</h3>
-                        <Link href="/fixture" className="font-barlow-condensed text-[13px] tracking-[2px] text-[#888888] uppercase hover:text-[#c9a84c]">
-                            Ver todo el fixture →
-                        </Link>
+            {/* 4. GRILLA: RESULTADOS Y TABLA (Secciones de alto contraste) */}
+            <section className="py-32 px-6 max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20">
+
+                {/* COLUMNA: RESULTADOS */}
+                <div>
+                    <div className="flex flex-col md:flex-row justify-between items-end mb-12 border-b border-white/5 pb-6 gap-6">
+                        <h3 className="font-bebas text-5xl uppercase italic tracking-tighter">
+                            Últimos <span className="text-[#c9a84c]">Resultados</span>
+                        </h3>
+
+                        {/* TABS PARA RESULTADOS */}
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setTabActiva("A")}
+                                className={`font-bebas text-xl px-6 py-1 skew-x-[-15deg] transition-all ${tabActiva === "A" ? "bg-[#c9a84c] text-black" : "bg-white/5 text-gray-500 hover:text-white"}`}
+                            >
+                                <span className="inline-block skew-x-[15deg]">CATEGORÍA A</span>
+                            </button>
+                            <button
+                                onClick={() => setTabActiva("B")}
+                                className={`font-bebas text-xl px-6 py-1 skew-x-[-15deg] transition-all ${tabActiva === "B" ? "bg-[#c9a84c] text-black" : "bg-white/5 text-gray-500 hover:text-white"}`}
+                            >
+                                <span className="inline-block skew-x-[15deg]">CATEGORÍA B</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="p-0">
-                        {resultados.length === 0 ? (
-                            /* VISTA DE EJEMPLO CUANDO NO HAY REPORTES */
-                            <div className="divide-y divide-[#1e1e1e]">
-                                {[
-                                    { local: "Local", visita: "Visitante" },
-                                    { local: "Local", visita: "Visitante" },
-                                    { local: "Local", visita: "Visitante" }
-                                ].map((ejemplo, i) => (
-                                    <div key={i} className="grid grid-cols-3 items-center p-4 opacity-80 select-none grayscale">
-                                        <div className="text-right pr-2">
-                                            <span className="font-barlow-condensed font-bold uppercase tracking-wider text-m text-[#555]">
-                                                {ejemplo.local}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-center">
-                                            <div className="flex items-center bg-[#0a0a0a] border border-[#333] px-3 py-1 rounded">
-                                                <span className="font-bebas text-2xl px-2 text-white">0</span>
-                                                <span className="text-[#333] font-bebas text-xl">-</span>
-                                                <span className="font-bebas text-2xl px-2 text-white">0</span>
+                    <div className="space-y-4">
+                        {resultados.filter(r => r.division === tabActiva).length > 0 ? (
+                            resultados
+                                .filter((partido) => partido.division === tabActiva)
+                                .map((partido) => {
+                                    const [gL, gV] = (partido.score || "0-0").split('-').map(Number);
+                                    return (
+                                        <div key={partido.id} className="grid grid-cols-3 items-center bg-[#111] p-8 border-l-4 border-transparent hover:border-[#c9a84c] transition-all group">
+                                            <span className="text-right font-bebas text-2xl uppercase tracking-tighter group-hover:text-[#c9a84c] transition-colors">{partido.local}</span>
+                                            <div className="flex justify-center items-center gap-6">
+                                                <span className="font-bebas text-5xl text-white">{gL}</span>
+                                                <span className="text-gray-800 text-3xl">-</span>
+                                                <span className="font-bebas text-5xl text-white">{gV}</span>
                                             </div>
+                                            <span className="text-left font-bebas text-2xl uppercase tracking-tighter group-hover:text-[#c9a84c] transition-colors">{partido.visita}</span>
                                         </div>
-                                        <div className="text-left pl-2">
-                                            <span className="font-barlow-condensed font-bold uppercase tracking-wider text-sm text-[#555]">
-                                                {ejemplo.visita}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                                <div className="p-6 text-center">
-                                    <p className="text-[#c9a84c] animate-pulse italic text-[10px] font-barlow-condensed uppercase tracking-[4px]">
-                                        Esperando reportes oficiales...
-                                    </p>
-                                </div>
-                            </div>
+                                    );
+                                })
                         ) : (
-                            /* RENDERIZADO REAL DE RESULTADOS */
-                            resultados.map((partido) => {
-                                const [gL, gV] = (partido.score || "0-0").split('-').map(Number);
-                                const localGana = gL > gV;
-                                const visitaGana = gV > gL;
-
-                                return (
-                                    <div key={partido.id} className="grid grid-cols-3 items-center p-4 border-b border-[#1e1e1e] last:border-0 hover:bg-[#ffffff03] transition-colors">
-                                        <div className="text-right pr-2">
-                                            <span className={`font-barlow-condensed font-bold uppercase tracking-wider text-sm ${localGana ? 'text-[#c9a84c]' : 'text-[#555]'}`}>
-                                                {partido.local}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-center">
-                                            <div className="flex items-center bg-[#0a0a0a] border border-[#333] px-3 py-1 rounded">
-                                                <span className={`font-bebas text-2xl px-2 ${localGana ? 'text-[#c9a84c]' : 'text-white'}`}>{gL}</span>
-                                                <span className="text-[#333] font-bebas text-xl">-</span>
-                                                <span className={`font-bebas text-2xl px-2 ${visitaGana ? 'text-[#c9a84c]' : 'text-white'}`}>{gV}</span>
-                                            </div>
-                                        </div>
-                                        <div className="text-left pl-2">
-                                            <span className={`font-barlow-condensed font-bold uppercase tracking-wider text-sm ${visitaGana ? 'text-[#c9a84c]' : 'text-[#555]'}`}>
-                                                {partido.visita}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })
+                            <div className="p-10 border border-dashed border-white/5 text-center text-gray-700 italic font-barlow tracking-[3px] uppercase">
+                                Sin reportes en Categoría {tabActiva}...
+                            </div>
                         )}
+                        <div className="text-right mt-4">
+                            <Link href="/fixture" className="font-barlow text-xs tracking-[4px] uppercase text-gray-600 hover:text-[#c9a84c] transition-colors">Ver Full Fixture →</Link>
+                        </div>
                     </div>
                 </div>
 
-                {/* PANEL: TABLA (Simulada) */}
-                <div className="bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden">
-                    <div className="flex justify-between items-center p-4 bg-[#222222] border-b border-[#2a2a2a]">
-                        <h3 className="font-bebas text-2xl tracking-[3px] text-[#c9a84c]">Tabla de Posiciones</h3>
-                        <Link href="/positions" className="font-barlow-condensed text-[13px] tracking-[2px] text-[#888888] uppercase hover:text-[#c9a84c]">
-                            Ver completa →
-                        </Link>
+                {/* COLUMNA: CLASIFICACIÓN */}
+                <div>
+                    <div className="flex flex-col md:flex-row justify-between items-end mb-12 border-b border-white/5 pb-6 gap-6">
+                        <h3 className="font-bebas text-5xl uppercase italic tracking-tighter">
+                            Top <span className="text-[#c9a84c]">Clasificación</span>
+                        </h3>
+
+                        {/* TABS PARA CLASIFICACIÓN (Sincronizados) */}
+                        <div className="flex gap-2 text-gray-500 font-bebas text-xl">
+                            <span className={tabActiva === "A" ? "text-[#c9a84c]" : ""}>DIVISION A</span>
+                            <span className="text-gray-800">/</span>
+                            <span className={tabActiva === "B" ? "text-[#c9a84c]" : ""}>DIVISION B</span>
+                        </div>
                     </div>
-                    <table className="w-full text-center border-collapse">
-                        <thead>
-                            <tr className="bg-[#222] font-barlow-condensed text-[13px] tracking-[2px] text-[#888888] uppercase">
-                                <th className="p-3">#</th>
-                                <th className="p-3 text-left">Equipo</th>
-                                <th className="p-3">PJ</th>
-                                <th className="p-3">PTS</th>
-                            </tr>
-                        </thead>
 
-                        {equipos && equipos.length > 0 ? (
-                            /* CUERPO DE TABLA REAL */
-                            <tbody className="font-barlow-condensed text-sm uppercase">
-                                {equipos.slice(0, 4).map((equipo, index) => (
-                                    <tr key={equipo.id} className="border-b border-[#1e1e1e] hover:bg-[#ffffff03] transition-colors">
-                                        <td className="p-3 font-bebas text-lg text-[#888]">{index + 1}</td>
+                    <div className="bg-[#111] p-2 relative overflow-hidden">
+                        {/* Decoración de fondo estilo Webild */}
+                        <div className="absolute top-0 right-0 p-4 opacity-[0.02] font-bebas text-9xl pointer-events-none">
+                            {tabActiva}
+                        </div>
 
-                                        <td className="p-3 text-left font-bold text-white">
-                                            <div className="flex items-center gap-3">
-                                                {/* CONTENEDOR DE LA IMAGEN */}
-                                                <div className="relative w-6 h-6 shrink-0">
-                                                    <Image
-                                                        src={equipo.escudo || "/img/default-shield.png"} // Siempre pon un fallback
-                                                        alt={equipo.nombre}
-                                                        fill
-                                                        className="object-contain"
-                                                    />
+                        <table className="w-full relative z-10">
+                            <tbody className="divide-y divide-white/5">
+                                {equipos
+                                    .filter((equipo) => equipo.division === tabActiva)
+                                    .sort((a, b) => (b.puntos || 0) - (a.puntos || 0))
+                                    .slice(0, 5)
+                                    .map((equipo, i) => (
+                                        <tr key={equipo.id} className="hover:bg-white/[0.02] transition-all group">
+                                            <td className="p-6 font-bebas text-2xl text-gray-800 group-hover:text-[#c9a84c]">{i + 1}</td>
+                                            <td className="p-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-8 h-8 relative grayscale group-hover:grayscale-0 transition-all">
+                                                        <Image src={equipo.escudo || "/img/default-shield.png"} alt={equipo.nombre} fill className="object-contain" />
+                                                    </div>
+                                                    <span className="font-bebas text-3xl uppercase tracking-tighter">{equipo.nombre}</span>
                                                 </div>
-                                                {/* NOMBRE DEL EQUIPO */}
-                                                <span className="truncate">{equipo.nombre}</span>
-                                            </div>
-                                        </td>
-
-                                        <td className="p-3 text-gray-400">{equipo.pj || 0}</td>
-                                        <td className="p-3 font-bebas text-2xl text-[#c9a84c]">{equipo.pts || 0}</td>
-                                    </tr>
-                                ))}
+                                            </td>
+                                            <td className="p-6 text-right font-bebas text-4xl text-[#c9a84c]">
+                                                {equipo.puntos || 0} <span className="text-[10px] text-gray-700 ml-1">PTS</span>
+                                            </td>
+                                        </tr>
+                                    ))}
                             </tbody>
-                        ) : (
-                            /* CUERPO DE TABLA DE EJEMPLO (PLACEHOLDER) */
-                            <tbody className="font-barlow-condensed text-sm uppercase text-[#444] opacity-50 italic select-none grayscale">
-                                {[1, 2, 3, 4].map((pos) => (
-                                    <tr key={pos} className="border-b border-[#1e1e1e]">
-                                        <td className="p-3 font-bebas text-lg">{pos}</td>
-                                        <td className="p-3 text-left">[ Equipo de Ejemplo ]</td>
-                                        <td className="p-3">—</td>
-                                        <td className="p-3 font-bebas text-2xl">—</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        )}
-                    </table>
-
-                    {(!equipos || equipos.length === 0) && (
-                        <div className="p-2 bg-black/20 text-center">
-                            <p className="font-barlow-condensed text-[9px] text-[#555] uppercase tracking-[3px]">
-                                Esperando computo de la primera jornada...
-                            </p>
+                        </table>
+                        <div className="p-6 border-t border-white/5 text-right">
+                            <Link href="/positions" className="font-barlow text-xs tracking-[4px] uppercase text-gray-600 hover:text-white transition-colors">Ver Tabla Completa →</Link>
                         </div>
-                    )}
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            {/* PANEL: NOVEDADES CON BOTÓN DE PUBLICAR */}
-            {/* SECCIÓN PRENSA - LIMPIADA */}
-            <div className="max-w-6xl mx-auto mb-6 flex justify-between items-center px-2">
-                <h3 className="font-bebas text-3xl tracking-[3px] text-white italic uppercase">
-                    Prensa <span className="text-[#c9a84c]">Oficial</span>
-                </h3>
+            {/* 5. SECCIÓN PRENSA (Estilo Magazine) */}
+            <section className="py-32 bg-[#0d0d0d]">
+                <div className="max-w-[1400px] mx-auto px-6">
+                    <div className="flex justify-between items-end mb-16">
+                        <h3 className="font-bebas text-6xl uppercase italic">Prensa <span className="text-[#c9a84c]">Oficial</span></h3>
+                        <Link href="/noticias" className="font-bebas text-2xl border-b-2 border-[#c9a84c] text-[#c9a84c] pb-1 hover:text-white hover:border-white transition-all">Ir al portal</Link>
+                    </div>
 
-                <Link href="/noticias" className="font-bebas text-xl bg-[#222] border border-[#333] px-6 py-2 text-gray-400 hover:text-[#c9a84c] hover:border-[#c9a84c] transition-all italic uppercase">
-                    Ir a noticias →
-                </Link>
-            </div>
-
-            <div className="max-w-6xl mx-auto bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden mb-10 font-barlow-condensed">
-                <div className="p-4 bg-[#222222] border-b border-[#2a2a2a] flex justify-between items-center">
-                    <h3 className="font-bebas text-xl tracking-[3px] text-[#c9a84c]">Últimas Novedades</h3>
-                    <span className="text-[10px] text-gray-500 uppercase tracking-widest italic font-bold animate-pulse">EL LEGADO</span>
-                </div>
-
-                <div className="divide-y divide-[#1e1e1e]">
-                    {noticias.length > 0 ? noticias.map((nota) => {
-                        const fecha = nota.fecha?.toDate() || new Date();
-                        const dia = fecha.getDate().toString().padStart(2, '0');
-                        const mes = fecha.toLocaleString('es-AR', { month: 'short' }).toUpperCase().replace('.', '');
-
-                        return (
-                            <Link href="/noticias" key={nota.id} className="flex gap-6 p-5 hover:bg-[#c9a84c05] transition-colors group">
-                                <div className="text-center min-w-[50px] border-r border-[#222] pr-4">
-                                    <div className="font-bebas text-3xl text-[#c9a84c] leading-none">{dia}</div>
-                                    <div className="font-barlow-condensed text-[11px] tracking-[2px] text-gray-500 font-bold">{mes}</div>
-                                </div>
-
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <span className={`text-[9px] px-1.5 py-0.5 font-bold uppercase border ${nota.categoria === 'Sancion' || nota.categoria === 'Sanción'
-                                            ? 'bg-red-900/20 border-red-500/50 text-red-400'
-                                            : 'bg-blue-900/20 border-blue-500/50 text-blue-400'
-                                            }`}>
-                                            {nota.categoria}
-                                        </span>
-                                        <h4 className="font-bold text-lg uppercase tracking-wider text-white group-hover:text-[#c9a84c] transition-colors">
-                                            {nota.titulo}
-                                        </h4>
-                                    </div>
-                                    <p className="text-sm leading-relaxed text-[#888] mb-2 line-clamp-1 italic">
-                                        {/* Limpia el HTML para que no se vean las etiquetas en el inicio */}
-                                        {nota.contenido?.replace(/<[^>]*>/g, '').substring(0, 120)}...
-                                    </p>
-                                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
+                        {noticias.map((nota) => (
+                            <Link href="/noticias" key={nota.id} className="bg-[#111] p-10 border border-white/5 hover:bg-[#c9a84c] hover:text-black transition-all group relative overflow-hidden h-[400px] flex flex-col justify-end">
+                                <span className="absolute top-10 left-10 text-[10px] font-bold tracking-[5px] uppercase opacity-50">{nota.categoria}</span>
+                                <h4 className="font-bebas text-4xl uppercase leading-none mb-4 group-hover:translate-y-[-10px] transition-transform">{nota.titulo}</h4>
+                                <p className="font-barlow text-sm italic line-clamp-2 opacity-60">
+                                    {nota.contenido?.replace(/<[^>]*>/g, '')}
+                                </p>
                             </Link>
-                        );
-                    }) : (
-                        <div className="p-10 text-center text-gray-600 italic uppercase text-xs tracking-[4px]">
-                            No hay noticias recientes...
-                        </div>
-                    )}
+                        ))}
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            <div className="max-w-6xl mx-auto mb-6 flex justify-between items-center px-2">
-                <h3 className="font-bebas text-3xl tracking-[3px] text-white italic uppercase">
+            {/* 6. AUSENCIAS (Comité Disciplinario) */}
+            <section className="py-32 px-6 max-w-[1400px] mx-auto">
+                <div className="bg-[#111] border-t-8 border-red-600 p-12 relative overflow-hidden">
+                    <div className="absolute right-[-2%] top-[-10%] font-bebas text-[15rem] text-red-600/5 select-none uppercase italic">Warning</div>
 
-                </h3>
+                    <h3 className="font-bebas text-5xl mb-12 text-red-600 italic uppercase tracking-tighter">Reportes del Comité Disciplinario</h3>
 
-                <Link href="/ausencias" className="font-bebas text-xl bg-[#222] border border-[#333] px-6 py-2 text-gray-400 hover:text-[#c9a84c] hover:border-[#c9a84c] transition-all italic uppercase">
-                    Ir a Ausencias →
-                </Link>
-            </div>
-            <div className="max-w-6xl mx-auto bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden mb-10 font-barlow-condensed ">
-
-                {/* CABECERA ROJA */}
-
-                <div className="p-4 bg-[#222222] border-b border-[#2a2a2a] flex justify-between items-center">
-                    <h3 className="font-bebas text-xl tracking-[3px] text-red-500">Reportes de Ausencia</h3>
-                    <span className="text-[10px] text-gray-500 uppercase tracking-widest italic font-bold">Comité Disciplinario</span>
-                </div>
-
-                <div className="divide-y divide-[#1e1e1e]">
-                    {reportesAusencia.length > 0 ? reportesAusencia.map((rep) => {
-                        const fecha = rep.fecha?.toDate() || new Date();
-                        const dia = fecha.getDate().toString().padStart(2, '0');
-                        const mes = fecha.toLocaleString('es-AR', { month: 'short' }).toUpperCase().replace('.', '');
-
-                        return (
-                            <div key={rep.id} className="flex gap-6 p-5 transition-colors group">
-                                {/* FECHA */}
-                                <div className="text-center min-w-[50px] border-r border-[#222] pr-4">
-                                    <div className="font-bebas text-3xl text-red-500 leading-none">{dia}</div>
-                                    <div className="font-barlow-condensed text-[11px] tracking-[2px] text-gray-500 font-bold">{mes}</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
+                        {reportesAusencia.length > 0 ? reportesAusencia.map((rep) => (
+                            <div key={rep.id} className="border-l-2 border-white/10 pl-8 py-2">
+                                <div className="flex items-center gap-4 mb-2">
+                                    <span className="bg-red-600 text-white font-bebas px-3 py-1 text-sm skew-x-[-10deg] italic">{rep.equipo}</span>
+                                    <span className="font-bebas text-xl text-white uppercase">{rep.dt}</span>
                                 </div>
-
-                                {/* CONTENIDO */}
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase border bg-red-900/20 border-red-500/50 text-red-400">
-                                            {rep.equipo}
-                                        </span>
-                                        <h4 className="font-bold text-lg uppercase tracking-wider text-white">
-                                            {rep.dt} - Ausencia Reportada
-                                        </h4>
-                                    </div>
-                                    <p className="text-sm leading-relaxed text-[#888] italic">
-                                        {rep.motivo}
-                                    </p>
-                                </div>
+                                <p className="font-barlow text-gray-500 italic text-lg leading-snug">"{rep.motivo}"</p>
                             </div>
-                        );
-                    }) : (
-                        <div className="p-10 text-center text-gray-700 italic uppercase text-xs tracking-[4px]">
-                            Sin reportes de ausencia actualmente...
-                        </div>
-                    )}
+                        )) : (
+                            <div className="text-gray-700 uppercase font-barlow tracking-[4px] italic text-xs">Sin incidentes registrados recientemente.</div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </section>
 
         </main>
     );
 }
 
-// Cambiamos string por React.ReactNode
-function StatCard({ value, label }: { value: React.ReactNode, label: string }) {
+// Sub-componente de Estadísticas con lógica visual Webild
+function StatCard({ value, label, isGold }: { value: any, label: string, isGold?: boolean }) {
     return (
-        <div className="bg-[#1a1a1a] border border-[#2a2a2a] p-5 text-center relative overflow-hidden group">
-            <div className="font-bebas text-4xl text-[#c9a84c] tracking-[2px] mb-1">
+        <div className="group">
+            <div className={`font-bebas text-7xl mb-2 transition-transform group-hover:scale-110 origin-left ${isGold ? 'text-[#c9a84c]' : 'text-white'}`}>
                 {value}
             </div>
-            <div className="font-barlow-condensed text-[15px] tracking-[3px] text-[#888888] uppercase">
+            <div className="font-barlow text-[10px] tracking-[5px] text-gray-600 uppercase font-bold group-hover:text-gray-400 transition-colors">
                 {label}
             </div>
-            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#c9a84c] opacity-30 group-hover:opacity-100 transition-opacity"></div>
         </div>
     );
 }
