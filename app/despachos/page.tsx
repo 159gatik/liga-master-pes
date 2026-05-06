@@ -26,40 +26,43 @@ interface Equipo {
     id: string;
     nombre: string;
     presupuesto: number;
+    division: string; // Campo obligatorio ahora
+    juego: string;    // Filtro por PES6
     dt?: string;
 }
 
 export default function SeccionDespachos() {
     const { userData, isAdmin } = useAuth();
     const [equipos, setEquipos] = useState<Equipo[]>([]);
+    const [tabActiva, setTabActiva] = useState<"A" | "B">("A"); // Tab de división
     const [equipoActivoId, setEquipoActivoId] = useState<string | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
     const [discordDT, setDiscordDT] = useState<string | null>(null);
 
-    // Estados para el nuevo post
     const [textoLibre, setTextoLibre] = useState("");
     const [lineasMovimiento, setLineasMovimiento] = useState<MovimientoLinea[]>([]);
     const [nuevaLinea, setNuevaLinea] = useState<MovimientoLinea>({ tipo: "COMPRA", detalle: "", monto: 0 });
 
+    // 1. Cargar equipos
     useEffect(() => {
         const q = query(collection(db, "equipos"), orderBy("nombre", "asc"));
         const unsub = onSnapshot(q, (snapshot) => {
             const eqs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Equipo));
             setEquipos(eqs);
-            setEquipoActivoId(prev => prev || (eqs.length > 0 ? eqs[0].id : null));
+
+            // Si no hay equipo activo, intentar poner el primero de la división A
+            if (!equipoActivoId) {
+                const primerA = eqs.find(e => e.division === "A" && e.juego === "pes6");
+                if (primerA) setEquipoActivoId(primerA.id);
+            }
         });
         return () => unsub();
     }, []);
 
+    // 2. Cargar Discord del DT
     useEffect(() => {
         if (!equipoActivoId) return;
-
-        const q = query(
-            collection(db, "users"),
-            where("equipoId", "==", equipoActivoId),
-            limit(1)
-        );
-
+        const q = query(collection(db, "users"), where("equipoId", "==", equipoActivoId), limit(1));
         const unsub = onSnapshot(q, (snapshot) => {
             if (!snapshot.empty) {
                 const dtData = snapshot.docs[0].data();
@@ -68,16 +71,13 @@ export default function SeccionDespachos() {
                 setDiscordDT("Sin DT asignado");
             }
         });
-
-        return () => {
-            unsub();
-            setDiscordDT(null);
-        };
+        return () => { unsub(); setDiscordDT(null); };
     }, [equipoActivoId]);
 
+    // 3. Cargar Movimientos (Posts)
     useEffect(() => {
         if (!equipoActivoId) return;
-        const q = query(collection(db, "equipos", equipoActivoId, "movimientos"), orderBy("fecha", "asc"));
+        const q = query(collection(db, "equipos", equipoActivoId, "movimientos"), orderBy("fecha", "desc")); // Cambiado a desc para ver lo nuevo arriba
         const unsub = onSnapshot(q, (snapshot) => {
             setPosts(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Post)));
         });
@@ -85,42 +85,25 @@ export default function SeccionDespachos() {
     }, [equipoActivoId]);
 
     const agregarLineaALista = () => {
-        if (!nuevaLinea.detalle.trim()) {
-            alert("Escribí el detalle del movimiento.");
-            return;
-        }
-
+        if (!nuevaLinea.detalle.trim()) return alert("Escribí el detalle.");
         let montoCorregido = nuevaLinea.monto;
         if (nuevaLinea.tipo === "COMPRA" && montoCorregido > 0) montoCorregido = -montoCorregido;
         else if ((nuevaLinea.tipo === "VENTA" || nuevaLinea.tipo === "PATROCINIO") && montoCorregido < 0) montoCorregido = Math.abs(montoCorregido);
-
         setLineasMovimiento(prev => [...prev, { ...nuevaLinea, monto: montoCorregido }]);
         setNuevaLinea({ tipo: "COMPRA", detalle: "", monto: 0 });
     };
 
     const publicarPost = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // 1. Validar que haya algo para enviar
-        if (!textoLibre.trim() && lineasMovimiento.length === 0) {
-            alert("El despacho está vacío. Escribe un mensaje o añade un movimiento.");
-            return;
-        }
-
+        if (!textoLibre.trim() && lineasMovimiento.length === 0) return alert("Despacho vacío.");
         const currentId = equipoActivoId;
         if (!currentId) return;
 
-        // 2. Verificación de seguridad local
-        const canPost = isAdmin || userData?.equipoId === currentId;
-        if (!canPost) {
-            alert("No tienes permiso para reportar en este club.");
-            return;
+        if (!isAdmin && userData?.equipoId !== currentId) {
+            return alert("No tienes permiso aquí.");
         }
 
         try {
-            console.log("Intentando enviar post a:", currentId);
-
-            // 3. Crear el documento en Firebase
             await addDoc(collection(db, "equipos", currentId, "movimientos"), {
                 autor: userData.nombre || "DT Oficial",
                 contenido: textoLibre.trim(),
@@ -129,40 +112,46 @@ export default function SeccionDespachos() {
                 fecha: serverTimestamp()
             });
 
-            // 4. Si el que postea es Admin, actualizamos presupuesto. Si es DT, no hacemos nada más.
             if (isAdmin && lineasMovimiento.length > 0) {
                 const totalMonto = lineasMovimiento.reduce((acc, curr) => acc + curr.monto, 0);
-                await updateDoc(doc(db, "equipos", currentId), {
-                    presupuesto: increment(totalMonto)
-                });
+                await updateDoc(doc(db, "equipos", currentId), { presupuesto: increment(totalMonto) });
             }
 
-            // 5. Éxito y limpieza
-            alert("Operación reportada al despacho con éxito.");
+            alert("Reportado con éxito.");
             setTextoLibre("");
             setLineasMovimiento([]);
-
-        } catch (error) {
-            console.error("Error completo de Firebase:", error);
-            alert(`Error: ${error.message}`);
-        }
+        } catch (error) { alert(`Error: ${error.message}`); }
     };
 
     const borrarPost = async (postId: string) => {
-        if (!isAdmin || !confirm("¿Borrar este mensaje? El presupuesto NO se restaurará automáticamente.")) return;
-        try {
-            await deleteDoc(doc(db, "equipos", equipoActivoId!, "movimientos", postId));
-        } catch (error) { console.error(error); }
+        if (!isAdmin || !confirm("¿Borrar mensaje?")) return;
+        try { await deleteDoc(doc(db, "equipos", equipoActivoId!, "movimientos", postId)); } catch (e) { console.error(e); }
     };
 
+    const equiposFiltrados = equipos.filter(e => e.division === tabActiva && e.juego === "pes6");
     const equipoActual = equipos.find(e => e.id === equipoActivoId);
 
     return (
-        <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] p-4 md:p-10 font-barlow-condensed">
+        <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] p-4 md:p-10 font-barlow-condensed pt-24">
             <div className="max-w-5xl mx-auto">
-                {/* TABS DE EQUIPOS */}
+
+                {/* TABS DE DIVISIÓN */}
+                <div className="flex gap-2 mb-4">
+                    {["A", "B"].map((div) => (
+                        <button
+                            key={div}
+                            onClick={() => setTabActiva(div as "A" | "B")}
+                            className={`px-6 py-2 font-bebas text-xl tracking-widest transition-all ${tabActiva === div ? "bg-[#c9a84c] text-black italic" : "bg-[#111] text-gray-500 border border-white/5 hover:text-white"
+                                }`}
+                        >
+                            DIVISIÓN {div}
+                        </button>
+                    ))}
+                </div>
+
+                {/* TABS DE EQUIPOS FILTRADOS */}
                 <div className="flex flex-wrap gap-1 mb-8 bg-[#111] p-1 border border-[#222]">
-                    {equipos.map((eq) => (
+                    {equiposFiltrados.map((eq) => (
                         <button key={eq.id} onClick={() => setEquipoActivoId(eq.id)}
                             className={`px-4 py-2 font-bebas text-lg italic transition-colors ${equipoActivoId === eq.id ? "bg-[#c9a84c] text-black" : "text-gray-400 hover:bg-[#222]"}`}>
                             {eq.nombre}
@@ -173,16 +162,16 @@ export default function SeccionDespachos() {
                 {/* INFO BAR EQUIPO */}
                 <div className="bg-[#1a1a1a] border border-[#2a2a2a] p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
-                        <h2 className="font-bebas text-4xl leading-none uppercase italic">{equipoActual?.nombre}</h2>
+                        <h2 className="font-bebas text-4xl leading-none uppercase italic">{equipoActual?.nombre || "Seleccioná un club"}</h2>
                         <div className="flex items-center gap-2 mt-2">
                             <span className="w-2 h-2 bg-[#5865F2] rounded-full animate-pulse"></span>
                             <p className="text-[#888] text-[12px] uppercase tracking-[2px] font-bold">
-                                DISCORD DT: <span className="text-white ml-1">{discordDT || "CARGANDO..."}</span>
+                                DISCORD DT: <span className="text-white ml-1">{discordDT || "---"}</span>
                             </p>
                         </div>
                     </div>
                     <div className="text-4xl md:text-6xl font-bebas text-[#27ae60] tabular-nums">
-                        ${equipoActual?.presupuesto?.toLocaleString()}
+                        ${equipoActual?.presupuesto?.toLocaleString() || "0"}
                     </div>
                 </div>
 
@@ -191,13 +180,13 @@ export default function SeccionDespachos() {
                     {posts.map((p, idx) => (
                         <div key={p.id} className={`bg-[#111] border ${p.esAdminPost ? 'border-[#c9a84c]/50 shadow-[0_0_15px_rgba(201,168,76,0.05)]' : 'border-[#222]'} flex flex-col md:flex-row relative animate-fadeIn`}>
                             {isAdmin && (
-                                <button onClick={() => borrarPost(p.id)} className="absolute top-2 right-2 text-red-500 hover:text-white text-xs uppercase font-bold bg-black/50 px-2 py-1 z-10 transition-colors">Borrar</button>
+                                <button onClick={() => borrarPost(p.id)} className="absolute top-2 right-2 text-red-500 hover:text-white text-xs uppercase font-bold bg-black/50 px-2 py-1 z-10">Borrar</button>
                             )}
                             <div className="w-full md:w-48 bg-[#151515] p-4 border-r border-[#222] flex flex-row md:flex-col items-center gap-3">
                                 <div className={`w-12 h-12 flex items-center justify-center font-bebas text-2xl italic ${p.esAdminPost ? 'bg-red-600 text-white' : 'bg-[#c9a84c] text-black'}`}>{p.autor.charAt(0)}</div>
                                 <div className="text-left md:text-center">
                                     <p className={`${p.esAdminPost ? 'text-red-500' : 'text-[#c9a84c]'} font-bold uppercase text-xs tracking-widest`}>{p.autor}</p>
-                                    <p className="text-[9px] text-gray-500 uppercase mt-1 italic">Operación #{idx + 1}</p>
+                                    <p className="text-[9px] text-gray-500 uppercase mt-1 italic">Operación {posts.length - idx}</p>
                                 </div>
                             </div>
                             <div className="flex-grow p-6">
@@ -219,36 +208,33 @@ export default function SeccionDespachos() {
                     ))}
                 </div>
 
-                {/* FORMULARIO DE RESPUESTA */}
-                {(isAdmin || userData?.equipoId === equipoActivoId) && (
+                {/* FORMULARIO */}
+                {(isAdmin || userData?.equipoId === equipoActivoId) && equipoActivoId && (
                     <div className="bg-[#1a1a1a] border-t-4 border-[#c9a84c] p-8 shadow-2xl">
-                        <h3 className="font-bebas text-3xl mb-6 italic uppercase">Redactar Informe de Despacho</h3>
+                        <h3 className="font-bebas text-3xl mb-6 italic uppercase text-white">Redactar Informe</h3>
                         <form onSubmit={publicarPost} className="space-y-4">
-                            <textarea placeholder="Detalla el traspaso o mensaje aquí..." className="w-full bg-[#0a0a0a] border border-[#333] p-3 outline-none focus:border-[#c9a84c] italic min-h-[100px] text-white transition-all"
+                            <textarea placeholder="Detalles aquí..." className="w-full bg-[#0a0a0a] border border-[#333] p-3 outline-none focus:border-[#c9a84c] italic min-h-[100px] text-white"
                                 value={textoLibre} onChange={(e) => setTextoLibre(e.target.value)} />
-
                             <div className="bg-[#111] border-l-4 border-[#c9a84c] p-6 mb-6">
-                                <h4 className="font-bebas text-2xl text-[#c9a84c] mb-3 italic uppercase tracking-widest">Contabilidad Oficial</h4>
-                                <p className="text-[11px] text-gray-500 uppercase italic mb-4">Los montos reportados por DTs no alteran el presupuesto hasta que un Admin los procese.</p>
+                                <h4 className="font-bebas text-2xl text-[#c9a84c] mb-3 uppercase italic tracking-widest">Contabilidad</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
-                                    <select className="bg-[#0a0a0a] border border-[#333] p-2 text-xs uppercase text-white font-bold" value={nuevaLinea.tipo} onChange={(e) => setNuevaLinea({ ...nuevaLinea, tipo: e.target.value })}>
+                                    <select className="bg-[#0a0a0a] border border-[#333] p-2 text-xs uppercase text-white" value={nuevaLinea.tipo} onChange={(e) => setNuevaLinea({ ...nuevaLinea, tipo: e.target.value })}>
                                         <option value="COMPRA">COMPRA (-)</option>
                                         <option value="VENTA">VENTA (+)</option>
                                         <option value="PRESTAMO">PRESTAMO</option>
                                         <option value="INTERCAMBIO">INTERCAMBIO</option>
                                         <option value="PATROCINIO">PATROCINIO (+)</option>
                                     </select>
-                                    <input type="text" placeholder="Ej: Venta de Messi a Inter" className="bg-[#0a0a0a] border border-[#333] p-2 md:col-span-2 text-sm italic" value={nuevaLinea.detalle} onChange={(e) => setNuevaLinea({ ...nuevaLinea, detalle: e.target.value })} />
-                                    <input type="number" placeholder="Monto" className="bg-[#0a0a0a] border border-[#333] p-2 text-sm" value={nuevaLinea.monto} onChange={(e) => setNuevaLinea({ ...nuevaLinea, monto: Number(e.target.value) })} />
+                                    <input type="text" placeholder="Detalle" className="bg-[#0a0a0a] border border-[#333] p-2 md:col-span-2 text-sm italic" value={nuevaLinea.detalle} onChange={(e) => setNuevaLinea({ ...nuevaLinea, detalle: e.target.value })} />
+                                    <input type="number" placeholder="Monto" className="bg-[#0a0a0a] border border-[#333] p-2 text-sm text-white" value={nuevaLinea.monto} onChange={(e) => setNuevaLinea({ ...nuevaLinea, monto: Number(e.target.value) })} />
                                 </div>
-                                <button type="button" onClick={agregarLineaALista} className="text-xs bg-white/5 border border-white/10 px-4 py-2 uppercase font-bold hover:bg-[#c9a84c] hover:text-black transition-all italic">
-                                    + Añadir movimiento al reporte
+                                <button type="button" onClick={agregarLineaALista} className="text-xs bg-white/5 border border-white/10 px-4 py-2 uppercase font-bold hover:bg-[#c9a84c] hover:text-black italic">
+                                    + Añadir movimiento
                                 </button>
-
                                 {lineasMovimiento.length > 0 && (
                                     <div className="mt-4 p-4 bg-black/20 border border-white/5">
                                         {lineasMovimiento.map((l, i) => (
-                                            <div key={i} className="text-xs italic py-1 border-b border-white/5 flex justify-between uppercase tracking-tighter">
+                                            <div key={i} className="text-xs italic py-1 border-b border-white/5 flex justify-between uppercase">
                                                 <span>[{l.tipo}] {l.detalle}</span>
                                                 <span className={l.monto >= 0 ? 'text-green-500' : 'text-red-500'}>${l.monto.toLocaleString()}</span>
                                             </div>
@@ -256,8 +242,8 @@ export default function SeccionDespachos() {
                                     </div>
                                 )}
                             </div>
-                            <button className="w-full bg-[#c9a84c] text-black font-bebas text-3xl py-3 hover:bg-white transition-all uppercase italic tracking-widest">
-                                Enviar Post al Despacho
+                            <button className="w-full bg-[#c9a84c] text-black font-bebas text-3xl py-3 hover:bg-white uppercase italic tracking-widest transition-all">
+                                Enviar al Despacho
                             </button>
                         </form>
                     </div>

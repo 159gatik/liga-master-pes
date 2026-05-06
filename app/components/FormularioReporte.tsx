@@ -9,7 +9,7 @@ interface Props {
     fechaNumero: number;
     rivales: { id: string, nombre: string }[];
     equipoNombre: string;
-    esCopa?: boolean; // <--- Agrégalo aquí
+    esCopa?: boolean;
 }
 
 export default function FormularioReporte({ fechaNumero, rivales, equipoNombre, esCopa = false }: Props) {
@@ -18,8 +18,8 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre, 
     const [formData, setFormData] = useState({
         rivalId: "",
         resultado: "victoria",
-        golesPro: "", // Goles que hizo el DT
-        golesRival: "", // Goles que recibió
+        golesPro: "",
+        golesRival: "",
         comentario: "",
         captura1: "", captura2: "", captura3: "",
     });
@@ -28,53 +28,49 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre, 
         e.preventDefault();
 
         if (!user || !userData?.equipoId) return alert("Error de sesión");
+
         if (!formData.captura1 || !formData.captura2 || !formData.captura3) {
             return Alert.fire({
                 icon: 'warning',
                 title: 'FALTAN LAS CAPTURAS',
                 text: 'Las 3 capturas son obligatorias según el reglamento.',
-            });;
+            });
         }
-        // Verificación de goles (asegurate de tener estos campos en tu formData)
+
         if (formData.golesPro === "" || formData.golesRival === "") {
             return Alert.fire({
                 icon: 'warning',
                 title: 'DATOS INCOMPLETOS',
                 text: 'Faltan ingresar los goles del partido.',
-            });;
+            });
         }
 
         setSubiendo(true);
         try {
             const batch = writeBatch(db);
-            // En lugar de const reporteRef = collection(db, "reportes");
             const nombreColeccion = esCopa ? "reportes_copa" : "reportes";
             const reporteRef = collection(db, nombreColeccion);
             const userRef = doc(db, "users", user.uid);
             const equipoRef = doc(db, "equipos", userData.equipoId);
 
-            // 1. Buscamos el nombre del rival para que la Home lo muestre sin hacer otro fetch
             const nombreRival = rivales.find(r => r.id === formData.rivalId)?.nombre || "Rival Desconocido";
 
-            // 2. Guardar el reporte con los campos que espera la HOME
+            // Guardar reporte con el campo DIVISION: "A"
             await addDoc(reporteRef, {
                 ...formData,
                 dtUid: user.uid,
                 equipoId: userData.equipoId,
                 nombreDT: userData.nombre,
                 fechaTorneo: Number(fechaNumero),
-
-                // Si es copa, guardamos la ronda en lugar de fechaTorneo (o ambos)
+                division: "A", // <--- INYECCIÓN AUTOMÁTICA PARA FILTRADO
                 ronda: esCopa ? Number(fechaNumero) : null,
                 torneo: esCopa ? "copa" : "liga",
-
                 local: equipoNombre || userData?.nombre || "Equipo Local",
                 visita: nombreRival,
                 score: `${formData.golesPro}-${formData.golesRival}`,
                 fecha: serverTimestamp(),
             });
 
-            // 3. Actualizar estadísticas del DT y Puntos del Equipo (Batch)
             const esWin = formData.resultado === "victoria";
             const esEmpate = formData.resultado === "empate";
 
@@ -89,17 +85,18 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre, 
                 pg: esWin ? increment(1) : increment(0),
                 pe: esEmpate ? increment(1) : increment(0),
                 pp: formData.resultado === "derrota" ? increment(1) : increment(0),
-                // También actualizamos goles en la tabla general
                 gf: increment(Number(formData.golesPro)),
                 gc: increment(Number(formData.golesRival)),
                 df: increment(Number(formData.golesPro) - Number(formData.golesRival))
             });
 
             await batch.commit();
+
             Toast.fire({
                 icon: 'success',
                 title: 'Reporte enviado con éxito'
             });
+
             window.location.reload();
         } catch (error) {
             console.error("Error al reportar:", error);
@@ -114,16 +111,19 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre, 
     };
 
     return (
-        <form onSubmit={enviarReporte} className="bg-[#111] border border-[#222] p-6 space-y-4 font-barlow-condensed">
-            <h4 className="font-bebas text-2xl text-[#c9a84c] italic uppercase">Reportar Fecha {fechaNumero}</h4>
+        <form onSubmit={enviarReporte} className="bg-[#111] border-t-4 border-[#c9a84c] p-8 space-y-6 shadow-2xl relative">
+            <div className="absolute top-0 right-0 p-3 opacity-5 font-bebas text-3xl select-none">OFFICIAL REPORT</div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Selección de Rival */}
-                <div className="flex flex-col gap-1">
-                    <label className="text-[10px] text-gray-500 uppercase font-bold">Rival</label>
+            <h4 className="font-bebas text-3xl text-[#c9a84c] italic uppercase tracking-tighter">
+                Reportar <span className="text-white">Jornada {fechaNumero}</span>
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-2">
+                    <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Rival del Encuentro</label>
                     <select
                         required
-                        className="bg-[#0a0a0a] border border-[#333] p-2 text-white outline-none focus:border-[#c9a84c]"
+                        className="bg-[#0a0a0a] border border-white/5 p-3 text-white outline-none focus:border-[#c9a84c] font-barlow italic transition-all cursor-pointer"
                         onChange={(e) => setFormData({ ...formData, rivalId: e.target.value })}
                     >
                         <option value="">Seleccionar Rival...</option>
@@ -131,11 +131,10 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre, 
                     </select>
                 </div>
 
-                {/* Resultado */}
-                <div className="flex flex-col gap-1">
-                    <label className="text-[10px] text-gray-500 uppercase font-bold">Tu Resultado</label>
+                <div className="flex flex-col gap-2">
+                    <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Resultado Final</label>
                     <select
-                        className="bg-[#0a0a0a] border border-[#333] p-2 text-white outline-none focus:border-[#c9a84c]"
+                        className="bg-[#0a0a0a] border border-white/5 p-3 text-white outline-none focus:border-[#c9a84c] font-barlow italic transition-all cursor-pointer"
                         onChange={(e) => setFormData({ ...formData, resultado: e.target.value })}
                     >
                         <option value="victoria">VICTORIA (+3 pts)</option>
@@ -144,40 +143,55 @@ export default function FormularioReporte({ fechaNumero, rivales, equipoNombre, 
                     </select>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <input
-                    type="number" required placeholder="Tus Goles"
-                    className="bg-[#0a0a0a] border border-[#333] p-2 text-center text-white"
-                    onChange={(e) => setFormData({ ...formData, golesPro: e.target.value })}
-                />
-                <input
-                    type="number" required placeholder="Goles Rival"
-                    className="bg-[#0a0a0a] border border-[#333] p-2 text-center text-white"
-                    onChange={(e) => setFormData({ ...formData, golesRival: e.target.value })}
-                />
-            </div>
-            {/* Capturas Obligatorias */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                <input type="url" required placeholder="Link Captura 1 (IMGUR/Discord)" className="bg-[#0a0a0a] border border-[#333] p-2 text-xs"
-                    onChange={(e) => setFormData({ ...formData, captura1: e.target.value })} />
-                <input type="url" required placeholder="Link Captura 2 (Resultado)" className="bg-[#0a0a0a] border border-[#333] p-2 text-xs"
-                    onChange={(e) => setFormData({ ...formData, captura2: e.target.value })} />
-                <input type="url" required placeholder="Link Captura 3 (Estadísticas)" className="bg-[#0a0a0a] border border-[#333] p-2 text-xs"
-                    onChange={(e) => setFormData({ ...formData, captura3: e.target.value })} />
+
+            <div className="grid grid-cols-2 gap-6">
+                <div className="flex flex-col gap-2">
+                    <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Mis Goles</label>
+                    <input
+                        type="number" required placeholder="0"
+                        className="bg-[#0a0a0a] border border-white/5 p-4 text-center text-white font-bebas text-2xl outline-none focus:border-[#c9a84c]"
+                        onChange={(e) => setFormData({ ...formData, golesPro: e.target.value })}
+                    />
+                </div>
+                <div className="flex flex-col gap-2">
+                    <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Goles Rival</label>
+                    <input
+                        type="number" required placeholder="0"
+                        className="bg-[#0a0a0a] border border-white/5 p-4 text-center text-white font-bebas text-2xl outline-none focus:border-[#c9a84c]"
+                        onChange={(e) => setFormData({ ...formData, golesRival: e.target.value })}
+                    />
+                </div>
             </div>
 
-            <textarea
-                placeholder="Comentario extra del partido"
-                className="w-full bg-[#0a0a0a] border border-[#333] p-3 text-sm h-24 outline-none focus:border-[#c9a84c]"
-                onChange={(e) => setFormData({ ...formData, comentario: e.target.value })}
-            />
+            <div className="space-y-2">
+                <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest block">Enlaces de Captura (Imgur / Discord)</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <input type="url" required placeholder="Goles" className="bg-[#0a0a0a] border border-white/5 p-3 text-[11px] outline-none focus:border-[#c9a84c] font-barlow"
+                        onChange={(e) => setFormData({ ...formData, captura1: e.target.value })} />
+                    <input type="url" required placeholder="Resultado" className="bg-[#0a0a0a] border border-white/5 p-3 text-[11px] outline-none focus:border-[#c9a84c] font-barlow"
+                        onChange={(e) => setFormData({ ...formData, captura2: e.target.value })} />
+                    <input type="url" required placeholder="Estadísticas" className="bg-[#0a0a0a] border border-white/5 p-3 text-[11px] outline-none focus:border-[#c9a84c] font-barlow"
+                        onChange={(e) => setFormData({ ...formData, captura3: e.target.value })} />
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+                <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Crónica del Partido</label>
+                <textarea
+                    placeholder="Escribe brevemente lo que pasó en el partido..."
+                    className="w-full bg-[#0a0a0a] border border-white/5 p-4 text-sm h-28 outline-none focus:border-[#c9a84c] font-barlow italic resize-none"
+                    onChange={(e) => setFormData({ ...formData, comentario: e.target.value })}
+                />
+            </div>
 
             <button
                 type="submit"
                 disabled={subiendo}
-                className="w-full bg-[#c9a84c] text-black font-bebas text-xl py-3 hover:bg-white transition-all disabled:opacity-50"
+                className="w-full bg-[#c9a84c] text-black font-bebas text-2xl py-4 skew-x-[-15deg] hover:bg-white transition-all disabled:opacity-50"
             >
-                {subiendo ? "PROCESANDO RESULTADO..." : "SUBIR REPORTE OFICIAL"}
+                <span className="inline-block skew-x-[15deg]">
+                    {subiendo ? "PROCESANDO DATOS..." : "ENVIAR REPORTE OFICIAL"}
+                </span>
             </button>
         </form>
     );
