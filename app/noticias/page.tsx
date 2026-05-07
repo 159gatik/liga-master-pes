@@ -1,11 +1,14 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db } from "@/src/lib/firebase";
 import { useAuth } from "@/src/lib/hooks/useAuht";
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import {
+    collection, query, orderBy, onSnapshot, addDoc,
+    serverTimestamp, Timestamp, doc, deleteDoc, runTransaction
+} from "firebase/firestore"; // 1. Importamos doc y deleteDoc
 import { Alert, Toast } from "@/src/lib/alerts";
 
-// Nuevo Editor compatible con React 19
+// Editor compatible con React 19
 import {
     Editor,
     EditorProvider,
@@ -27,18 +30,19 @@ interface Noticia {
     contenido: string;
     autor: string;
     fecha: Timestamp;
+    reacciones?: { [key: string]: number };
+    userReactions?: { [key: string]: string };
 }
 
 export default function NoticiasPage() {
-    const { userData, isAdmin } = useAuth();
+    const { userData, isAdmin, user } = useAuth();
     const [noticias, setNoticias] = useState<Noticia[]>([]);
+    const formularioRef = useRef<HTMLDivElement>(null);
 
-    // Estados para el formulario
     const [titulo, setTitulo] = useState("");
     const [categoria, setCategoria] = useState("Comunicado");
     const [contenido, setContenido] = useState("");
 
-    // Cargar noticias en tiempo real
     useEffect(() => {
         const q = query(collection(db, "novedades"), orderBy("fecha", "desc"));
         const unsub = onSnapshot(q, (snap) => {
@@ -47,11 +51,38 @@ export default function NoticiasPage() {
         return () => unsub();
     }, []);
 
+    const scrollToEditor = () => {
+        formularioRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    // 2. FUNCIÓN PARA ELIMINAR NOTICIA
+    const borrarNoticia = async (id: string) => {
+        const confirmacion = await Alert.fire({
+            title: "¿Estás seguro?",
+            text: "Esta acción eliminará la noticia permanentemente del foro.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#c9a84c",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Sí, eliminar",
+            cancelButtonText: "Cancelar"
+        });
+
+        if (confirmacion.isConfirmed) {
+            try {
+                await deleteDoc(doc(db, "novedades", id));
+                Toast.fire({ icon: 'success', title: 'Noticia eliminada correctamente' });
+            } catch (error) {
+                console.error(error);
+                Alert.fire("Error", "No se pudo eliminar la noticia", "error");
+            }
+        }
+    };
+
     const publicarNoticia = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!titulo.trim() || !contenido.trim() || contenido === '<p><br></p>') {
-            return Alert.fire("Error", "Debes completar el título y el cuerpo de la noticia", "error");
+            return Alert.fire("Error", "Debes completar el título y el cuerpo", "error");
         }
 
         try {
@@ -64,7 +95,6 @@ export default function NoticiasPage() {
                 fecha: serverTimestamp(),
             });
 
-            // Limpiar campos
             setTitulo("");
             setContenido("");
             Toast.fire({ icon: 'success', title: 'Noticia lanzada al foro' });
@@ -73,145 +103,268 @@ export default function NoticiasPage() {
             Alert.fire("Error", "No se pudo publicar la noticia", "error");
         }
     };
+    const reaccionarANoticia = async (noticiaId: string, emoji: string) => {
+        // 1. Verificamos si el usuario está logueado
+        if (!user) {
+            return Alert.fire({
+                title: "¡Atención!",
+                text: "Debes iniciar sesión para poder reaccionar a las noticias.",
+                icon: "info",
+                confirmButtonColor: "#c9a84c",
+            });
+        }
+
+        const noticiaRef = doc(db, "novedades", noticiaId);
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const noticiaDoc = await transaction.get(noticiaRef);
+
+                if (!noticiaDoc.exists()) {
+                    throw "La noticia no existe";
+                }
+
+                const data = noticiaDoc.data();
+
+                // Inicializamos los objetos si no existen en Firebase
+                const userReactions = data.userReactions || {};
+                const reacciones = data.reacciones || {};
+
+                // Obtenemos qué reaccionó este usuario antes (si es que lo hizo)
+                const reaccionPrevia = userReactions[user.uid];
+
+                // CASO A: El usuario hace clic en el MISMO emoji (quiere quitar su reacción)
+                if (reaccionPrevia === emoji) {
+                    // Quitamos la marca del usuario
+                    delete userReactions[user.uid];
+                    // Restamos 1 al contador de ese emoji
+                    reacciones[emoji] = Math.max(0, (reacciones[emoji] || 1) - 1);
+                }
+                // CASO B: El usuario reacciona por primera vez o CAMBIA de emoji
+                else {
+                    // Si ya tenía OTRO emoji antes, le restamos 1 al anterior
+                    if (reaccionPrevia) {
+                        reacciones[reaccionPrevia] = Math.max(0, (reacciones[reaccionPrevia] || 1) - 1);
+                    }
+
+                    // Seteamos la nueva reacción para el usuario
+                    userReactions[user.uid] = emoji;
+                    // Sumamos 1 al nuevo emoji
+                    reacciones[emoji] = (reacciones[emoji] || 0) + 1;
+                }
+
+                // Actualizamos el documento en Firebase con los nuevos mapas
+                transaction.update(noticiaRef, {
+                    userReactions: userReactions,
+                    reacciones: reacciones
+                });
+            });
+
+            // Opcional: un pequeño feedback táctil
+            console.log("Reacción procesada");
+        } catch (error) {
+            console.error("Error en la transacción de reacción: ", error);
+            Toast.fire({
+                icon: 'error',
+                title: 'No se pudo procesar la reacción'
+            });
+        }
+    };
 
     return (
-        <main className="min-h-screen bg-[#0a0a0a] text-white p-6 md:p-10 font-barlow-condensed">
-            <div className="max-w-5xl mx-auto space-y-12">
+        <main className="min-h-screen bg-[#0a0a0a] text-white p-6 md:p-10 font-barlow-condensed pt-32">
+            <div className="max-w-5xl mx-auto space-y-16">
 
                 {/* CABECERA */}
-                <div className="border-l-4 border-[#c9a84c] pl-6">
-                    <h1 className="font-bebas text-7xl italic uppercase leading-none">
-                        Prensa <span className="text-[#c9a84c]">Oficial</span>
-                    </h1>
-                    <p className="text-gray-500 tracking-[4px] uppercase italic text-sm">
-                        El Legado PES 6 · Foro de Novedades y Comunicados
-                    </p>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-l-4 border-[#c9a84c] pl-8 py-2">
+                    <div>
+                        <h1 className="font-bebas text-8xl italic uppercase leading-[0.8] tracking-tighter">
+                            Prensa <span className="text-[#c9a84c]">Oficial</span>
+                        </h1>
+                        <p className="text-gray-500 tracking-[6px] uppercase italic text-sm mt-4 font-bold">
+                            Novedades · Comunicados · Mercado de Pases
+                        </p>
+                    </div>
+
+                    {(isAdmin || userData?.rol === "dt") && (
+                        <button
+                            onClick={scrollToEditor}
+                            className="bg-[#c9a84c] text-black font-bebas text-3xl px-8 py-3 italic hover:bg-white transition-all shadow-[8px_8px_0px_rgba(201,168,76,0.2)] hover:shadow-none hover:translate-x-1 hover:translate-y-1"
+                        >
+                            + Redactar Noticia
+                        </button>
+                    )}
                 </div>
+
                 {/* FEED DE NOTICIAS */}
-                <div className="space-y-10">
+                <div className="space-y-12">
                     {noticias.length > 0 ? noticias.map((n) => (
-                        <article key={n.id} className="bg-[#0f0f0f] border border-[#222] shadow-2xl animate-fadeIn group">
-                            {/* Cabecera del Post */}
-                            <div className="bg-[#1a1a1a] p-4 border-b border-[#222] flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                    <span className="bg-[#c9a84c] text-black px-3 py-1 font-bold text-[10px] uppercase italic shadow-sm">
+                        <article key={n.id} className="bg-[#0f0f0f] border border-white/5 shadow-2xl animate-fadeIn group overflow-hidden relative">
+
+                            {/* 3. BOTÓN DE ELIMINAR (SOLO ADMIN) */}
+                            {isAdmin && (
+                                <button
+                                    onClick={() => borrarNoticia(n.id)}
+                                    className="absolute top-3 right-3 z-20 bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white px-3 py-1 text-[10px] font-bold uppercase transition-all border border-red-600/50"
+                                >
+                                    Eliminar Noticia
+                                </button>
+                            )}
+
+                            <div className="bg-[#161616] px-6 py-3 border-b border-white/5 flex justify-between items-center">
+                                <div className="flex items-center gap-4">
+                                    <span className="bg-[#c9a84c] text-black px-4 py-0.5 font-bebas text-xl italic shadow-sm">
                                         {n.categoria}
                                     </span>
-                                    <span className="text-gray-600 text-[10px] uppercase font-bold tracking-widest">
+                                    <span className="text-gray-500 text-[11px] uppercase font-bold tracking-[3px]">
                                         {n.fecha?.toDate().toLocaleString('es-AR')}
                                     </span>
                                 </div>
                             </div>
 
-                            {/* Cuerpo del Post */}
-                            <div className="p-10">
-                                <h3 className="font-bebas text-6xl italic uppercase text-white mb-8 leading-none border-l-4 border-[#c9a84c] pl-6 tracking-tighter">
+                            <div className="p-10 md:p-14">
+                                <h3 className="font-bebas text-6xl md:text-7xl italic uppercase text-white mb-10 leading-none tracking-tighter group-hover:text-[#c9a84c] transition-colors">
                                     {n.titulo}
                                 </h3>
 
-                                {/* Contenedor de contenido enriquecido */}
                                 <div
-                                    className="text-gray-300 text-xl md:text-2xl leading-relaxed noticia-format selection:bg-[#c9a84c]/20"
+                                    className="text-gray-300 text-xl md:text-2xl leading-relaxed font-light space-y-4 prose prose-invert max-w-none [&_strong]:text-[#c9a84c]"
                                     dangerouslySetInnerHTML={{ __html: n.contenido }}
                                 />
                             </div>
 
-                            {/* Firma del Autor */}
-                            <div className="bg-[#0a0a0a] p-5 border-t border-[#1a1a1a] flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-[#222] border border-[#c9a84c]/30 text-[#c9a84c] flex items-center justify-center font-bebas italic text-3xl group-hover:bg-[#c9a84c] group-hover:text-black transition-all">
+                            {/* --- SECCIÓN DE REACCIONES (NUEVO) --- */}
+                            <div className="px-10 md:px-14 pb-8 flex flex-wrap gap-3">
+                                {['👏', '😂', '💣', '😔', '🌭', '⛄', '🐐'].map((emoji) => {
+                                    const count = n.reacciones?.[emoji] || 0;
+                                    // Suponiendo que 'user' viene de tu hook useAuth
+                                    const hasReacted = n.userReactions?.[user?.uid] === emoji;
+
+                                    return (
+                                        <button
+                                            key={emoji}
+                                            onClick={() => reaccionarANoticia(n.id, emoji)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 group/reaccion ${hasReacted
+                                                ? 'bg-[#c9a84c]/20 border-[#c9a84c] text-[#c9a84c] shadow-[0_0_15px_rgba(201,168,76,0.1)]'
+                                                : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/30 hover:bg-white/10'
+                                                }`}
+                                        >
+                                            <span className={`text-xl transition-transform ${hasReacted ? 'scale-110' : 'group-hover/reaccion:scale-120'}`}>
+                                                {emoji}
+                                            </span>
+                                            <span className="font-bebas text-xl tracking-tight">
+                                                {count}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="bg-[#0a0a0a] p-6 border-t border-white/5 flex items-center justify-between">
+                                <div className="flex items-center gap-5">
+                                    <div className="w-14 h-14 bg-[#1a1a1a] border border-[#c9a84c]/20 text-[#c9a84c] flex items-center justify-center font-bebas italic text-4xl group-hover:bg-[#c9a84c] group-hover:text-black transition-all duration-500">
                                         {n.autor.charAt(0)}
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-gray-600 uppercase tracking-[3px] leading-none mb-1">Publicado por</p>
-                                        <p className="text-xl text-white font-bold uppercase italic leading-none tracking-tighter">
+                                        <p className="text-[10px] text-gray-600 uppercase tracking-[4px] leading-none mb-1 font-bold">Corresponsal Oficial</p>
+                                        <p className="text-2xl text-white font-bebas uppercase italic leading-none tracking-tight">
                                             {n.autor}
                                         </p>
                                     </div>
                                 </div>
+                                {/* Badge decorativo opcional para rellenar el espacio derecho */}
+                                <div className="hidden sm:block opacity-10">
+                                    <span className="font-bebas text-4xl italic uppercase">The Legacy</span>
+                                </div>
                             </div>
                         </article>
                     )) : (
-                        <div className="p-20 text-center">
-                            <p className="font-bebas text-4xl text-gray-800 uppercase italic tracking-widest animate-pulse">
-                                Esperando novedades oficiales...
+                        <div className="py-32 text-center border border-dashed border-white/10">
+                            <p className="font-bebas text-5xl text-white/10 uppercase italic tracking-[10px] animate-pulse">
+                                Sintonizando frecuencias de prensa...
                             </p>
                         </div>
                     )}
                 </div>
-                {/* EDITOR ESTILO FORO (Solo para Admin o DT) */}
-                {(isAdmin || userData?.rol === "dt") ? (
-                    <section className="bg-[#111] border-t-4 border-[#c9a84c] p-8 shadow-2xl animate-fadeIn">
-                        <h2 className="font-bebas text-3xl text-white italic uppercase mb-6 tracking-widest text-[#c9a84c]">
-                            Redactar Nueva Noticia
-                        </h2>
 
-                        <form onSubmit={publicarNoticia} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input
-                                    type="text"
-                                    placeholder="Título de la noticia..."
-                                    className="bg-black border border-[#333] p-3 outline-none focus:border-[#c9a84c] text-white font-bold uppercase italic"
-                                    value={titulo}
-                                    onChange={e => setTitulo(e.target.value)}
-                                />
-                                <select
-                                    className="bg-black border border-[#333] p-3 text-[#c9a84c] font-bold uppercase italic outline-none cursor-pointer"
-                                    value={categoria}
-                                    onChange={e => setCategoria(e.target.value)}
-                                >
-                                    <option value="Fichaje">Fichaje</option>
-                                    <option value="Comunicado">Comunicado Oficial</option>
-                                    <option value="Sancion">Sanción Disciplinaria</option>
-                                    <option value="Torneo">Información Torneo</option>
-                                </select>
-                            </div>
+                {/* EDITOR */}
+                <div ref={formularioRef} className="pt-10">
+                    {(isAdmin || userData?.rol === "dt") ? (
+                        <section className="bg-[#0f0f0f] border border-[#c9a84c]/30 p-1 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                            <div className="bg-[#111] p-8 md:p-12">
+                                <div className="flex items-center gap-4 mb-10">
+                                    <div className="h-10 w-2 bg-[#c9a84c]"></div>
+                                    <h2 className="font-bebas text-5xl text-white italic uppercase tracking-tighter">
+                                        Redactar <span className="text-[#c9a84c]">Comunicado</span>
+                                    </h2>
+                                </div>
 
-                            {/* NUEVO EDITOR COMPATIBLE */}
-                            <div className="bg-[#050505] border border-[#333] min-h-[300px] text-white overflow-hidden">
-                                <EditorProvider>
-                                    <Editor
-                                        value={contenido}
-                                        onChange={(e) => setContenido(e.target.value)}
-                                        placeholder="Escribe el contenido aquí (puedes usar negritas, listas y links)..."
-                                        containerProps={{
-                                            style: {
-                                                height: '350px',
-                                                backgroundColor: '#050505',
-                                                color: '#fff',
-                                                border: 'none',
-                                                padding: '10px'
-                                            }
-                                        }}
+                                <form onSubmit={publicarNoticia} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="md:col-span-2">
+                                            <input
+                                                type="text"
+                                                placeholder="TÍTULO DE LA NOTICIA..."
+                                                className="w-full bg-black border border-white/10 p-4 outline-none focus:border-[#c9a84c] text-white font-bebas text-3xl italic transition-all"
+                                                value={titulo}
+                                                onChange={e => setTitulo(e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <select
+                                                className="w-full bg-black border border-white/10 p-4 text-[#c9a84c] font-bebas text-2xl italic outline-none cursor-pointer focus:border-[#c9a84c] transition-all"
+                                                value={categoria}
+                                                onChange={e => setCategoria(e.target.value)}
+                                            >
+                                                <option value="Fichaje">Fichaje</option>
+                                                <option value="Comunicado">Comunicado Oficial</option>
+                                                <option value="Sancion">Sanción Disciplinaria</option>
+                                                <option value="Torneo">Información Torneo</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-black border border-white/10 min-h-[400px] text-white overflow-hidden focus-within:border-[#c9a84c] transition-all">
+                                        <EditorProvider>
+                                            <Editor
+                                                value={contenido}
+                                                onChange={(e) => setContenido(e.target.value)}
+                                                containerProps={{
+                                                    style: {
+                                                        minHeight: '400px',
+                                                        backgroundColor: 'transparent',
+                                                        color: '#d1d5db',
+                                                        border: 'none',
+                                                        padding: '20px',
+                                                        fontSize: '1.25rem'
+                                                    }
+                                                }}
+                                            >
+                                                <Toolbar>
+                                                    <BtnBold /><BtnItalic /><BtnUnderline /><BtnStrikeThrough />
+                                                    <BtnLink /><BtnNumberedList /><BtnBulletList /><BtnClearFormatting />
+                                                </Toolbar>
+                                            </Editor>
+                                        </EditorProvider>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-[#c9a84c] text-black font-bebas text-5xl py-5 hover:bg-white transition-all uppercase italic tracking-tighter"
                                     >
-                                        <Toolbar>
-                                            <BtnBold />
-                                            <BtnItalic />
-                                            <BtnUnderline />
-                                            <BtnStrikeThrough />
-                                            <BtnLink />
-                                            <BtnNumberedList />
-                                            <BtnBulletList />
-                                            <BtnClearFormatting />
-                                        </Toolbar>
-                                    </Editor>
-                                </EditorProvider>
+                                        Lanzar al Foro Oficial
+                                    </button>
+                                </form>
                             </div>
-
-                            <button type="submit" className="w-full bg-[#c9a84c] text-black font-bebas text-4xl py-3 hover:bg-white transition-all uppercase italic tracking-tighter shadow-lg">
-                                Lanzar Noticia al Foro
-                            </button>
-                        </form>
-                    </section>
-                ) : (
-                    <div className="bg-[#111] p-6 border border-dashed border-[#222] text-center">
-                        <p className="text-gray-600 text-sm uppercase tracking-[4px] italic">
-                            Acceso de redacción restringido a Directores Técnicos y Staff.
-                        </p>
-                    </div>
-                )}
-
-                
+                        </section>
+                    ) : (
+                        <div className="bg-[#0a0a0a] p-10 border border-white/5 text-center">
+                            <p className="text-gray-600 text-sm uppercase tracking-[6px] italic font-bold">
+                                --- Acceso de redacción restringido ---
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
         </main>
     );

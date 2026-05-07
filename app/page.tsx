@@ -4,11 +4,12 @@ import Link from 'next/link';
 import Image from "next/image";
 import { useAuth } from '@/src/lib/hooks/useAuht';
 import { db } from "@/src/lib/firebase";
-import { collection, query, where, onSnapshot, orderBy, limit, Timestamp } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, limit, Timestamp, addDoc, } from "firebase/firestore";
 
 // Componentes
 import BannerPatrocinadores from "./components/BannerPatrocinadores";
 import UltimosUsuarios from "./components/UltimosUsuarios";
+import ReporteAusenciaForm from "./ausencias/page";
 
 // Interfaces
 interface Equipo { id: string; juego: string; nombre: string; escudo?: string; pj?: number; pts?: number;[key: string]: any; }
@@ -25,7 +26,6 @@ export default function Page() {
     const [reportesAusencia, setReportesAusencia] = useState<ReporteAusencia[]>([]);
     const [tabActiva, setTabActiva] = useState<"A" | "B">("A");
     const cantidadPes6 = equipos.filter(e => e.juego?.toString().toLowerCase() === 'pes6').length;
-
     // --- CARGA DE DATOS ---
     useEffect(() => {
         const qNoticias = query(collection(db, "novedades"), orderBy("fecha", "desc"), limit(3));
@@ -48,6 +48,7 @@ export default function Page() {
 
         return () => { unsubN(); unsubE(); unsubR(); unsubA(); };
     }, [user]);
+
 
     return (
         <main className="min-h-screen bg-[#0a0a0a] text-[#f0ece0] font-sans selection:bg-[#c9a84c] selection:text-black">
@@ -175,12 +176,12 @@ export default function Page() {
                                     );
                                 })
                         ) : (
-                            <div className="p-10 border border-dashed border-white/5 text-center text-gray-700 italic font-barlow tracking-[3px] uppercase">
+                            <div className="p-10 border border-dashed border-white/5 text-center text-gray-400 italic font-barlow tracking-[3px] uppercase">
                                 Sin reportes en Categoría {tabActiva}...
                             </div>
                         )}
                         <div className="text-right mt-4">
-                            <Link href="/fixture" className="font-barlow text-xs tracking-[4px] uppercase text-gray-600 hover:text-[#c9a84c] transition-colors">Ver Full Fixture →</Link>
+                            <Link href="/fixture" className="font-barlow text-xs tracking-[4px] uppercase text-gray-400 hover:text-[#c9a84c] transition-colors">Ver Full Fixture →</Link>
                         </div>
                     </div>
                 </div>
@@ -217,21 +218,21 @@ export default function Page() {
                                             <td className="p-6 font-bebas text-2xl text-gray-800 group-hover:text-[#c9a84c]">{i + 1}</td>
                                             <td className="p-6">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-8 h-8 relative grayscale group-hover:grayscale-0 transition-all">
+                                                    <div className="w-8 h-8 relative  transition-all">
                                                         <Image src={equipo.escudo || "/img/default-shield.png"} alt={equipo.nombre} fill className="object-contain" />
                                                     </div>
                                                     <span className="font-bebas text-3xl uppercase tracking-tighter">{equipo.nombre}</span>
                                                 </div>
                                             </td>
                                             <td className="p-6 text-right font-bebas text-4xl text-[#c9a84c]">
-                                                {equipo.puntos || 0} <span className="text-[10px] text-gray-700 ml-1">PTS</span>
+                                                {equipo.puntos || 0} <span className="text-[10px] text-gray-200 ml-1">PTS</span>
                                             </td>
                                         </tr>
                                     ))}
                             </tbody>
                         </table>
                         <div className="p-6 border-t border-white/5 text-right">
-                            <Link href="/positions" className="font-barlow text-xs tracking-[4px] uppercase text-gray-600 hover:text-white transition-colors">Ver Tabla Completa →</Link>
+                            <Link href="/positions" className="font-barlow text-xs tracking-[4px] uppercase text-gray-300 hover:text-white transition-colors">Ver Tabla Completa →</Link>
                         </div>
                     </div>
                 </div>
@@ -241,42 +242,110 @@ export default function Page() {
             <section className="py-32 bg-[#0d0d0d]">
                 <div className="max-w-[1400px] mx-auto px-6">
                     <div className="flex justify-between items-end mb-16">
-                        <h3 className="font-bebas text-6xl uppercase italic">Prensa <span className="text-[#c9a84c]">Oficial</span></h3>
-                        <Link href="/noticias" className="font-bebas text-2xl border-b-2 border-[#c9a84c] text-[#c9a84c] pb-1 hover:text-white hover:border-white transition-all">Ir al portal</Link>
+                        <h3 className="font-bebas text-6xl uppercase italic">
+                            Prensa <span className="text-[#c9a84c]">Oficial</span>
+                        </h3>
+                        <Link
+                            href="/noticias"
+                            className="font-bebas text-2xl border-b-2 border-[#c9a84c] text-[#c9a84c] pb-1 hover:text-white hover:border-white transition-all"
+                        >
+                            Ver todo el portal
+                        </Link>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
-                        {noticias.map((nota) => (
-                            <Link href="/noticias" key={nota.id} className="bg-[#111] p-10 border border-white/5 hover:bg-[#c9a84c] hover:text-black transition-all group relative overflow-hidden h-[400px] flex flex-col justify-end">
-                                <span className="absolute top-10 left-10 text-[10px] font-bold tracking-[5px] uppercase opacity-50">{nota.categoria}</span>
-                                <h4 className="font-bebas text-4xl uppercase leading-none mb-4 group-hover:translate-y-[-10px] transition-transform">{nota.titulo}</h4>
-                                <p className="font-barlow text-sm italic line-clamp-2 opacity-60">
+                        {noticias.length > 0 ? noticias.map((nota) => (
+                            <Link
+                                href="/noticias"
+                                key={nota.id}
+                                className="bg-[#111] p-10 border border-white/5 hover:bg-[#c9a84c] hover:text-black transition-all group relative overflow-hidden h-[400px] flex flex-col justify-end"
+                            >
+                                {/* Categoría Flotante */}
+                                <span className="absolute top-10 left-10 text-[10px] font-bold tracking-[5px] uppercase opacity-50 group-hover:opacity-100">
+                                    {nota.categoria}
+                                </span>
+
+                                {/* Título */}
+                                <h4 className="font-bebas text-4xl uppercase leading-none mb-4 group-hover:translate-y-[-10px] transition-transform">
+                                    {nota.titulo}
+                                </h4>
+
+                                {/* Resumen (Limpiando etiquetas HTML) */}
+                                <p className="font-barlow text-sm italic line-clamp-2 opacity-60 group-hover:opacity-100">
                                     {nota.contenido?.replace(/<[^>]*>/g, '')}
                                 </p>
                             </Link>
-                        ))}
+                        )) : (
+                            // Placeholder si no hay noticias
+                            [1, 2, 3].map(i => (
+                                <div key={i} className="bg-[#111] h-[400px] border border-white/5 animate-pulse flex items-center justify-center">
+                                    <span className="font-bebas text-gray-800 text-2xl">Cargando...</span>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </section>
 
-            {/* 6. AUSENCIAS (Comité Disciplinario) */}
-            <section className="py-32 px-6 max-w-[1400px] mx-auto">
-                <div className="bg-[#111] border-t-8 border-red-600 p-12 relative overflow-hidden">
-                    <div className="absolute right-[-2%] top-[-10%] font-bebas text-[15rem] text-red-600/5 select-none uppercase italic">Warning</div>
+            <section className="py-32 bg-[#0a0a0a]">
+                <div className="max-w-[1400px] mx-auto px-6">
+                    {/* Encabezado igual a Prensa pero en Rojo */}
+                    <div className="flex justify-between items-end mb-16 border-b border-white/5 pb-8">
+                        <div>
+                            <span className="text-red-600 font-barlow text-xs tracking-[8px] uppercase block mb-2 font-bold">
+                                Comité Disciplinario
+                            </span>
+                            <h3 className="font-bebas text-6xl uppercase italic text-white leading-none">
+                                Reportes de <span className="text-red-600">Ausencia</span> Y <span className="text-red-600">Abandonos</span>
+                            </h3>
+                        </div>
+                        <Link
+                            href="/ausencias"
+                            className="font-bebas text-2xl border-b-2 border-red-600 text-red-600 pb-1 hover:text-white hover:border-white transition-all"
+                        >
+                            Ver todos los reportes
+                        </Link>
+                    </div>
 
-                    <h3 className="font-bebas text-5xl mb-12 text-red-600 italic uppercase tracking-tighter">Reportes del Comité Disciplinario</h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
-                        {reportesAusencia.length > 0 ? reportesAusencia.map((rep) => (
-                            <div key={rep.id} className="border-l-2 border-white/10 pl-8 py-2">
-                                <div className="flex items-center gap-4 mb-2">
-                                    <span className="bg-red-600 text-white font-bebas px-3 py-1 text-sm skew-x-[-10deg] italic">{rep.equipo}</span>
-                                    <span className="font-bebas text-xl text-white uppercase">{rep.dt}</span>
+                    {/* Grilla de Tarjetas (Igual a Noticias) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
+                        {reportesAusencia.length > 0 ? reportesAusencia.slice(0, 3).map((rep) => (
+                            <div
+                                key={rep.id}
+                                className="bg-[#111] p-10 border border-white/5 hover:bg-red-600 hover:text-white transition-all group relative overflow-hidden h-[400px] flex flex-col justify-end cursor-default"
+                            >
+                                {/* Marca de agua de fondo en la tarjeta */}
+                                <div className="absolute top-[-20px] right-[-20px] font-bebas text-9xl text-white/[0.03] group-hover:text-black/10 transition-colors pointer-events-none uppercase italic">
+                                    REPORTES
                                 </div>
-                                <p className="font-barlow text-gray-500 italic text-lg leading-snug">"{rep.motivo}"</p>
+
+                                {/* Nombre del Equipo (Categoría Flotante) */}
+                                <span className="absolute top-10 left-10 text-[10px] font-bold tracking-[5px] uppercase opacity-50 group-hover:opacity-100">
+                                    {rep.equipo}
+                                </span>
+
+                                {/* Nombre del DT (Título) */}
+                                <h4 className="font-bebas text-5xl uppercase leading-none mb-4 group-hover:translate-y-[-10px] transition-transform tracking-tighter">
+                                    {rep.dt}
+                                </h4>
+
+                                {/* Motivo (Cuerpo) */}
+                                <p className="font-barlow text-lg italic line-clamp-3 opacity-60 group-hover:opacity-100 leading-snug">
+                                    "{rep.motivo}"
+                                </p>
+
+                                {/* Fecha sutil abajo */}
+                                <span className="mt-6 text-[9px] uppercase tracking-[3px] opacity-30 font-bold">
+                                    Registrado: {rep.fecha?.toDate().toLocaleDateString()}
+                                </span>
                             </div>
                         )) : (
-                            <div className="text-gray-700 uppercase font-barlow tracking-[4px] italic text-xs">Sin incidentes registrados recientemente.</div>
+                            // Placeholder si no hay reportes
+                            [1, 2, 3].map(i => (
+                                <div key={i} className="bg-[#111] h-[400px] border border-white/5 animate-pulse flex items-center justify-center">
+                                    <span className="font-bebas text-gray-800 text-2xl uppercase italic">Sin Incidentes</span>
+                                </div>
+                            ))
                         )}
                     </div>
                 </div>

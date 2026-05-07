@@ -136,7 +136,7 @@ export default function ContenedorCopa({
                                 <div className="space-y-3">
                                     {equipos.filter(e => e.grupo === grupo).map(e => (
                                         <div key={e.id} className="flex items-center gap-4 p-4 bg-black/40 border border-white/5 group hover:border-[#c9a84c]/30 transition-all">
-                                            <div className="relative w-8 h-8 grayscale group-hover:grayscale-0 transition-all">
+                                            <div className="relative w-8 h-8  transition-all">
                                                 <Image src={e.escudo || "/img/default-shield.png"} alt="" fill className="object-contain" />
                                             </div>
                                             <span className="font-bebas text-2xl uppercase tracking-widest text-gray-300 group-hover:text-white">{e.nombre}</span>
