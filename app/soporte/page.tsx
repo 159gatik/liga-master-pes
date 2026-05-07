@@ -1,11 +1,12 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db } from "@/src/lib/firebase";
 import { useAuth } from "@/src/lib/hooks/useAuht";
 import {
     collection, addDoc, query, orderBy, onSnapshot,
     serverTimestamp, Timestamp, doc
 } from "firebase/firestore";
+import { Alert, Toast } from "@/src/lib/alerts";
 
 interface Post {
     id: string;
@@ -24,15 +25,16 @@ interface Comentario {
     fecha: Timestamp;
 }
 
-export default function Soporte() {
+export default function SoportePage() {
     const { userData, user } = useAuth();
     const [posts, setPosts] = useState<Post[]>([]);
     const [nuevoPost, setNuevoPost] = useState({ titulo: "", mensaje: "", categoria: "ERROR TÉCNICO" });
     const [postSeleccionado, setPostSeleccionado] = useState<Post | null>(null);
     const [comentarios, setComentarios] = useState<Comentario[]>([]);
     const [nuevoComentario, setNuevoComentario] = useState("");
+    const [enviando, setEnviando] = useState(false);
+    const formularioRef = useRef<HTMLDivElement>(null);
 
-    // 1. Escuchar los temas del foro
     useEffect(() => {
         const q = query(collection(db, "soporte_foro"), orderBy("fecha", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -41,83 +43,132 @@ export default function Soporte() {
         return () => unsubscribe();
     }, []);
 
-    // 2. Escuchar comentarios cuando se selecciona un post
     useEffect(() => {
         if (!postSeleccionado) return;
-
         const q = query(
             collection(db, "soporte_foro", postSeleccionado.id, "comentarios"),
             orderBy("fecha", "asc")
         );
-
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Comentario[];
-
-            setComentarios(data);
+            setComentarios(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Comentario)));
         });
         return () => unsubscribe();
     }, [postSeleccionado]);
 
     const crearTicket = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user) return alert("Debes estar logueado");
-
-        await addDoc(collection(db, "soporte_foro"), {
-            ...nuevoPost,
-            autor: userData?.nombre,
-            autorId: user.uid,
-            fecha: serverTimestamp()
-        });
-        setNuevoPost({ titulo: "", mensaje: "", categoria: "ERROR TÉCNICO" });
+        if (!user) return Alert.fire("Error", "Debes iniciar sesión", "error");
+        setEnviando(true);
+        try {
+            await addDoc(collection(db, "soporte_foro"), {
+                ...nuevoPost,
+                autor: userData?.nombre || "Usuario",
+                autorId: user.uid,
+                fecha: serverTimestamp()
+            });
+            setNuevoPost({ titulo: "", mensaje: "", categoria: "ERROR TÉCNICO" });
+            Toast.fire({ icon: 'success', title: 'Ticket publicado' });
+        } catch (error) {
+            Alert.fire("Error", "No se pudo publicar", "error");
+        } finally {
+            setEnviando(false);
+        }
     };
 
     const enviarComentario = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!nuevoComentario.trim() || !postSeleccionado) return;
-
-        await addDoc(collection(db, "soporte_foro", postSeleccionado.id, "comentarios"), {
-            texto: nuevoComentario,
-            autor: userData?.nombre,
-            autorId: user?.uid,
-            rol: userData?.rol || "dt",
-            fecha: serverTimestamp()
-        });
-        setNuevoComentario("");
+        try {
+            await addDoc(collection(db, "soporte_foro", postSeleccionado.id, "comentarios"), {
+                texto: nuevoComentario,
+                autor: userData?.nombre || "Usuario",
+                autorId: user?.uid,
+                rol: userData?.rol || "dt",
+                fecha: serverTimestamp()
+            });
+            setNuevoComentario("");
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-    
-
     return (
-        <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-10 font-barlow-condensed text-white">
-            <div className="max-w-5xl mx-auto space-y-10">
+        <main className="min-h-screen bg-[#0a0a0a] text-white pt-32 pb-20 px-6">
+            <div className="max-w-[1400px] mx-auto">
 
-                {/* CABECERA */}
-                <div className="border-l-4 border-[#c9a84c] pl-6">
-                    <h1 className="font-bebas text-6xl italic tracking-tighter uppercase">
-                        Soporte <span className="text-[#c9a84c]">Comunitario</span>
+                {/* 1. CABECERA AGRESIVA */}
+                <div className="relative mb-20 border-l-8 border-cyan-500 pl-8">
+                    <div className="absolute -top-10 left-20 font-bebas text-[12vw] text-cyan-500/[0.03] pointer-events-none select-none uppercase italic leading-none">
+                        Support
+                    </div>
+                    <h1 className="font-bebas text-7xl md:text-9xl italic uppercase leading-none tracking-tighter">
+                        Soporte <span className="text-cyan-500">Comunitario</span>
                     </h1>
-                    <p className="text-gray-500 uppercase tracking-[3px] text-xs italic">Foro Oficial de Ayuda · El Legado</p>
+                    <p className="text-gray-500 font-barlow text-sm tracking-[10px] uppercase mt-4 block italic">
+                        Foro Oficial de Ayuda · El Legado
+                    </p>
                 </div>
 
                 {!postSeleccionado ? (
-                    <>
-                        {/* FORMULARIO DE CREACIÓN (Solo se ve en el listado) */}
-                        <div className="bg-[#111] border border-[#222] p-6 shadow-xl">
-                            <h3 className="font-bebas text-2xl text-[#c9a84c] mb-4 uppercase italic">¿Tienes un problema?</h3>
-                            <form onSubmit={crearTicket} className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
+
+                        {/* LISTADO DE TEMAS (Lado Izquierdo) */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <h4 className="font-bebas text-2xl text-gray-600 uppercase tracking-widest mb-8 flex items-center gap-4">
+                                <span className="w-10 h-[1px] bg-gray-800"></span> Temas Recientes
+                            </h4>
+
+                            {posts.length > 0 ? posts.map(post => (
+                                <div
+                                    key={post.id}
+                                    onClick={() => { setPostSeleccionado(post); window.scrollTo(0, 0); }}
+                                    className="bg-[#111] border border-white/5 p-8 hover:bg-[#161616] hover:border-cyan-500/30 transition-all cursor-pointer group relative overflow-hidden"
+                                >
+                                    <div className="flex justify-between items-start relative z-10">
+                                        <div className="space-y-4">
+                                            <span className="bg-cyan-600/10 text-cyan-500 text-[10px] font-bold px-3 py-1 uppercase tracking-widest border border-cyan-500/20">
+                                                {post.categoria}
+                                            </span>
+                                            <h3 className="text-3xl md:text-4xl font-bebas uppercase italic group-hover:text-cyan-500 transition-colors leading-none">
+                                                {post.titulo}
+                                            </h3>
+                                            <p className="text-gray-500 font-barlow italic text-lg leading-snug line-clamp-1 opacity-60">
+                                                "{post.mensaje}"
+                                            </p>
+                                        </div>
+                                        <div className="text-right flex flex-col justify-between h-full">
+                                            <span className="font-bebas text-cyan-500 text-xl tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0 italic">
+                                                LEER MÁS +
+                                            </span>
+                                            <p className="text-gray-700 text-[10px] font-bold uppercase mt-10">
+                                                POR {post.autor} · {post.fecha?.toDate().toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="py-20 border border-dashed border-white/5 text-center text-gray-700 font-bebas text-3xl italic uppercase">
+                                    No hay consultas activas
+                                </div>
+                            )}
+                        </div>
+
+                        {/* FORMULARIO (Lado Derecho) */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-[#111] border-t-4 border-cyan-500 p-8 sticky top-32 shadow-2xl">
+                                <h3 className="font-bebas text-3xl text-white mb-2 uppercase italic">Abrir Ticket</h3>
+                                <p className="text-gray-500 text-xs mb-8 uppercase tracking-[3px]">Describe tu problema técnico</p>
+
+                                <form onSubmit={crearTicket} className="space-y-6">
                                     <input
                                         required
-                                        placeholder="Título de tu duda..."
-                                        className="bg-[#0a0a0a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c]"
+                                        placeholder="TÍTULO DEL PROBLEMA"
+                                        className="w-full bg-black border border-white/5 p-4 text-white font-bebas text-xl outline-none focus:border-cyan-500 transition-all uppercase italic"
                                         value={nuevoPost.titulo}
                                         onChange={(e) => setNuevoPost({ ...nuevoPost, titulo: e.target.value })}
                                     />
                                     <select
-                                        className="bg-[#0a0a0a] border border-[#333] p-3 text-[#c9a84c] font-bold outline-none cursor-pointer"
+                                        className="w-full bg-black border border-white/5 p-4 text-cyan-500 font-bebas text-xl outline-none cursor-pointer focus:border-cyan-500 transition-all italic"
                                         value={nuevoPost.categoria}
                                         onChange={(e) => setNuevoPost({ ...nuevoPost, categoria: e.target.value })}
                                     >
@@ -126,102 +177,94 @@ export default function Soporte() {
                                         <option value="REGLAMENTO">REGLAMENTO</option>
                                         <option value="OTROS">OTROS</option>
                                     </select>
-                                </div>
-                                <textarea
-                                    required
-                                    placeholder="Explica detalladamente tu problema..."
-                                    className="w-full bg-[#0a0a0a] border border-[#333] p-3 text-gray-400 min-h-[100px] outline-none focus:border-[#c9a84c]"
-                                    value={nuevoPost.mensaje}
-                                    onChange={(e) => setNuevoPost({ ...nuevoPost, mensaje: e.target.value })}
-                                />
-                                <button className="bg-[#c9a84c] text-black font-bebas text-2xl px-10 py-2 hover:bg-white transition-all uppercase">
-                                    Publicar Tema
-                                </button>
-                            </form>
+                                    <textarea
+                                        required
+                                        placeholder="DESCRIBE TU PROBLEMA DETALLADAMENTE..."
+                                        className="w-full bg-black border border-white/5 p-4 text-gray-400 font-barlow italic text-lg outline-none focus:border-cyan-500 transition-all min-h-[150px] resize-none"
+                                        value={nuevoPost.mensaje}
+                                        onChange={(e) => setNuevoPost({ ...nuevoPost, mensaje: e.target.value })}
+                                    />
+                                    <button
+                                        disabled={enviando}
+                                        className="w-full bg-cyan-600 text-white font-bebas text-3xl py-4 hover:bg-white hover:text-black transition-all italic tracking-tighter disabled:opacity-50"
+                                    >
+                                        {enviando ? "PUBLICANDO..." : "LANZAR TICKET →"}
+                                    </button>
+                                </form>
+                            </div>
                         </div>
-
-                        {/* LISTADO DE TEMAS */}
-                        <div className="space-y-4">
-                            <h4 className="text-[#888] uppercase tracking-[4px] text-sm font-bold border-b border-[#222] pb-2">Temas Recientes</h4>
-                            {posts.map(post => (
-                                <div
-                                    key={post.id}
-                                    onClick={() => setPostSeleccionado(post)}
-                                    className="bg-[#0f0f0f] border border-[#222] p-5 hover:border-[#c9a84c]/50 transition-all cursor-pointer group"
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <span className="text-[10px] bg-[#222] text-[#c9a84c] px-2 py-1 font-bold uppercase tracking-widest">
-                                                {post.categoria}
-                                            </span>
-                                            <h3 className="text-xl text-white font-bold uppercase mt-2 group-hover:text-[#c9a84c] transition-colors">
-                                                {post.titulo}
-                                            </h3>
-                                            <p className="text-gray-500 text-sm mt-1 line-clamp-2 italic">Por {post.autor}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="text-[#c9a84c] font-bebas tracking-widest uppercase text-xs group-hover:mr-2 transition-all">Ver hilo →</span>
-                                            <p className="text-gray-600 text-[10px] uppercase mt-2">{post.fecha?.toDate().toLocaleDateString()}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </>
+                    </div>
                 ) : (
-                    /* VISTA DE DETALLE Y COMENTARIOS */
-                    <div className="space-y-6 animate-fadeIn">
+                    /* VISTA DE DETALLE (HILO) */
+                    <div className="max-w-4xl mx-auto space-y-10 animate-fadeIn">
                         <button
                             onClick={() => setPostSeleccionado(null)}
-                            className="text-[#c9a84c] uppercase text-xs font-bold hover:text-white transition-colors"
+                            className="group flex items-center gap-3 text-cyan-500 font-bebas text-2xl uppercase italic hover:text-white transition-all"
                         >
-                            ← Volver al listado
+                            <span className="group-hover:-translate-x-2 transition-transform">←</span> Volver al listado
                         </button>
 
-                        <div className="bg-[#111] p-8 border-l-4 border-[#c9a84c] shadow-2xl">
-                            <span className="text-[10px] bg-[#c9a84c] text-black px-2 py-0.5 font-bold uppercase">{postSeleccionado.categoria}</span>
-                            <h2 className="text-4xl font-bebas italic mt-3 text-white tracking-wider">{postSeleccionado.titulo}</h2>
-                            <p className="text-gray-300 mt-6 text-lg leading-relaxed">{postSeleccionado.mensaje}</p>
-                            <div className="mt-8 pt-4 border-t border-white/5 flex justify-between items-center">
-                                <p className="text-[10px] text-gray-500 uppercase font-bold italic">Iniciado por <span className="text-white">{postSeleccionado.autor}</span></p>
-                                <p className="text-[10px] text-gray-500 uppercase">{postSeleccionado.fecha?.toDate().toLocaleString()}</p>
+                        <div className="bg-[#111] p-10 md:p-16 border-l-8 border-cyan-500 shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 font-bebas text-9xl italic pointer-events-none uppercase">HELP</div>
+                            <span className="bg-cyan-600 text-white px-4 py-1 font-bebas text-xl italic uppercase shadow-xl tracking-widest">
+                                {postSeleccionado.categoria}
+                            </span>
+                            <h2 className="text-5xl md:text-7xl font-bebas italic mt-8 text-white tracking-tighter uppercase leading-none">
+                                {postSeleccionado.titulo}
+                            </h2>
+                            <p className="text-gray-400 mt-10 text-xl md:text-2xl leading-relaxed font-barlow italic border-l border-white/10 pl-8">
+                                {postSeleccionado.mensaje}
+                            </p>
+                            <div className="mt-12 flex justify-between items-center text-[10px] font-bold uppercase tracking-[4px] text-gray-600 border-t border-white/5 pt-6">
+                                <span>INICIADO POR: {postSeleccionado.autor}</span>
+                                <span>{postSeleccionado.fecha?.toDate().toLocaleString()}</span>
                             </div>
                         </div>
 
                         {/* RESPUESTAS */}
-                        <div className="space-y-4 ml-0 md:ml-10">
-                            <h4 className="text-xs uppercase tracking-[3px] text-gray-500 font-bold border-b border-[#222] pb-2">Respuestas de la comunidad</h4>
-                            {comentarios.length === 0 && <p className="text-gray-600 italic text-sm">No hay respuestas aún. ¡Sé el primero en ayudar!</p>}
+                        <div className="space-y-6">
+                            <h4 className="font-bebas text-3xl text-gray-500 uppercase italic tracking-widest border-b border-white/5 pb-4">
+                                Respuestas del Staff y Comunidad
+                            </h4>
 
                             {comentarios.map(com => (
-                                <div key={com.id} className={`p-5 border ${com.rol === 'admin' ? 'border-[#c9a84c] bg-[#c9a84c]/5' : 'border-[#222] bg-[#0d0d0d]'}`}>
-                                    <div className="flex justify-between items-center mb-3">
-                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${com.rol === 'admin' ? 'text-[#c9a84c]' : 'text-gray-400'}`}>
-                                            {com.autor} {com.rol === 'admin' && <span className="ml-2 bg-[#c9a84c] text-black px-1">STAFF</span>}
-                                        </span>
-                                        <span className="text-[9px] text-gray-600 uppercase font-mono">{com.fecha?.toDate().toLocaleString()}</span>
+                                <div key={com.id} className={`p-8 border-l-4 transition-all ${com.rol === 'admin' ? 'border-cyan-500 bg-cyan-500/5' : 'border-white/10 bg-[#0f0f0f]'}`}>
+                                    <div className="flex justify-between items-center mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <span className={`font-bebas text-2xl italic tracking-tight ${com.rol === 'admin' ? 'text-cyan-500' : 'text-white'}`}>
+                                                {com.autor}
+                                            </span>
+                                            {com.rol === 'admin' && (
+                                                <span className="bg-cyan-600 text-[10px] text-white px-2 py-0.5 font-bold uppercase tracking-widest">STAFF</span>
+                                            )}
+                                        </div>
+                                        <span className="text-[10px] font-bold text-gray-700 uppercase">{com.fecha?.toDate().toLocaleString()}</span>
                                     </div>
-                                    <p className="text-sm text-gray-300 leading-relaxed">{com.texto}</p>
+                                    <p className="text-lg md:text-xl text-gray-400 font-barlow italic leading-relaxed">
+                                        "{com.texto}"
+                                    </p>
                                 </div>
                             ))}
                         </div>
 
                         {/* CAJA DE RESPUESTA */}
-                        <form onSubmit={enviarComentario} className="mt-12 bg-[#111] p-6 border border-[#222] shadow-xl">
-                            <label className="text-[10px] text-[#c9a84c] uppercase font-bold mb-3 block tracking-[2px]">Publicar respuesta</label>
-                            <textarea
-                                required
-                                value={nuevoComentario}
-                                onChange={(e) => setNuevoComentario(e.target.value)}
-                                className="w-full bg-[#0a0a0a] border border-[#333] p-4 text-sm text-white outline-none focus:border-[#c9a84c] min-h-[100px] transition-all"
-                                placeholder="Escribe tu mensaje aquí..."
-                            />
-                            <div className="flex justify-end mt-4">
-                                <button className="bg-[#c9a84c] text-black font-bebas text-xl px-12 py-2 hover:bg-white transition-all uppercase">
-                                    Enviar Respuesta
-                                </button>
-                            </div>
-                        </form>
+                        <div className="bg-[#111] p-10 border border-white/5 shadow-2xl">
+                            <form onSubmit={enviarComentario} className="space-y-6">
+                                <h4 className="font-bebas text-3xl text-white uppercase italic">Aportar al hilo</h4>
+                                <textarea
+                                    required
+                                    value={nuevoComentario}
+                                    onChange={(e) => setNuevoComentario(e.target.value)}
+                                    className="w-full bg-black border border-white/10 p-6 text-xl text-white font-barlow italic outline-none focus:border-cyan-500 min-h-[150px] transition-all resize-none"
+                                    placeholder="Escribe tu respuesta aquí..."
+                                />
+                                <div className="flex justify-end">
+                                    <button className="bg-cyan-600 text-white font-bebas text-4xl px-16 py-4 hover:bg-white hover:text-black transition-all italic tracking-tighter uppercase">
+                                        Responder →
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 )}
             </div>

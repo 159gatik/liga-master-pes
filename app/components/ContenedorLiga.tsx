@@ -17,7 +17,7 @@ interface Disponibilidad { id: string; equipoId: string; nombreEquipo: string; f
 interface PartidoProgramado { id: string; localNombre: string; visitaNombre: string; fechaTorneo: number; localId: string; visitaId: string; division?: string; }
 
 interface Props {
-    division: 'A' | 'B'; // Prop obligatoria para el filtrado
+    division?: 'A' | 'B'; // Prop obligatoria para el filtrado
     colEquipos?: string;
     colPartidos?: string;
     colReportes?: string;

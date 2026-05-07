@@ -9,14 +9,21 @@ import { collection, query, where, onSnapshot, orderBy, limit, Timestamp, addDoc
 // Componentes
 import BannerPatrocinadores from "./components/BannerPatrocinadores";
 import UltimosUsuarios from "./components/UltimosUsuarios";
-import ReporteAusenciaForm from "./ausencias/page";
 
 // Interfaces
 interface Equipo { id: string; juego: string; nombre: string; escudo?: string; pj?: number; pts?: number;[key: string]: any; }
 interface Reporte { id: string; local: string; visita: string; score: string; fecha: Timestamp; division: "A" | "B"; }
 interface Noticia { id: string; titulo: string; categoria: string; contenido: string; autor: string; fecha: Timestamp; }
 interface ReporteAusencia { id: string; dt: string; equipo: string; motivo: string; fecha: Timestamp; }
-
+interface Post {
+    id: string;
+    titulo: string;
+    mensaje: string;
+    autor: string;
+    autorId?: string;
+    categoria: "ERROR TÉCNICO" | "MERCADO / FICHAJES" | "REGLAMENTO" | "OTROS";
+    fecha: any; // Aquí Firebase devuelve el Timestamp
+}
 export default function Page() {
     const { user, userData, loading } = useAuth();
     const [yaPostulado, setYaPostulado] = useState(false);
@@ -26,27 +33,45 @@ export default function Page() {
     const [reportesAusencia, setReportesAusencia] = useState<ReporteAusencia[]>([]);
     const [tabActiva, setTabActiva] = useState<"A" | "B">("A");
     const cantidadPes6 = equipos.filter(e => e.juego?.toString().toLowerCase() === 'pes6').length;
+    const [posts, setPosts] = useState<any[]>([]);
     // --- CARGA DE DATOS ---
     useEffect(() => {
+        // 1. Noticias (Prensa)
         const qNoticias = query(collection(db, "novedades"), orderBy("fecha", "desc"), limit(3));
         const unsubN = onSnapshot(qNoticias, (snap) => setNoticias(snap.docs.map(d => ({ id: d.id, ...d.data() } as Noticia))));
 
+        // 2. Tabla de Posiciones
         const qEquipos = query(collection(db, "equipos"), orderBy("puntos", "desc"));
         const unsubE = onSnapshot(qEquipos, (snap) => setEquipos(snap.docs.map(d => ({ id: d.id, ...d.data() } as Equipo))));
 
+        // 3. Reportes de Partidos (Resultados)
         const qReportes = query(collection(db, "reportes"), orderBy("fecha", "desc"), limit(4));
         const unsubR = onSnapshot(qReportes, (snap) => setResultados(snap.docs.map(d => ({ id: d.id, ...d.data() } as Reporte))));
 
+        // 4. Reportes de Ausencia (Comité)
         const qAusencias = query(collection(db, "reportes_ausencias"), orderBy("fecha", "desc"), limit(5));
         const unsubA = onSnapshot(qAusencias, (snap) => setReportesAusencia(snap.docs.map(d => ({ id: d.id, ...d.data() } as ReporteAusencia))));
 
+        // 5. Soporte Comunitario (NUEVO)
+        const qSoporte = query(collection(db, "soporte_foro"), orderBy("fecha", "desc"), limit(3));
+        const unsubS = onSnapshot(qSoporte, (snap) => setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Post))));
+
+        // 6. Postulaciones (Solo si hay usuario)
+        let unsubP: () => void;
         if (user) {
             const qPost = query(collection(db, "postulaciones"), where("uid", "==", user.uid));
-            const unsubP = onSnapshot(qPost, (snap) => setYaPostulado(!snap.empty));
-            return () => { unsubN(); unsubE(); unsubR(); unsubA(); unsubP(); };
+            unsubP = onSnapshot(qPost, (snap) => setYaPostulado(!snap.empty));
         }
 
-        return () => { unsubN(); unsubE(); unsubR(); unsubA(); };
+        // CLEANUP: Cerramos todas las conexiones al desmontar el componente
+        return () => {
+            unsubN();
+            unsubE();
+            unsubR();
+            unsubA();
+            unsubS(); // Limpieza de soporte
+            if (unsubP) unsubP();
+        };
     }, [user]);
 
 
@@ -344,6 +369,75 @@ export default function Page() {
                             [1, 2, 3].map(i => (
                                 <div key={i} className="bg-[#111] h-[400px] border border-white/5 animate-pulse flex items-center justify-center">
                                     <span className="font-bebas text-gray-800 text-2xl uppercase italic">Sin Incidentes</span>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </section>
+            {/* 7. SOPORTE COMUNITARIO (Estilo Prensa/Foro) */}
+            <section className="py-32 bg-[#0d0d0d]">
+                <div className="max-w-[1400px] mx-auto px-6">
+
+                    {/* Encabezado Estilo Soporte (Cian/Azul) */}
+                    <div className="flex justify-between items-end mb-16 border-b border-white/5 pb-8">
+                        <div>
+                            <span className="text-cyan-500 font-barlow text-xs tracking-[8px] uppercase block mb-2 font-bold">
+                                Asistencia Técnica
+                            </span>
+                            <h3 className="font-bebas text-6xl uppercase italic text-white leading-none">
+                                Soporte <span className="text-cyan-500">Comunitario</span>
+                            </h3>
+                        </div>
+                        <Link
+                            href="/soporte"
+                            className="font-bebas text-2xl border-b-2 border-cyan-500 text-cyan-500 pb-1 hover:text-white hover:border-white transition-all"
+                        >
+                            Ir al Foro de Ayuda
+                        </Link>
+                    </div>
+
+                    {/* Grilla de Tickets del Foro */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
+                        {posts.length > 0 ? posts.slice(0, 3).map((post) => (
+                            <Link
+                                href="/soporte"
+                                key={post.id}
+                                className="bg-[#111] p-10 border border-white/5 hover:bg-cyan-600 hover:text-white transition-all group relative overflow-hidden h-[400px] flex flex-col justify-end"
+                            >
+                                {/* Marca de agua de fondo */}
+                                <div className="absolute top-[-20px] right-[-20px] font-bebas text-9xl text-white/[0.03] group-hover:text-black/10 transition-colors pointer-events-none uppercase italic">
+                                    Help
+                                </div>
+
+                                {/* Categoría del Ticket */}
+                                <span className="absolute top-10 left-10 text-[10px] font-bold tracking-[5px] uppercase opacity-50 group-hover:opacity-100">
+                                    {post.categoria}
+                                </span>
+
+                                {/* Título de la consulta */}
+                                <h4 className="font-bebas text-4xl uppercase leading-none mb-4 group-hover:translate-y-[-10px] transition-transform tracking-tighter">
+                                    {post.titulo}
+                                </h4>
+
+                                {/* Vista previa del mensaje */}
+                                <p className="font-barlow text-sm italic line-clamp-2 opacity-60 group-hover:opacity-100">
+                                    {post.mensaje}
+                                </p>
+
+                                {/* Autor y Fecha */}
+                                <div className="mt-6 flex justify-between items-center border-t border-white/10 pt-4 group-hover:border-white/30">
+                                    <span className="text-[10px] uppercase font-bold tracking-widest">{post.autor}</span>
+                                    <span className="text-[9px] opacity-40 group-hover:opacity-100">
+                                        {post.fecha?.toDate().toLocaleDateString()}
+                                    </span>
+                                </div>
+                            </Link>
+                        )) : (
+                            // Placeholder Cargando
+                            [1, 2, 3].map(i => (
+                                <div key={i} className="bg-[#111] h-[400px] border border-white/5 animate-pulse flex items-center justify-center">
+                                    <span className="font-bebas text-gray-800 text-2xl uppercase italic">Cargando Foro...</span>
                                 </div>
                             ))
                         )}

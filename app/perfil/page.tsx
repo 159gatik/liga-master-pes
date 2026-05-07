@@ -23,6 +23,7 @@ interface Jugador {
     nombre: string;
     pos: string;
     media?: number | string;
+    dorsal: number;
 }
 
 interface Equipo {
@@ -240,7 +241,7 @@ export default function PerfilDT() {
                                             <p className="text-white font-bold text-2xl uppercase group-hover:text-[#c9a84c] transition-colors leading-none">{jugador.nombre}</p>
                                             <p className="text-[10px] text-[#c9a84c] uppercase tracking-[3px] mt-2 font-bold italic">{jugador.pos || "General"}</p>
                                         </div>
-                                        <div className="font-bebas text-4xl text-[#c9a84c]/40 group-hover:text-[#c9a84c] transition-colors">{jugador.media || "--"}</div>
+                                        <div className="font-bebas text-4xl text-[#c9a84c]/40 group-hover:text-[#c9a84c] transition-colors">{jugador.dorsal || "--"}</div>
                                     </div>
 
                                     {/* BOTÓN DE RESCISIÓN: Solo si el mercado está abierto */}

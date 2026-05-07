@@ -14,7 +14,7 @@ interface PartidoProgramado { id: string; localNombre: string; visitaNombre: str
 interface Disponibilidad { id: string; equipoId: string; nombreEquipo: string; fechaTorneo: number; texto: string; fecha: Timestamp; division?: string; }
 
 interface Props {
-    division: 'A' | 'B'; // Prop obligatoria para coherencia con Fixture
+    division?: 'A' | 'B'; // Prop obligatoria para coherencia con Fixture
     colEquipos?: string;
     colPartidos?: string;
     colReportes?: string;
