@@ -136,16 +136,22 @@ export default function ContenedorLiga({
                 {/* Flecha Izquierda */}
                 <button
                     onClick={() => scroll('left')}
-                    className="absolute left-0 top-0 bottom-0 z-10 px-4 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center text-[#c9a84c] hover:text-white"
+                    className="absolute left-0 top-0 bottom-0 z-20 px-4 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center text-[#c9a84c] hover:text-white"
                 >
                     <span className="font-bebas text-5xl leading-none">‹</span>
                 </button>
 
-                {/* Contenedor Scrollable */}
+                {/* Contenedor Scrollable - Aquí aplicamos la limpieza */}
                 <div
                     ref={scrollRef}
                     id="carrusel-fechas"
-                    className="flex overflow-x-auto gap-8 px-10 no-scrollbar scroll-smooth items-center"
+                    /* Mantenemos no-scrollbar y añadimos overflow-y-hidden para evitar saltos */
+                    className="flex overflow-x-auto gap-8 px-10 items-center no-scrollbar scroll-smooth overflow-y-hidden"
+                    style={{
+                        msOverflowStyle: 'none',
+                        scrollbarWidth: 'none',
+                        WebkitOverflowScrolling: 'touch'
+                    }}
                 >
                     {Array.from({ length: totalFechas }, (_, i) => i + 1).map((f) => (
                         <button
@@ -156,7 +162,7 @@ export default function ContenedorLiga({
                         >
                             F{f}
                             {fechaActiva === f && (
-                                <div className="absolute -bottom-4 left-0 right-0 h-1 bg-[#c9a84c]" />
+                                <div className="absolute -bottom-2 left-0 right-0 h-1 bg-[#c9a84c] shadow-[0_0_10px_#c9a84c]" />
                             )}
                         </button>
                     ))}
@@ -165,7 +171,7 @@ export default function ContenedorLiga({
                 {/* Flecha Derecha */}
                 <button
                     onClick={() => scroll('right')}
-                    className="absolute right-0 top-0 bottom-0 z-10 px-4 bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center text-[#c9a84c] hover:text-white"
+                    className="absolute right-0 top-0 bottom-0 z-20 px-4 bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center text-[#c9a84c] hover:text-white"
                 >
                     <span className="font-bebas text-5xl leading-none">›</span>
                 </button>
