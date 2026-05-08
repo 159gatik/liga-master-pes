@@ -6,22 +6,36 @@ import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import ReCAPTCHA from "react-google-recaptcha";
 import Link from "next/link";
+import { Alert } from "@/src/lib/alerts";
 
 export default function RegisterPage() {
     const [captchaToken, setCaptchaToken] = useState<string | null>(null);
     const recaptchaRef = useRef<ReCAPTCHA>(null);
-    const [formData, setFormData] = useState({ email: "", password: "", username: "", ligas: { pes6: false, pes2013: false } });
+    const [formData, setFormData] = useState({
+        email: "",
+        password: "",
+        confirmPassword: "",
+        username: "",
+        aceptarReglamento: false
+    });
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!captchaToken) {
-            alert("Por favor, completa el desafío de seguridad (reCAPTCHA) para continuar.");
-            return;
+        // VALIDACIONES PREVIAS
+        if (formData.password !== formData.confirmPassword) {
+            return Alert.fire({ icon: 'warning', title: 'CONTRASEÑA', text: 'Las contraseñas no coinciden.' });
         }
 
+        if (!formData.aceptarReglamento) {
+            return Alert.fire({ icon: 'warning', title: 'REGLAMENTO', text: 'Debes aceptar el reglamento para unirte.' });
+        }
+
+        if (!captchaToken) {
+            return Alert.fire({ icon: 'warning', title: 'SEGURIDAD', text: 'Completa el reCAPTCHA.' });
+        }
 
         setLoading(true);
 
@@ -30,143 +44,160 @@ export default function RegisterPage() {
             const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const user = userCredential.user;
 
-            // 2. Actualizar el perfil de Auth (displayName) de inmediato
+            // 2. Actualizar displayName
             await updateProfile(user, { displayName: formData.username });
 
-            // 3. CREAR EL DOCUMENTO EN FIRESTORE (Prioridad máxima)
-            // Guardamos los datos antes de enviar el mail para asegurar presencia en DB
+            // 3. Crear documento en Firestore (Estructura optimizada para PES 6)
             await setDoc(doc(db, "users", user.uid), {
                 nombre: formData.username,
                 email: formData.email,
-                rol: "invitado", // Ahora todos entran como dt
-                // Nueva estructura:
+                rol: "invitado",
                 ligas: {
-                    pes6: formData.ligas.pes6 ? { rol: "pendiente", equipoId: "" } : null,
-                    pes2013: formData.ligas.pes2013 ? { rol: "pendiente", equipoId: "" } : null
+                    pes6: { rol: "pendiente", equipoId: "" }
                 },
-                // Mantén campos antiguos para compatibilidad si los necesitas
                 nombreEquipo: "Sin Equipo",
                 discord: "",
+                whatsapp: "",
                 wins: 0,
                 losses: 0,
                 fechaRegistro: new Date().toISOString(),
                 emailVerificado: false
             });
 
-            // 4. ENVIAR EMAIL DE VERIFICACIÓN (Paso final)
-            // Usamos un try interno por si el servicio de correos falla, que no rompa el registro
+            // 4. Enviar email de verificación
             try {
                 await sendEmailVerification(user);
             } catch (emailError) {
-                console.error("Error al enviar email, pero el usuario se creó en DB:", emailError);
+                console.error("Error al enviar mail:", emailError);
             }
 
-            // 5. Notificación y redirección
-            alert(`¡Registro exitoso, ${formData.username}! Revisa tu correo (${formData.email}) para activar tu cuenta de DT.`);
-            router.push("/verificar-email");
+            Alert.fire({
+                icon: 'success',
+                title: '¡CONTRATO FIRMADO!',
+                text: `Bienvenido DT ${formData.username}. Activa tu cuenta desde el email enviado.`,
+            }).then(() => {
+                router.push("/verificar-email");
+            });
 
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-            console.error("Error en el registro:", errorMessage);
-
-            if (errorMessage.includes("auth/email-already-in-use")) {
-                alert("Este correo ya está registrado en la liga.");
-            } else if (errorMessage.includes("permission-denied")) {
-                alert("Error de permisos en la base de datos. Avisa al administrador.");
-            } else {
-                alert("Error al registrar: " + errorMessage);
-            }
+        } catch (error: any) {
+            console.error("Error registro:", error.message);
+            let msg = "Error al procesar el registro.";
+            if (error.code === "auth/email-already-in-use") msg = "Este email ya está en uso.";
+            Alert.fire({ icon: 'error', title: 'ERROR', text: msg });
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] bg-[#0a0a0a] p-6 text-[#f0ece0]">
-            <div className="w-full max-w-md bg-[#111] border border-[#2a2a2a] border-t-4 border-t-[#c9a84c] p-10 shadow-2xl relative">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] p-6 text-[#f0ece0] pt-24 italic">
+            <div className="w-full max-w-md bg-[#111] border border-[#2a2a2a] border-t-4 border-t-[#c9a84c] p-10 shadow-2xl relative animate-in fade-in zoom-in duration-500">
 
-                {/* Decoración de esquina estética */}
-                <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-[#c9a84c]/30"></div>
+                {/* Decoración de esquina */}
+                <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-[#c9a84c]/20"></div>
 
-                <h1 className="font-bebas text-5xl text-center text-white mb-2 tracking-widest uppercase italic">
-                    Unirse a <span className="text-[#c9a84c]">La Liga Online</span>
-                </h1>
-                <p className="font-barlow-condensed text-center text-[#555] uppercase tracking-[3px] text-sm mb-10 italic">
-                    Crea tu identidad de DT para empezar
-                </p>
+                <div className="mb-10 text-center">
+                    <h1 className="font-bebas text-6xl text-white tracking-tighter uppercase leading-none">
+                        Nuevo <span className="text-[#c9a84c]">DT</span>
+                    </h1>
+                    <p className="font-barlow-condensed text-[#555] uppercase tracking-[4px] text-xs mt-2">
+                        Ficha por la liga El Legado
+                    </p>
+                </div>
 
-                <form onSubmit={handleRegister} className="flex flex-col gap-6 font-barlow-condensed">
+                <form onSubmit={handleRegister} className="flex flex-col gap-5 font-barlow-condensed">
+
+                    {/* NICKNAME */}
                     <div className="space-y-1">
-                        <label className="text-[15px] text-[#c9a84c] uppercase font-bold tracking-widest ml-1 italic">Nombre de DT (Nick PES 6)</label>
+                        <label className="text-[10px] text-[#c9a84c] uppercase font-bold tracking-[2px] ml-1">Nickname de DT</label>
                         <input
                             type="text"
-                            placeholder="Usuario Online"
-                            className="w-full bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all italic"
-                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                             required
+                            placeholder="EJ: GULI_PES"
+                            className="w-full bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all"
+                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                         />
                     </div>
 
+                    {/* EMAIL */}
                     <div className="space-y-1">
-                        <label className="text-[15px] text-[#c9a84c] uppercase font-bold tracking-widest ml-1 italic">Correo Electrónico</label>
+                        <label className="text-[10px] text-[#c9a84c] uppercase font-bold tracking-[2px] ml-1">Email Oficial</label>
                         <input
                             type="email"
-                            placeholder="dt@ellegado.com"
-                            className="w-full bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all italic"
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             required
+                            placeholder="dt@ellegado.com"
+                            className="w-full bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all"
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         />
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="text-[15px] text-[#c9a84c] uppercase font-bold tracking-widest ml-1 italic">Contraseña de Acceso</label>
+                    {/* PASSWORD GRID */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-[10px] text-[#c9a84c] uppercase font-bold tracking-[2px] ml-1">Contraseña</label>
+                            <input
+                                type="password"
+                                required
+                                placeholder="••••••••"
+                                className="w-full bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all"
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] text-[#c9a84c] uppercase font-bold tracking-[2px] ml-1">Confirmar</label>
+                            <input
+                                type="password"
+                                required
+                                placeholder="••••••••"
+                                className="w-full bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all"
+                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    {/* LIGA INFO */}
+                    <div className="p-3 bg-black/40 border-l-2 border-[#c9a84c] flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Inscripción Activa:</span>
+                        <span className="text-xs font-bold text-[#c9a84c] uppercase">PES 6 ONLINE</span>
+                    </div>
+
+                    {/* REGLAMENTO */}
+                    <label className="flex items-start gap-3 p-4 bg-black/20 border border-white/5 cursor-pointer group">
                         <input
-                            type="password"
-                            placeholder="••••••••"
-                            className="w-full bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all"
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            type="checkbox"
                             required
+                            className="mt-1 accent-[#c9a84c]"
+                            onChange={(e) => setFormData({ ...formData, aceptarReglamento: e.target.checked })}
                         />
-                    </div>
-                    <div className="flex gap-4 p-4 bg-[#1a1a1a] border border-[#333] justify-center">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={formData.ligas.pes6}
-                                onChange={(e) => setFormData({ ...formData, ligas: { ...formData.ligas, pes6: e.target.checked } })}
-                            />
-                            <span className="text-sm font-bold uppercase italic text-[#c9a84c]">Jugar PES 6</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={formData.ligas.pes2013}
-                                onChange={(e) => setFormData({ ...formData, ligas: { ...formData.ligas, pes2013: e.target.checked } })}
-                            />
-                            <span className="text-sm font-bold uppercase italic text-[#00aaff]">Jugar PES 2013</span>
-                        </label>
-                    </div>
-                    <div className="flex justify-center my-2">
+                        <p className="text-[10px] text-gray-500 uppercase leading-relaxed group-hover:text-gray-300 transition-colors">
+                            Acepto el <span className="text-white underline">reglamento</span>, las normas de conducta y el uso de herramientas de conexión obligatorias.
+                        </p>
+                    </label>
+
+                    {/* CAPTCHA */}
+                    <div className="flex justify-center my-2 grayscale hover:grayscale-0 transition-all scale-90">
                         <ReCAPTCHA
                             ref={recaptchaRef}
-                            sitekey="6Lc4B8wsAAAAAO0OCTlfTLqukUxTMuwFffafksXo" // Reemplaza con tu Site Key real
+                            sitekey="6Lc4B8wsAAAAAO0OCTlfTLqukUxTMuwFffafksXo"
                             onChange={(token) => setCaptchaToken(token)}
-                            theme="dark" // Para que combine con tu web oscura
+                            theme="dark"
                         />
                     </div>
+
+                    {/* BOTÓN ESTILO CONTRATO */}
                     <button
                         type="submit"
-                        disabled={loading || !captchaToken} // 6. Bloqueado si no hay token o carga
-                        className="bg-[#c9a84c] text-black font-bebas text-3xl py-3 mt-4 tracking-[4px] uppercase hover:bg-white transition-all shadow-[0_0_20px_rgba(201,168,76,0.2)] disabled:opacity-30 italic"
+                        disabled={loading || !captchaToken}
+                        className="relative w-full bg-[#c9a84c] text-black font-bebas text-4xl py-4 mt-4 tracking-[3px] uppercase hover:bg-white hover:scale-[1.02] active:scale-95 transition-all shadow-[0_10px_20px_rgba(201,168,76,0.15)] disabled:opacity-20"
                     >
-                        {loading ? "Inscribiendo..." : "Finalizar Registro"}
+                        {loading ? "Firmando..." : "Firmar Contrato"}
                     </button>
                 </form>
 
-                <div className="mt-8 text-center border-t border-[#222] pt-6">
-                    <p className="text-[#444] text-xs uppercase tracking-widest italic">
-                        ¿Ya formas parte? {" "}
-                        <Link href="/login" className="text-[#c9a84c] hover:underline font-bold">Inicia Sesión</Link>
+                <div className="mt-10 text-center border-t border-white/5 pt-6 font-barlow-condensed">
+                    <p className="text-[#444] text-[11px] uppercase tracking-widest">
+                        ¿Ya tienes ficha de DT? {" "}
+                        <Link href="/login" className="text-[#c9a84c] hover:text-white font-bold transition-colors">Entrar a la Oficina</Link>
                     </p>
                 </div>
             </div>

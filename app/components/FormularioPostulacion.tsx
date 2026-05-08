@@ -6,18 +6,17 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import emailjs from '@emailjs/browser';
 import { Alert } from "@/src/lib/alerts";
 
-
 interface FormularioProps {
     equipoPreseleccionado?: string;
     equipoIdPreseleccionado?: string;
-    coleccionPostulacion?: string; // NUEVO: "postulaciones" o "pes2013_postulaciones"
-    tituloLiga?: string;           // NUEVO: "PES 6" o "PES 2013"
+    coleccionPostulacion?: string;
+    tituloLiga?: string;
 }
 
 export default function FormularioPostulacion({
     equipoPreseleccionado = "",
     equipoIdPreseleccionado = "",
-    coleccionPostulacion = "postulaciones", // Default a PES 6
+    coleccionPostulacion = "postulaciones",
     tituloLiga = "PES 6"
 }: FormularioProps) {
     const { user, userData } = useAuth();
@@ -28,22 +27,19 @@ export default function FormularioPostulacion({
     const [esNombreValido, setEsNombreValido] = useState(true);
 
     const [formData, setFormData] = useState({
-        nicknamePes: "",
-        edad: "",
-        email: "",
+        whatsapp: "",
         discord: "",
-        internet: "",
-        jugoOnline: "SI",
         pais: "",
+        experiencia: "SI",
+        linkSpeedtest: "",
         equipoNombre: equipoPreseleccionado,
         equipoId: equipoIdPreseleccionado,
-        linkSpeedtest: "",
     });
 
     // Validar el nombre en tiempo real
     useEffect(() => {
         if (nombreConfirmacion.length > 0 && userData?.nombre) {
-            setEsNombreValido(nombreConfirmacion === userData.nombre);
+            setEsNombreValido(nombreConfirmacion.trim() === userData.nombre.trim());
         } else {
             setEsNombreValido(true);
         }
@@ -60,66 +56,65 @@ export default function FormularioPostulacion({
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        // Verificación final antes de enviar
-        if (nombreConfirmacion !== userData?.nombre) {
-            Alert.fire({
-                icon: 'warning',
-                title: 'ERROR EN EL NICK',
-                text: 'No coincide con el nick registrado.',
-            });
-            return;
+        if (nombreConfirmacion.trim() !== userData?.nombre?.trim()) {
+            return Alert.fire({ icon: 'warning', title: 'NICK INCORRECTO', text: 'Escribe tu Nick exactamente como figura en tu cuenta.' });
         }
 
-        if (!user || !userData) return Alert.fire({
-            icon: 'warning',
-            title: 'ERROR',
-            text: 'Debes iniciar sesión.',
-        });;
-        if (!formData.equipoId) return Alert.fire({
-            icon: 'warning',
-            title: 'ERROR',
-            text: 'Seleccioná un equipo de la grilla.',
-        });;
-
+        if (!user?.uid) return;
         setEnviando(true);
 
         try {
-            await addDoc(collection(db, coleccionPostulacion), {
+            // 1. GUARDAR EN FIREBASE (Lo más importante)
+            const nuevaPostulacion = {
                 uid: user.uid,
-                juego: coleccionPostulacion === "pes2013_postulaciones" ? "pes2013" : "pes6",
                 nombre: userData.nombre,
                 equipoNombre: formData.equipoNombre,
                 equipoId: formData.equipoId,
-                nicknamePes: formData.nicknamePes,
                 discord: formData.discord,
-                email: formData.email,
+                whatsapp: formData.whatsapp,
                 pais: formData.pais,
-                edad: formData.edad,
-                internet: formData.internet,
                 speedtestUrl: formData.linkSpeedtest,
-                experiencia: formData.jugoOnline,
+                experiencia: formData.experiencia,
                 fecha: serverTimestamp(),
+                juego: "pes6"
+            };
+
+            // Esperamos a que Firebase termine
+            await addDoc(collection(db, coleccionPostulacion), nuevaPostulacion);
+
+            // 2. INTENTO DE MAIL (Si falla, no avisamos al usuario para no asustarlo)
+            try {
+                await emailjs.send(
+                    'service_nb187ge',
+                    'template_rxcjm7t',
+                    {
+                        from_name: userData.nombre,
+                        equipo_nombre: formData.equipoNombre,
+                        whatsapp: formData.whatsapp,
+                        discord_user: formData.discord,
+                        speedtest: formData.linkSpeedtest
+                    },
+                    'qK8p-VpJF5iDs8kPJ'
+                );
+            } catch (mailErr) {
+                console.warn("EmailJS falló, pero el DT ya está en Firebase:", mailErr);
+            }
+
+            // 3. ÉXITO (Mostramos el éxito porque Firebase ya tiene los datos)
+            Alert.fire({
+                icon: 'success',
+                title: '¡POSTULACIÓN ENVIADA!',
+                text: 'Tu solicitud ya está en la base de datos de El Legado.',
+            }).then(() => {
+                window.location.reload();
             });
 
-            await emailjs.send(
-                'service_nb187ge', 'template_rxcjm7t',
-                {
-                    from_name: userData.nombre,
-                    equipo_nombre: formData.equipoNombre,
-                    discord_user: formData.discord,
-                    user_email: formData.email
-                },
-                'qK8p-VpJF5iDs8kPJ'
-            );
-            //AGREGAR SWEET ALERT
-            alert("¡Postulación enviada con éxito!");
-            window.location.reload();
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
+            console.error("Error real de Firebase:", error);
             Alert.fire({
-                icon: 'warning',
-                title: 'ERROR AL ENVIAR',
-                text: 'No se pudo enviar la postulación.',
+                icon: 'error',
+                title: 'ERROR CRÍTICO',
+                text: 'No se pudo guardar en la base de datos.',
             });
         } finally {
             setEnviando(false);
@@ -127,96 +122,109 @@ export default function FormularioPostulacion({
     };
 
     return (
-        <section className="max-w-2xl mx-auto bg-[#111] border border-[#2a2a2a] border-t-4 border-t-[#c9a84c] p-8 shadow-2xl">
-            <div className="mb-6 border-b border-[#222] pb-4 text-center">
-                <p className="text-[10px] tracking-[3px] text-[#c9a84c] uppercase font-bold italic">Postulante Detectado</p>
-                <h2 className="font-bebas text-5xl text-white italic tracking-widest">{userData?.nombre || "Cargando..."}</h2>
+        <section className="max-w-2xl mx-auto bg-[#111] border border-[#2a2a2a] border-t-4 border-t-[#c9a84c] p-8 shadow-2xl animate-in fade-in duration-500">
+            <div className="mb-8 border-b border-white/5 pb-6 text-center">
+                <p className="text-[10px] tracking-[4px] text-[#c9a84c] uppercase font-bold italic mb-1">Inscripción Oficial</p>
+                <h2 className="font-bebas text-5xl text-white italic tracking-widest">{userData?.nombre || "..."}</h2>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5 font-barlow-condensed text-white">
+            <form onSubmit={handleSubmit} className="space-y-6 font-barlow-condensed">
 
-                {/* CAMPO DE VALIDACIÓN DE NOMBRE */}
-                <div className="flex flex-col gap-1">
-                    <label className="text-[10px] tracking-[2px] text-[#c9a84c] uppercase font-bold">Confirmar Identidad</label>
-                    <p className="text-[11px] text-gray-500 italic mb-1 uppercase">Escribe tu Nick de registro exactamente igual:</p>
+                {/* VALIDACIÓN DE NICK */}
+                <div className="flex flex-col gap-2">
+                    <label className="text-[11px] tracking-[2px] text-[#c9a84c] uppercase font-bold">1. Confirma tu Nick de Usuario</label>
                     <input
                         type="text"
                         required
                         value={nombreConfirmacion}
-                        className={`bg-[#1a1a1a] border p-2 outline-none transition-all ${esNombreValido ? 'border-[#333] focus:border-[#c9a84c]' : 'border-red-600 focus:border-red-600'
-                            }`}
-                        placeholder="Confirmar Nick..."
+                        className={`bg-[#1a1a1a] border p-3 outline-none transition-all text-white ${esNombreValido ? 'border-[#333] focus:border-[#c9a84c]' : 'border-red-600'}`}
+                        placeholder="Escribe tu Nick aquí..."
                         onChange={(e) => setNombreConfirmacion(e.target.value)}
                     />
-                    {!esNombreValido && (
-                        <span className="text-red-600 text-[10px] uppercase font-bold italic animate-pulse">El nombre no coincide</span>
-                    )}
+                    {!esNombreValido && <span className="text-red-500 text-[10px] uppercase font-bold italic">El nombre debe ser idéntico al de tu cuenta</span>}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* PREGUNTA DE EXPERIENCIA LIGA MASTER ONLINE */}
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] tracking-[2px] text-[#888] uppercase">¿Experiencia en Liga Master Online?</label>
-                        <select
-                            required
-                            className="bg-[#1a1a1a] border border-[#333] p-2 outline-none focus:border-[#c9a84c] text-sm uppercase"
-                            onChange={(e) => setFormData({ ...formData, jugoOnline: e.target.value })}
-                            value={formData.jugoOnline}
-                        >
-                            <option value="SI">SÍ, TENGO EXPERIENCIA</option>
-                            <option value="NO">NO, SOY NUEVO</option>
-                        </select>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] tracking-[2px] text-[#888] uppercase">País de residencia</label>
-                        <input type="text" required className="bg-[#1a1a1a] border border-[#333] p-2 outline-none focus:border-[#c9a84c]"
-                            onChange={(e) => setFormData({ ...formData, pais: e.target.value })} />
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                    <label className="text-[10px] tracking-[2px] text-[#c9a84c] uppercase font-bold italic">Equipo Seleccionado</label>
-                    <input type="text" value={formData.equipoNombre} readOnly className="bg-[#1a1a1a] border border-[#c9a84c] p-2 text-[#c9a84c] font-bold cursor-default uppercase" />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] tracking-[2px] text-[#888] uppercase">Usuario Discord</label>
-                        <input type="text" required placeholder="Nombre#1234" className="bg-[#1a1a1a] border border-[#333] p-2 outline-none focus:border-[#c9a84c]"
-                            onChange={(e) => setFormData({ ...formData, discord: e.target.value })} />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] tracking-[2px] text-[#888] uppercase">Internet (MB)</label>
-                        <input type="text" required className="bg-[#1a1a1a] border border-[#333] p-2 outline-none focus:border-[#c9a84c]"
-                            onChange={(e) => setFormData({ ...formData, internet: e.target.value })} />
-                    </div>
-                    <div className="flex flex-col gap-2 bg-[#0a0a0a] p-4 border-l-2 border-[#c9a84c]">
-                        <label className="text-[15px] tracking-[4px] text-[#c9a84c] uppercase font-bold italic">
-                            Link de Speedtest
-                        </label>
-                        <p className="text-[13px] text-gray-500 uppercase">
-                            Realizá el test en <a href="https://www.speedtest.net" target="_blank" className="underline text-white">Speedtest.net</a>, hacé clic en Compartir y pegá el link acá.
-                        </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* WHATSAPP */}
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[11px] tracking-[2px] text-[#888] uppercase font-bold">2. Número de WhatsApp</label>
                         <input
-                            type="url"
+                            type="tel"
                             required
-                            placeholder="https://www.speedtest.net/result/..."
-                            className="bg-[#1a1a1a] border border-[#333] p-2 text-s outline-none focus:border-[#c9a84c]"
-                            onChange={(e) => setFormData({ ...formData, linkSpeedtest: e.target.value })}
-                            value={formData.linkSpeedtest}
+                            placeholder="+54 9 11 ..."
+                            className="bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c]"
+                            onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                         />
                     </div>
+                    {/* DISCORD */}
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[11px] tracking-[2px] text-[#888] uppercase font-bold">3. Usuario de Discord</label>
+                        <input
+                            type="text"
+                            required
+                            placeholder="usuario#1234"
+                            className="bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c]"
+                            onChange={(e) => setFormData({ ...formData, discord: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* PAIS */}
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[11px] tracking-[2px] text-[#888] uppercase font-bold">4. País</label>
+                        <input
+                            type="text"
+                            required
+                            className="bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c]"
+                            onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
+                        />
+                    </div>
+                    {/* EXPERIENCIA */}
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[11px] tracking-[2px] text-[#888] uppercase font-bold">5. ¿Experiencia Online?</label>
+                        <select
+                            className="bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] uppercase"
+                            onChange={(e) => setFormData({ ...formData, experiencia: e.target.value })}
+                            value={formData.experiencia}
+                        >
+                            <option value="SI">Sí, he jugado ligas</option>
+                            <option value="NO">No, soy nuevo</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* SPEEDTEST - SECCIÓN DESTACADA */}
+                <div className="bg-black/40 border-l-4 border-[#c9a84c] p-6 space-y-3">
+                    <label className="text-[14px] tracking-[3px] text-[#c9a84c] uppercase font-bold italic flex items-center gap-2">
+                        Link de Speedtest (Obligatorio)
+                    </label>
+                    <p className="text-[12px] text-gray-500 uppercase leading-relaxed">
+                        Entrá a <a href="https://www.speedtest.net" target="_blank" className="text-white underline hover:text-[#c9a84c]">Speedtest.net</a>, realizá el test y pegá el link del resultado.
+                    </p>
+                    <input
+                        type="url"
+                        required
+                        placeholder="https://www.speedtest.net/result/..."
+                        className="w-full bg-[#111] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] text-sm"
+                        onChange={(e) => setFormData({ ...formData, linkSpeedtest: e.target.value })}
+                    />
+                </div>
+
+                {/* EQUIPO SELECCIONADO (VISTA PREVIA) */}
+                <div className="bg-[#c9a84c]/10 border border-[#c9a84c]/30 p-4 flex justify-between items-center">
+                    <span className="text-[10px] text-[#c9a84c] font-bold uppercase tracking-[2px]">Club Solicitado:</span>
+                    <span className="font-bebas text-2xl text-white italic tracking-wider uppercase">{formData.equipoNombre || "Ninguno seleccionado"}</span>
                 </div>
 
                 <button
                     type="submit"
                     disabled={enviando || !esNombreValido || nombreConfirmacion === ""}
-                    className={`w-full font-bebas text-3xl py-4 mt-4 tracking-[4px] uppercase transition-all shadow-lg ${(enviando || !esNombreValido || nombreConfirmacion === "")
-                        ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50"
-                        : "bg-[#c9a84c] text-black hover:bg-white active:scale-95"
-                        }`}
+                    className={`w-full font-bebas text-4xl py-4 mt-6 tracking-[5px] uppercase transition-all ${(enviando || !esNombreValido || nombreConfirmacion === "")
+                        ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-40"
+                        : "bg-[#c9a84c] text-black hover:bg-white hover:scale-[1.02] shadow-[0_10px_30px_rgba(201,168,76,0.2)]"}`}
                 >
-                    {enviando ? "Procesando..." : "Finalizar Postulación"}
+                    {enviando ? "Procesando..." : "Enviar Postulación"}
                 </button>
             </form>
         </section>

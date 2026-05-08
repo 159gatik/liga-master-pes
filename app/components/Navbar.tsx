@@ -6,7 +6,7 @@ import { useAuth } from '@/src/lib/hooks/useAuht';
 import { auth } from '@/src/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { Menu, X, LogOut, User as UserIcon } from 'lucide-react';
-
+import { Alert } from "@/src/lib/alerts"; // Asegúrate de importar tu configuración de SweetAlert
 const LIGA_CONFIG = {
     pes6: {
         nombre: "EL LEGADO",
@@ -79,10 +79,29 @@ export default function Navbar() {
     const links = config.links(!!user, isAdmin);
 
     const handleLogout = async () => {
-        if (confirm("¿Cerrar sesión?")) {
-            await signOut(auth);
-            window.location.href = "/";
-        }
+        Alert.fire({
+            title: '¿CERRAR SESIÓN?',
+            text: "Se finalizará tu sesión actual en la oficina técnica.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#c9a84c',
+            cancelButtonColor: '#1a1a1a',
+            confirmButtonText: 'SÍ, SALIR',
+            cancelButtonText: 'CANCELAR',
+            background: '#0a0a0a',
+            color: '#fff',
+            customClass: {
+                popup: 'border-2 border-[#c9a84c] font-barlow-condensed italic',
+                title: 'font-bebas text-3xl tracking-widest',
+                confirmButton: 'font-bebas tracking-widest',
+                cancelButton: 'font-bebas tracking-widest'
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                await signOut(auth);
+                window.location.href = "/";
+            }
+        });
     };
 
     return (
@@ -223,8 +242,8 @@ export default function Navbar() {
                                 <Link
                                     href="/login"
                                     onClick={() => setIsMenuOpen(false)}
-                                        className="w-full flex items-center justify-center text-black py-3 font-bebas text-xl italic tracking-widest"
-                                        style={{ background: config.acento }}
+                                    className="w-full flex items-center justify-center text-black py-3 font-bebas text-xl italic tracking-widest"
+                                    style={{ background: config.acento }}
                                 >
                                     INICIAR SESIÓN
                                 </Link>

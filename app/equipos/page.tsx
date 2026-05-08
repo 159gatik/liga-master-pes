@@ -4,15 +4,18 @@ import Image from "next/image";
 import { db } from "../../src/lib/firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import DetalleEquipo from "./DetalleEquipos";
+import Link from "next/link";
 
+// 1. Interfaz actualizada con dtId
 interface Equipo {
     id: string;
     nombre: string;
     escudo: string;
     dt: string;
+    dtUid?: string; // ID de Firebase del DT para el enlace al perfil
     presupuesto: number;
     valor_plantilla: number;
-    division?: string; // Añadimos division a la interfaz
+    division?: string;
     juego?: string;
     titulos?: string[];
     copas?: string[];
@@ -22,7 +25,7 @@ export default function EquiposPage() {
     const [equipos, setEquipos] = useState<Equipo[]>([]);
     const [equipoSeleccionado, setEquipoSeleccionado] = useState<Equipo | null>(null);
     const [loading, setLoading] = useState(true);
-    const [tabActiva, setTabActiva] = useState<"A" | "B">("A"); // Estado para los Tabs
+    const [tabActiva, setTabActiva] = useState<"A" | "B">("A");
 
     useEffect(() => {
         const q = query(collection(db, "equipos"), orderBy("nombre", "asc"));
@@ -62,7 +65,7 @@ export default function EquiposPage() {
                         key={div}
                         onClick={() => {
                             setTabActiva(div as "A" | "B");
-                            setEquipoSeleccionado(null); // Limpiamos selección al cambiar de división
+                            setEquipoSeleccionado(null);
                         }}
                         className={`px-8 py-3 font-bebas text-2xl tracking-widest transition-all ${tabActiva === div
                             ? "bg-[#c9a84c] text-black italic scale-105"
@@ -86,29 +89,41 @@ export default function EquiposPage() {
                             <div
                                 key={equipo.id}
                                 className={`relative bg-[#111] border-2 p-4 flex flex-col items-center transition-all duration-300 cursor-pointer ${equipoSeleccionado?.id === equipo.id
-                                        ? 'border-[#c9a84c] bg-[#1a1a1a] scale-105 z-10 shadow-[0_0_15px_rgba(201,168,76,0.2)]'
-                                        : 'border-white/5'
+                                    ? 'border-[#c9a84c] bg-[#1a1a1a] scale-105 z-10 shadow-[0_0_15px_rgba(201,168,76,0.2)]'
+                                    : 'border-white/5'
                                     }`}
                                 onClick={() => setEquipoSeleccionado(equipo)}
                             >
-                                {/* Contenedor del escudo: sin grayscale para que siempre tenga color */}
+                                {/* Contenedor del escudo */}
                                 <div className="relative w-16 h-16 mb-2 transition-all">
                                     <Image
                                         src={equipo.escudo || "/img/escudos/default.jpg"}
                                         alt={equipo.nombre}
                                         fill
                                         className="object-contain p-1"
+                                        unoptimized
                                     />
                                 </div>
 
-                                {/* Nombre del equipo: cambia a dorado solo si está seleccionado */}
+                                {/* Nombre del equipo */}
                                 <h3 className={`font-bebas text-lg tracking-wider text-center leading-tight uppercase transition-colors ${equipoSeleccionado?.id === equipo.id ? 'text-[#c9a84c]' : 'text-white'
                                     }`}>
                                     {equipo.nombre}
                                 </h3>
 
-                                <span className="text-[9px] text-[#888] uppercase tracking-widest mt-1">
-                                    {equipo.dt || "Vacante"}
+                                {/* LINK AL PERFIL DEL DT */}
+                                <span className="text-[12px] text-[#88] uppercase tracking-widest mt-1 z-20 relative">
+                                    {equipo.dtUid ? (
+                                        <Link
+                                            href={`/perfil/ver?id=${equipo.dtUid}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="hover:text-[#c9a84c] transition-colors duration-200 cursor-pointer underline decoration-[#c9a84c]/20 underline-offset-2"
+                                        >
+                                            {equipo.dt}
+                                        </Link>
+                                    ) : (
+                                        <span className="opacity-40 italic">Vacante</span>
+                                    )}
                                 </span>
                             </div>
                         ))
