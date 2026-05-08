@@ -115,22 +115,32 @@ export default function Page() {
                         </Link>
 
                         {!loading && (
-                            <div className="flex gap-4">
+                            <div className="flex flex-wrap gap-4">
                                 {!user ? (
+                                    /* USUARIO NO LOGUEADO */
                                     <Link href="/register" className="border-2 border-white/20 text-white font-bebas text-3xl px-12 py-5 skew-x-[-15deg] hover:bg-white hover:text-black transition-all">
                                         <span className="inline-block skew-x-[15deg]">Registrate</span>
                                     </Link>
                                 ) : (
+                                    /* USUARIO LOGUEADO */
                                     <>
-                                        {userData?.ligas?.pes6?.estado === "aprobado" ? (
-                                            <Link href="/perfil" className="bg-[#27ae60] text-white font-bebas text-3xl px-12 py-5 skew-x-[-15deg] hover:scale-105 transition-all">
+                                        {/* SI YA TIENE EQUIPO O ESTÁ APROBADO EN PES6 -> VA A LA OFICINA */}
+                                        {(userData?.equipoId || userData?.ligas?.pes6?.estado === "aprobado") ? (
+                                            <Link href="/perfil" className="bg-[#27ae60] text-white font-bebas text-3xl px-12 py-5 skew-x-[-15deg] hover:scale-105 transition-all shadow-[0_0_20px_rgba(39,174,96,0.3)]">
                                                 <span className="inline-block skew-x-[15deg]">Mi Oficina</span>
                                             </Link>
                                         ) : (
-                                            <Link href={yaPostulado ? "#" : "/equipos-libres"} className={`border-2 border-[#c9a84c] text-[#c9a84c] font-bebas text-3xl px-12 py-5 skew-x-[-15deg] ${yaPostulado ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#c9a84c] hover:text-black'}`}>
-                                                <span className="inline-block skew-x-[15deg]">{yaPostulado ? "En Revisión" : "Postularse"}</span>
+                                            /* SI NO TIENE EQUIPO -> POSTULARSE O EN REVISIÓN */
+                                            <Link
+                                                href={yaPostulado ? "#" : "/equipos-libres"}
+                                                className={`border-2 border-[#c9a84c] text-[#c9a84c] font-bebas text-3xl px-12 py-5 skew-x-[-15deg] ${yaPostulado ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#c9a84c] hover:text-black'}`}
+                                            >
+                                                <span className="inline-block skew-x-[15deg]">
+                                                    {yaPostulado ? "En Revisión" : "Postularse"}
+                                                </span>
                                             </Link>
                                         )}
+
                                         <Link href="/despachos" className="bg-white/5 border border-white/10 italic font-bebas text-3xl px-12 py-5 skew-x-[-15deg] hover:bg-white/10 transition-all">
                                             <span className="inline-block skew-x-[15deg]">Despachos</span>
                                         </Link>
