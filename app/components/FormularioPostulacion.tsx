@@ -34,6 +34,7 @@ export default function FormularioPostulacion({
         linkSpeedtest: "",
         equipoNombre: equipoPreseleccionado,
         equipoId: equipoIdPreseleccionado,
+        edad: "",
     });
 
     // Validar el nombre en tiempo real
@@ -129,21 +130,36 @@ export default function FormularioPostulacion({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6 font-barlow-condensed">
-
-                {/* VALIDACIÓN DE NICK */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-[11px] tracking-[2px] text-[#c9a84c] uppercase font-bold">1. Confirma tu Nick de Usuario</label>
-                    <input
-                        type="text"
-                        required
-                        value={nombreConfirmacion}
-                        className={`bg-[#1a1a1a] border p-3 outline-none transition-all text-white ${esNombreValido ? 'border-[#333] focus:border-[#c9a84c]' : 'border-red-600'}`}
-                        placeholder="Escribe tu Nick aquí..."
-                        onChange={(e) => setNombreConfirmacion(e.target.value)}
-                    />
-                    {!esNombreValido && <span className="text-red-500 text-[10px] uppercase font-bold italic">El nombre debe ser idéntico al de tu cuenta</span>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* VALIDACIÓN DE NICK */}
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[11px] tracking-[2px] text-[#c9a84c] uppercase font-bold">1. Confirma tu Nick de Usuario</label>
+                        <input
+                            type="text"
+                            required
+                            value={nombreConfirmacion}
+                            className={`bg-[#1a1a1a] border p-3 outline-none transition-all text-white ${esNombreValido ? 'border-[#333] focus:border-[#c9a84c]' : 'border-red-600'}`}
+                            placeholder="Escribe tu Nick aquí..."
+                            onChange={(e) => setNombreConfirmacion(e.target.value)}
+                        />
+                        {!esNombreValido && <span className="text-red-500 text-[10px] uppercase font-bold italic">El nombre debe ser idéntico al de tu cuenta</span>}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[11px] tracking-[2px] text-[#888] uppercase font-bold">
+                            2. Tu edad
+                        </label>
+                        <input
+                            type="number" // Cambiado a number para mejor experiencia en móviles
+                            required
+                            min="13"      // Opcional: validación mínima
+                            max="99"      // Opcional: validación máxima
+                            placeholder="Ej: 25"
+                            className="bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-colors"
+                            onChange={(e) => setFormData({ ...formData, edad: e.target.value })}
+                        />
+                    </div>
                 </div>
-
+                <hr />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* WHATSAPP */}
                     <div className="flex flex-col gap-2">

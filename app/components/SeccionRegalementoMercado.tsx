@@ -1,180 +1,183 @@
 "use client";
 
+import { useState } from "react";
+
 export default function SeccionReglamentoMercado() {
+    const [tabActiva, setTabActiva] = useState<"A" | "B">("A");
+
     return (
-        <div className="max-w-4xl mx-auto animate-fade-in space-y-8 pb-20">
-            {/* TÍTULO PRINCIPAL CON CICLO DE TEMPORADA */}
-            <div className="border-b border-[#c9a84c] pb-4 flex flex-col md:flex-row justify-between items-end gap-2">
-                <div>
-                    <h3 className="font-bebas text-4xl text-[#c9a84c] tracking-widest uppercase">
-                        Normativa del Mercado · <span className="text-white">Temporada I</span>
+        <div className="max-w-6xl mx-auto animate-fadeIn space-y-12 pb-20 font-barlow-condensed italic">
+
+            {/* TÍTULO PRINCIPAL ESTILO EL LEGADO */}
+            <header className="relative py-10 border-b border-white/10 overflow-hidden">
+                <div className="relative z-10">
+                    <h3 className="font-bebas text-6xl text-white tracking-tighter uppercase leading-none">
+                        Reglamento de <span className="text-[#c9a84c]">Mercado</span>
                     </h3>
-                    <p className="text-gray-500 font-barlow-condensed text-xs uppercase tracking-[3px]">Ciclo: Torneo Apertura + Torneo Clausura</p>
+                    <p className="text-gray-500 text-sm uppercase tracking-[5px] mt-2 font-bold">Temporada I · Ciclo Integral</p>
                 </div>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-5 font-bebas text-9xl uppercase tracking-tighter select-none">
+                    MARKET
+                </div>
+            </header>
 
+            {/* AVISO RESTRICCIÓN (BANNER INCLINADO) */}
+            <div className="relative overflow-hidden bg-red-600/10 border border-red-600/20 p-8 skew-x-[-10deg]">
+                <div className="skew-x-[10deg]">
+                    <p className="text-red-500 font-bebas text-3xl uppercase mb-1 tracking-widest">Mercado Cerrado</p>
+                    <p className="text-gray-400 text-lg leading-tight max-w-2xl">
+                        El mercado permanecerá **bloqueado** durante el desarrollo de los torneos. Altas, bajas y traspasos solo se habilitarán en el receso oficial tras el Clausura.
+                    </p>
+                </div>
             </div>
 
-            {/* AVISO IMPORTANTE SOBRE APERTURA */}
-            <div className="bg-red-900/10 border-l-4 border-red-600 p-6 italic">
-                <p className="text-red-500 font-bold uppercase text-m mb-1 tracking-widest">Restricción de Calendario:</p>
-                <p className="text-gray-400 text-m font-barlow-condensed">
-                    El mercado **permanecerá cerrado** durante el transcurso de los dos torneos. Las negociaciones, altas y bajas solo se habilitarán una vez finalizada la temporada completa (tras el Clausura).
-                </p>
-            </div>
-
-            {/* GRID DE REGLAS GENERALES */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-barlow-condensed">
-
-                {/* REGLA 1: TRASPASOS */}
-                <div className="bg-[#111] border border-[#2a2a2a] p-6 hover:border-[#27ae60] transition-colors relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 bg-[#27ae60] text-black font-bold px-2 py-0.5 text-[13px] uppercase">Post-Clausura</div>
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className="bg-[#27ae60] text-black font-bold px-2 py-1 text-xs uppercase">Compra</span>
-                        <h4 className="text-xl text-white font-bold uppercase tracking-wider">Traspaso Directo</h4>
-                    </div>
-                    <p className="text-gray-400 text-m leading-relaxed mb-4">
-                        Compra definitiva entre clubes. El dinero sale del presupuesto del comprador y va **íntegro** al vendedor.
-                    </p>
-                    <div className="bg-black/50 p-3 border border-white/5 space-y-1">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">Ejemplo de flujo:</p>
-                        <p className="text-xs text-white">Vendes por <strong className="text-[#27ae60]">$50M</strong> → Recibes <strong className="text-[#27ae60]">$50M</strong> al instante.</p>
-                    </div>
+            {/* GRID DE REGLAS (ESTILO TARJETAS WEBILD) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white/5 border border-white/5 p-6 hover:border-[#c9a84c] transition-all group relative">
+                    <span className="text-[#c9a84c] font-bebas text-4xl absolute top-2 right-4 opacity-20">01</span>
+                    <h4 className="text-white font-bebas text-2xl uppercase mb-3">Traspasos</h4>
+                    <p className="text-gray-500 text-sm leading-snug">Venta directa entre clubes. El 100% del monto pactado se acredita al vendedor al instante.</p>
                 </div>
 
-                {/* REGLA 2: PRÉSTAMOS */}
-                <div className="bg-[#111] border border-[#2a2a2a] p-6 hover:border-blue-500 transition-colors relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 bg-blue-600 text-white font-bold px-2 py-0.5 text-[13px] uppercase">Anual</div>
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className="bg-blue-600 text-white font-bold px-2 py-1 text-xs uppercase">Préstamo</span>
-                        <h4 className="text-xl text-white font-bold uppercase tracking-wider">Cesión por 1 Temp.</h4>
-                    </div>
-                    <p className="text-gray-400 text-m leading-relaxed mb-4">
-                        Uso del jugador por el ciclo completo (2 torneos). Al finalizar, el jugador **vuelve solo** a su dueño original.
-                    </p>
-                    <div className="bg-black/50 p-3 border border-white/5 space-y-1">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">Costo Fijo:</p>
-                        <p className="text-xs text-blue-400 font-bold uppercase italic">30% de la cotización actual</p>
-                    </div>
+                <div className="bg-white/5 border border-white/5 p-6 hover:border-blue-500 transition-all group relative">
+                    <span className="text-blue-500 font-bebas text-4xl absolute top-2 right-4 opacity-20">02</span>
+                    <h4 className="text-white font-bebas text-2xl uppercase mb-3">Préstamos</h4>
+                    <p className="text-gray-500 text-sm leading-snug">Cesión por toda la temporada. Costo fijo del 30% del valor del jugador. Sin opción de compra.</p>
                 </div>
 
-                {/* REGLA 3: SUELDOS */}
-                <div className="bg-[#111] border border-[#2a2a2a] p-6 border-l-4 border-l-orange-500 relative group">
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className="bg-orange-500 text-white font-bold px-2 py-1 text-xs uppercase">Sueldos</span>
-                        <h4 className="text-xl text-white font-bold uppercase tracking-wider">Mantenimiento Final</h4>
-                    </div>
-                    <p className="text-gray-400 text-m leading-relaxed mb-4">
-                        El costo de mantener la plantilla se liquida **una sola vez** al terminar el segundo torneo de la temporada.
-                    </p>
-                    <div className="bg-orange-900/10 p-3 border border-orange-500/20">
-                        <p className="text-xs text-orange-500 uppercase font-bold tracking-tighter">Impacto: -10% de la valoración de plantilla</p>
-                    </div>
+                <div className="bg-white/5 border border-white/5 p-6 hover:border-orange-500 transition-all group relative">
+                    <span className="text-orange-500 font-bebas text-4xl absolute top-2 right-4 opacity-20">03</span>
+                    <h4 className="text-white font-bebas text-2xl uppercase mb-3">Sueldos</h4>
+                    <p className="text-gray-500 text-sm leading-snug">Mantenimiento de plantilla: Pago único del 10% del valor total al finalizar el ciclo.</p>
                 </div>
 
-                {/* REGLA 4: JUGADORES LIBRES */}
-                <div className="bg-[#111] border border-[#2a2a2a] p-6 border-t-2 border-t-[#c9a84c] shadow-[0_0_15px_rgba(201,168,76,0.05)] relative group">
-                    <div className="absolute top-0 right-0 bg-[#c9a84c] text-black font-bold px-2 py-0.5 text-[13px] uppercase">Post-Temporada</div>
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className="bg-[#c9a84c] text-black font-bold px-2 py-1 text-xs uppercase">Libres</span>
-                        <h4 className="text-xl text-white font-bold uppercase tracking-wider">Fichaje del Mercado</h4>
-                    </div>
-                    <ul className="text-gray-400 text-[15px] space-y-1 mb-4">
-                        <li className="flex justify-between"><span>Límite de fichajes:</span> <span className="text-white">2 por DT</span></li>
-                        <li className="flex justify-between"><span>Orden de prioridad:</span> <span className="text-white font-bold italic">El más rápido</span></li>
-                        <li className="flex justify-between"><span>Costo de alta:</span> <span className="text-[#c9a84c] font-bold">80% de su valor</span></li>
+                <div className="bg-[#c9a84c]/10 border border-[#c9a84c]/20 p-6 relative">
+                    <h4 className="text-[#c9a84c] font-bebas text-2xl uppercase mb-3"> jugadores Libres</h4>
+                    <ul className="text-xs text-gray-400 space-y-1 uppercase font-bold">
+                        <li className="flex justify-between"><span>Cupo:</span> <span className="text-white">2 por DT</span></li>
+                        <li className="flex justify-between"><span>Costo:</span> <span className="text-white">80% Valor</span></li>
+                        <li className="flex justify-between"><span>Orden:</span> <span className="text-[#c9a84c]">Prioridad Pedido</span></li>
                     </ul>
-                    <div className="bg-[#c9a84c]/5 p-2 border border-[#c9a84c]/20 text-center">
-                        <p className="text-[10px] text-[#c9a84c] font-bold uppercase italic">Requiere $100M mínimos en banco</p>
-                    </div>
                 </div>
             </div>
 
-            {/* SECCIÓN: PREMIOS POR PUESTO */}
-            <div className="bg-[#111] border border-[#222] p-8 shadow-2xl">
-                <h3 className="font-bebas text-4xl text-white mb-6 italic uppercase tracking-widest border-b border-[#c9a84c] pb-2 text-center md:text-left">
-                    Tabla de <span className="text-[#c9a84c]">Mérito Deportivo</span>
+            {/* SECCIÓN MÉRITO DEPORTIVO */}
+            <section className="space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-end border-b border-white/10 pb-4">
+                    <h3 className="font-bebas text-5xl text-white uppercase tracking-tighter">
+                        Premios de <span className="text-[#c9a84c]">La liga</span>
+                    </h3>
+
+                    {/* SELECTOR INCLINADO */}
+                    <div className="flex gap-2 mt-4 md:mt-0">
+                        <button
+                            onClick={() => setTabActiva("A")}
+                            className={`px-8 py-2 font-bebas text-2xl skew-x-[-15deg] transition-all ${tabActiva === "A" ? 'bg-[#c9a84c] text-black' : 'bg-white/5 text-gray-500 hover:text-white'}`}
+                        >
+                            <span className="inline-block skew-x-[15deg]">División A</span>
+                        </button>
+                        <button
+                            onClick={() => setTabActiva("B")}
+                            className={`px-8 py-2 font-bebas text-2xl skew-x-[-15deg] transition-all ${tabActiva === "B" ? 'bg-[#c9a84c] text-black' : 'bg-white/5 text-gray-500 hover:text-white'}`}
+                        >
+                            <span className="inline-block skew-x-[15deg]">División B</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="bg-white/[0.02] border border-white/5 p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-2">
+                        {tabActiva === "A" ? (
+                            <>
+                                <div className="space-y-1">
+                                    <FilaPremio pos="1° CAMPEÓN" monto="$60.000.000" destaque />
+                                    <FilaPremio pos="2° PUESTO" monto="$50.000.000" />
+                                    <FilaPremio pos="3° PUESTO" monto="$42.000.000" />
+                                    <FilaPremio pos="4° PUESTO" monto="$36.000.000" />
+                                    <FilaPremio pos="5° PUESTO" monto="$31.000.000" />
+                                </div>
+                                <div className="space-y-1">
+                                    <FilaPremio pos="6° PUESTO" monto="$25.000.000" apagado />
+                                    <FilaPremio pos="7° PUESTO" monto="$20.000.000" apagado />
+                                    <FilaPremio pos="8° PUESTO" monto="$15.000.000" apagado />
+                                    <FilaPremio pos="9° DÉFICIT" monto="-$5.000.000" error />
+                                    <FilaPremio pos="10° DÉFICIT" monto="-$8.000.000" error />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="space-y-1">
+                                    <FilaPremio pos="1° CAMPEÓN" monto="$50.000.000" destaque />
+                                    <FilaPremio pos="2° PUESTO" monto="$40.000.000" />
+                                    <FilaPremio pos="3° PUESTO" monto="$32.000.000" />
+                                    <FilaPremio pos="4° PUESTO" monto="$26.000.000" />
+                                    <FilaPremio pos="5° PUESTO" monto="$21.000.000" />
+                                </div>
+                                <div className="space-y-1">
+                                    <FilaPremio pos="6° PUESTO" monto="$15.000.000" />
+                                    <FilaPremio pos="7° PUESTO" monto="$10.000.000" />
+                                    <FilaPremio pos="8° PUESTO" monto="$7.000.000" />
+                                    <FilaPremio pos="9° DÉFICIT" monto="$5.000.000" />
+                                    <FilaPremio pos="10° DÉFICIT" monto="$3.000.000" />
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+                <h3 className="font-bebas text-5xl text-white uppercase tracking-tighter">
+                    Premios <span className="text-[#c9a84c]">copa el legado</span>
                 </h3>
+                <div className="bg-white/[0.02] border border-white/5 p-8 flex justify-center">
+                    {/* El max-w evita que las filas se vuelvan gigantes en monitores anchos */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-2 w-full max-w-4xl">
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2 font-barlow-condensed">
-                    {/* COLUMNA 1 */}
-                    <div className="divide-y divide-white/5">
-                        <div className="flex justify-between py-2 text-[#c9a84c] font-bold text-lg italic">
-                            <span>1° CAMPEÓN</span>
-                            <span>$60.000.000</span>
+                        {/* COLUMNA 1 */}
+                        <div className="space-y-1 flex flex-col items-center md:items-stretch">
+                            <FilaPremio pos="1° CAMPEÓN" monto="$30.000.000" destaque />
+                            <FilaPremio pos="2° PUESTO" monto="$15.000.000" destaque />
                         </div>
-                        <div className="flex justify-between py-2 text-white">
-                            <span>2° PUESTO</span>
-                            <span>$50.000.000</span>
+
+                        {/* COLUMNA 2 */}
+                        <div className="space-y-1 flex flex-col items-center md:items-stretch">
+                            <FilaPremio pos="GOLEADOR" monto="$10.000.000" />
+                            <FilaPremio pos="CLASIF. PLAYOFFS" monto="$5.000.000" />
                         </div>
-                        <div className="flex justify-between py-2 text-white/80">
-                            <span>3° PUESTO</span>
-                            <span>$42.000.000</span>
-                        </div>
-                        <div className="flex justify-between py-2 text-white/70">
-                            <span>4° PUESTO</span>
-                            <span>$36.000.000</span>
-                        </div>
-                        <div className="flex justify-between py-2 text-white/60">
-                            <span>5° PUESTO</span>
-                            <span>$31.000.000</span>
+
+                    </div>
+                </div>
+                {/* EXTRAS Y SANCIONES */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-black/40 border border-green-500/20 p-6">
+                        <h5 className="text-[#27ae60] font-bebas text-2xl uppercase mb-4 tracking-wider">Bonificaciones</h5>
+                        <div className="space-y-2 text-sm uppercase">
+                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Goleador de Liga</span> <span className="text-white">+$15.000.000</span></div>
+                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Premio Fair Play</span> <span className="text-white">+$10.000.000</span></div>
+
                         </div>
                     </div>
+                    <div className="bg-black/40 border border-red-500/20 p-6">
+                        <h5 className="text-red-500 font-bebas text-2xl uppercase mb-4 tracking-wider">Sanciones</h5>
+                        <div className="space-y-2 text-sm uppercase">
+                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Tarjeta Amarilla</span> <span className="text-white">-$3.000.000</span></div>
+                            <div className="flex justify-between border-b border-white/5 pb-1"><span>Tarjeta Roja</span> <span className="text-white">-$5.000.000</span></div>
 
-                    {/* COLUMNA 2 */}
-                    <div className="divide-y divide-white/5 border-t border-white/5 md:border-t-0">
-                        <div className="flex justify-between py-2 text-white/50">
-                            <span>6° PUESTO</span>
-                            <span>$25.000.000</span>
-                        </div>
-                        <div className="flex justify-between py-2 text-white/40">
-                            <span>7° PUESTO</span>
-                            <span>$20.000.000</span>
-                        </div>
-                        <div className="flex justify-between py-2 text-white/30">
-                            <span>8° PUESTO</span>
-                            <span>$15.000.000</span>
-                        </div>
-                        <div className="flex justify-between py-2 text-red-500 font-bold bg-red-900/10 px-2">
-                            <span>9° PUESTO (DÉFICIT)</span>
-                            <span>-$5.000.000</span>
-                        </div>
-                        <div className="flex justify-between py-2 text-red-600 font-bold bg-red-900/20 px-2">
-                            <span>10° PUESTO (DÉFICIT)</span>
-                            <span>-$8.000.000</span>
                         </div>
                     </div>
                 </div>
+            </section>
+        </div>
+    );
+}
 
-                {/* BONUS Y MULTAS */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-6 border-t border-[#222]">
-                    <div className="bg-black/40 p-4 border-l-4 border-[#27ae60]">
-                        <h5 className="text-[#27ae60] font-bold text-xs uppercase mb-2">Ingresos por Torneo</h5>
-                        <ul className="text-[11px] text-gray-400 space-y-1">
-                            <li className="flex justify-between"><span>GOLEADOR DE LIGA</span> <span className="text-white">+$15.000.000</span></li>
-                            <li className="flex justify-between"><span>PREMIO FAIR PLAY</span> <span className="text-white">+$10.000.000</span></li>
-                            <li className="flex justify-between"><span>SPONSOR CLUB</span> <span className="text-gray-500 italic">PAGO POR TORNEO</span></li>
-                        </ul>
-                    </div>
-                    <div className="bg-black/40 p-4 border-l-4 border-red-600">
-                        <h5 className="text-red-600 font-bold text-xs uppercase mb-2">Multas Disciplinarias</h5>
-                        <ul className="text-[11px] text-gray-400 space-y-1">
-                            <li className="flex justify-between"><span>CADA TARJETA AMARILLA</span> <span className="text-white">-$3.000.000</span></li>
-                            <li className="flex justify-between"><span>CADA TARJETA ROJA</span> <span className="text-white">-$5.000.000</span></li>
-                            <li className="flex justify-between"><span>ABANDONO DE LIGA</span> <span className="text-red-500 italic">RESET DE CUENTA</span></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            {/* NOTA FINAL */}
-            <div className="bg-blue-900/10 border border-blue-900/30 p-6 flex items-start gap-4">
-                <div className="font-barlow-condensed">
-                    <h5 className="text-blue-400 font-bold uppercase tracking-widest text-m mb-1">Estructura de la Temporada</h5>
-                    <p className="text-blue-200/60 text-m leading-relaxed italic">
-                        Los premios por puesto se entregan al finalizar **cada torneo** (Apertura y Clausura). Sin embargo, la posibilidad de modificar la plantilla se reserva exclusivamente para el receso entre temporadas. ¡Gestioná tu presupuesto con inteligencia!
-                    </p>
-                </div>
-            </div>
+function FilaPremio({ pos, monto, destaque, error, apagado }: { pos: string, monto: string, destaque?: boolean, error?: boolean, apagado?: boolean }) {
+    return (
+        <div className={`flex justify-between items-center py-3 px-4 border-b border-white/5 transition-all hover:bg-white/5 ${error ? 'bg-red-500/5' : ''}`}>
+            <span className={`text-sm font-bold tracking-widest ${destaque ? 'text-[#c9a84c]' : error ? 'text-red-500' : apagado ? 'text-gray-600' : 'text-white'}`}>
+                {pos}
+            </span>
+            <span className={`font-bebas text-2xl ${destaque ? 'text-[#c9a84c]' : error ? 'text-red-500' : 'text-white'}`}>
+                {monto}
+            </span>
         </div>
     );
 }

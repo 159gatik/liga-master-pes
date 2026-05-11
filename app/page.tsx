@@ -155,17 +155,38 @@ export default function Page() {
             <BannerPatrocinadores />
 
             {/* 3. SECCIÓN ESTADÍSTICAS LIMPIAS */}
-            <section className="py-32 bg-[#0d0d0d] border-y border-white/5">
-                <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-2 lg:grid-cols-5 gap-12">
+            <section className="py-32 bg-[#0d0d0d]  border-y border-white/5">
+                <div className="max-w-[1400px]  mx-auto px-6 grid grid-cols-2 lg:grid-cols-5 gap-12">
                     <StatCard value={cantidadPes6} label="Clubes Registrados" />
                     <StatCard value={resultados.length} label="Partidos Reportados" />
-                    <StatCard value="ACTIVO" label="Estado Servidor" isGold />
-                    <StatCard value="18" label="Jornadas Liga" />
+                    <StatCard value="ACTIVO" label="Estado de Liga" isGold />
+                    <StatCard value="9" label="Jornadas Liga" />
                     <StatCard value="I" label="Edición Actual" />
                 </div>
             </section>
 
             {/* 4. GRILLA: RESULTADOS Y TABLA (Secciones de alto contraste) */}
+            <div className="flex flex-wrap justify-center items-center gap-3 w-full py-6">
+                <button
+                    onClick={() => setTabActiva("A")}
+                    className={`font-bebas text-2xl md:text-3xl px-8 py-2 skew-x-[-15deg] transition-all duration-300 ${tabActiva === "A"
+                        ? "bg-[#c9a84c] text-black shadow-[0_0_15px_rgba(201,168,76,0.3)]"
+                        : "bg-white/5 text-gray-500 hover:text-white border border-white/5"
+                        }`}
+                >
+                    <span className="inline-block skew-x-[15deg]">CATEGORÍA A</span>
+                </button>
+
+                <button
+                    onClick={() => setTabActiva("B")}
+                    className={`font-bebas text-2xl md:text-3xl px-8 py-2 skew-x-[-15deg] transition-all duration-300 ${tabActiva === "B"
+                        ? "bg-[#c9a84c] text-black shadow-[0_0_15px_rgba(201,168,76,0.3)]"
+                        : "bg-white/5 text-gray-500 hover:text-white border border-white/5"
+                        }`}
+                >
+                    <span className="inline-block skew-x-[15deg]">CATEGORÍA B</span>
+                </button>
+            </div>
             <section className="py-32 px-6 max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20">
 
                 {/* COLUMNA: RESULTADOS */}
@@ -175,21 +196,6 @@ export default function Page() {
                             Últimos <span className="text-[#c9a84c]">Resultados</span>
                         </h3>
 
-                        {/* TABS PARA RESULTADOS */}
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setTabActiva("A")}
-                                className={`font-bebas text-xl px-6 py-1 skew-x-[-15deg] transition-all ${tabActiva === "A" ? "bg-[#c9a84c] text-black" : "bg-white/5 text-gray-500 hover:text-white"}`}
-                            >
-                                <span className="inline-block skew-x-[15deg]">CATEGORÍA A</span>
-                            </button>
-                            <button
-                                onClick={() => setTabActiva("B")}
-                                className={`font-bebas text-xl px-6 py-1 skew-x-[-15deg] transition-all ${tabActiva === "B" ? "bg-[#c9a84c] text-black" : "bg-white/5 text-gray-500 hover:text-white"}`}
-                            >
-                                <span className="inline-block skew-x-[15deg]">CATEGORÍA B</span>
-                            </button>
-                        </div>
                     </div>
 
                     <div className="space-y-4">
@@ -463,10 +469,10 @@ export default function Page() {
 function StatCard({ value, label, isGold }: { value: any, label: string, isGold?: boolean }) {
     return (
         <div className="group">
-            <div className={`font-bebas text-7xl mb-2 transition-transform group-hover:scale-110 origin-left ${isGold ? 'text-[#c9a84c]' : 'text-white'}`}>
+            <div className={`font-bebas text-7xl flex justify-center  mb-2 transition-transform group-hover:scale-110 origin-left ${isGold ? 'text-[#c9a84c]' : 'text-white'}`}>
                 {value}
             </div>
-            <div className="font-barlow text-[10px] tracking-[5px] text-gray-600 uppercase font-bold group-hover:text-gray-400 transition-colors">
+            <div className="font-barlow text-[10px] flex justify-center  tracking-[5px] text-gray-600 uppercase font-bold group-hover:text-gray-400 transition-colors">
                 {label}
             </div>
         </div>

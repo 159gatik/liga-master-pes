@@ -1,29 +1,23 @@
 nombre,pos,edad,dorsal,valor
 Anatoliy Trubin,POR,24,1,25000000
-Samuel Soares,POR,23,24,5000000
-André Gomes,POR,21,75,2500000
-António Silva,CT,22,4,40000000
-Tomás Araújo,CT,23,44,15000000
-Morato,CT,24,5,15000000
-Adrian Bajrami,CT,23,73,1500000
-Gustavo Marques,CT,24,72,1000000
-Álvaro Carreras,LI,22,3,18000000
-Jan-Niklas Beste,LI,27,37,15000000
-Alexander Bah,LD,27,6,13000000
-Issa Kaboré,LD,24,28,10000000
-Florentino Luis,PIV,26,61,20000000
-Leandro Barreiro,MC,26,16,17000000
-Fredrik Aursnes,MC,30,8,20000000
-Orkun Kökçü,MC,25,10,28000000
-Renato Sanches,MC,28,85,10000000
-Soualiho Meïté,MC,32,23,2000000
-Martim Neto,MC,23,22,3000000
-Gianluca Prestianni,MCO,20,25,10000000
-Tiago Gouveia,EI,24,21,5000000
-Benjamín Rollheiser,MCO,25,32,10000000
-Ángel Di María,ED,38,11,3000000
-Kerem Aktürkoğlu,EI,27,17,34000000
-Andreas Schjelderup,EI,21,21,10000000
-Vangelis Pavlidis,DC,27,9,25000000
-Arthur Cabral,DC,28,7,14000000
-Zeki Amdouni,DC,25,70,12000000
+Samuel Soares,POR,23,24,4000000
+António Silva,CT,22,4,28000000
+Tomás Araújo,CT,23,44,28000000
+Nicolás Otamendi,CT,38,30,1000000
+Samuel Dahl,LI,23,26,12000000
+Amar Dedić,LD,23,17,15000000
+Alexander Bah,LD,28,6,9000000
+Richard Ríos,MC,25,20,22000000
+Enzo Barrenechea,MC,24,5,15000000
+Fredrik Aursnes,MC,30,8,17000000
+Leandro Barreiro,MC,26,18,15000000
+João Veloso,MC,20,68,1500000
+Georgiy Sudakov,MCO,23,10,28000000
+João Rego,MCO,20,84,3000000
+Andreas Schjelderup,EI,21,21,20000000
+Bruma,EI,31,7,5000000
+Dodi Lukébakio,ED,28,11,20000000
+Gianluca Prestianni,ED,20,25,12000000
+Vangelis Pavlidis,DC,27,14,32000000
+Franjo Ivanović,DC,22,9,18000000
+Henrique Araújo,DC,24,39,2000000

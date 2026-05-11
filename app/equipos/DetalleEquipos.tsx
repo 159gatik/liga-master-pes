@@ -200,7 +200,7 @@ function SeccionAlineacion({ equipoId }: { equipoId: string }) {
     return (
         <div className="flex flex-col lg:flex-row gap-16 items-start animate-fadeIn italic">
             {/* PIZARRA TÁCTICA */}
-            <div className="relative w-[340px] h-[500px] bg-[#050505] border-2 border-[#1a1a1a] shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-hidden shrink-0 mx-auto lg:mx-0">
+            <div className="relative w-[340px] h-[500px] bg-[#0509] border-2 border-[#1a1a1a] shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-hidden shrink-0 mx-auto lg:mx-0">
                 {/* Marcado de cancha */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none">
                     <div className="absolute top-0 w-full h-1/2 border-b border-white"></div>

@@ -46,7 +46,7 @@ export default function ContenedorLiga({
     const [partidosProgramados, setPartidosProgramados] = useState<PartidoProgramado[]>([]);
     const [cargandoConfig, setCargandoConfig] = useState(true);
 
-    const totalFechas = 18;
+    const totalFechas = 9;
 
     // 1. Equipos y Config (Filtrados por División)
     useEffect(() => {
@@ -127,37 +127,54 @@ export default function ContenedorLiga({
         }
     };
 
+    const navegarFecha = (direccion: 'left' | 'right') => {
+        let nuevaFecha = fechaActiva;
+
+        if (direccion === 'left') {
+            // Si no es la primera, retrocede
+            nuevaFecha = fechaActiva > 1 ? fechaActiva - 1 : 1;
+        } else {
+            // Si no es la última, avanza
+            nuevaFecha = fechaActiva < totalFechas ? fechaActiva + 1 : totalFechas;
+        }
+
+        // Cambiamos la fecha activa (esto dispara el cambio de partidos)
+        setFechaActiva(nuevaFecha);
+
+        // Mantenemos el scroll automático para que el botón seleccionado se vea
+        const el = document.getElementById(`fecha-btn-${nuevaFecha}`);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    };
+
     return (
         <div className="w-full space-y-12 animate-in fade-in duration-700">
 
-            {/* CARRUSEL FECHAS (Estilo Minimalista Webild) */}
+            {/* 2. El Código del Carrusel actualizado */}
             <div className="relative group bg-white/[0.02] border-y border-white/5 py-4 overflow-hidden">
 
-                {/* Flecha Izquierda */}
+                {/* Flecha Izquierda - Ahora llama a navegarFecha */}
                 <button
-                    onClick={() => scroll('left')}
-                    className="absolute left-0 top-0 bottom-0 z-20 px-4 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center text-[#c9a84c] hover:text-white"
+                    onClick={() => navegarFecha('left')}
+                    disabled={fechaActiva === 1}
+                    className="absolute left-0 top-0 bottom-0 z-20 px-4 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent opacity-0 group-hover:opacity-100 disabled:hidden transition-opacity duration-300 flex items-center justify-center text-[#c9a84c] hover:text-white"
                 >
                     <span className="font-bebas text-5xl leading-none">‹</span>
                 </button>
 
-                {/* Contenedor Scrollable - Aquí aplicamos la limpieza */}
                 <div
                     ref={scrollRef}
                     id="carrusel-fechas"
-                    /* Mantenemos no-scrollbar y añadimos overflow-y-hidden para evitar saltos */
-                    className="flex overflow-x-auto gap-8 px-10 items-center no-scrollbar scroll-smooth overflow-y-hidden"
-                    style={{
-                        msOverflowStyle: 'none',
-                        scrollbarWidth: 'none',
-                        WebkitOverflowScrolling: 'touch'
-                    }}
+                    className="flex overflow-x-auto gap-4 md:gap-8 px-10 items-center no-scrollbar scroll-smooth overflow-y-hidden w-full justify-start md:justify-center"
+                    style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
                 >
                     {Array.from({ length: totalFechas }, (_, i) => i + 1).map((f) => (
                         <button
                             key={f}
+                            id={`fecha-btn-${f}`} // ID necesario para el scrollIntoView
                             onClick={() => setFechaActiva(f)}
-                            className={`px-6 py-2 font-bebas text-4xl transition-all flex-shrink-0 italic tracking-tighter relative ${fechaActiva === f ? 'text-[#c9a84c] scale-110' : 'text-gray-700 hover:text-gray-400'
+                            className={`px-4 md:px-6 py-2 font-bebas text-3xl md:text-4xl transition-all flex-shrink-0 italic tracking-tighter relative ${fechaActiva === f ? 'text-[#c9a84c] scale-110' : 'text-gray-400 hover:text-gray-400'
                                 }`}
                         >
                             F{f}
@@ -168,10 +185,11 @@ export default function ContenedorLiga({
                     ))}
                 </div>
 
-                {/* Flecha Derecha */}
+                {/* Flecha Derecha - Ahora llama a navegarFecha */}
                 <button
-                    onClick={() => scroll('right')}
-                    className="absolute right-0 top-0 bottom-0 z-20 px-4 bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center text-[#c9a84c] hover:text-white"
+                    onClick={() => navegarFecha('right')}
+                    disabled={fechaActiva === totalFechas}
+                    className="absolute right-0 top-0 bottom-0 z-20 px-4 bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent opacity-0 group-hover:opacity-100 disabled:hidden transition-opacity duration-300 flex items-center justify-center text-[#c9a84c] hover:text-white"
                 >
                     <span className="font-bebas text-5xl leading-none">›</span>
                 </button>

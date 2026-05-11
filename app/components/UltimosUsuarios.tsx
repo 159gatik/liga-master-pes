@@ -42,39 +42,9 @@ export default function UsuariosActivos() {
                     DTs <span className="text-[#c9a84c]">En Línea</span>
                 </h3>
             </div>
-
-            {/* Lista de nombres activos */}
-            <div className="space-y-3">
-                {loading ? (
-                    <p className="text-[10px] text-gray-500 animate-pulse uppercase italic">Sincronizando satélite...</p>
-                ) : usuarios.length > 0 ? (
-                    usuarios.map((u) => (
-                        <div
-                            key={u.id}
-                            className="flex justify-between items-center group cursor-default"
-                        >
-                            <div className="flex flex-col">
-                                <span className="font-barlow-condensed text-sm uppercase tracking-[2px] text-gray-300 group-hover:text-white transition-colors leading-none">
-                                    {u.nombre || "Manager Desconocido"}
-                                </span>
-                                <span className="text-[8px] text-[#c9a84c] font-bold uppercase tracking-widest opacity-50">
-                                    {u.nombreEquipo || "Sin Club"}
-                                </span>
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="py-4 border-t border-white/5">
-                        <p className="text-[10px] text-gray-600 uppercase tracking-widest italic leading-tight">
-                            No hay Managers conectados en la oficina
-                        </p>
-                    </div>
-                )}
-            </div>
-
             {/* Contador rápido */}
             {usuarios.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-white/5">
+                <div >
                     <p className="text-[9px] text-gray-500 uppercase tracking-[3px] font-bold">
                         Total Conectados: <span className="text-white">{usuarios.length}</span>
                     </p>

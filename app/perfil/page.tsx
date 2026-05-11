@@ -198,7 +198,7 @@ export default function PerfilDT() {
                         </div>
 
                         {/* LA CANCHA */}
-                        <div className="relative w-full aspect-[3/4] max-w-[380px] mx-auto bg-[#050505] border-2 border-[#1a1a1a] overflow-hidden shadow-2xl">
+                        <div className="relative w-full aspect-[3/4] max-w-[380px] mx-auto bg-[#0509] border-2 border-[#1a1a1a] overflow-hidden shadow-2xl">
 
                             {/* LÍNEAS DEL CAMPO (DISEÑO TÁCTICO) */}
                             <div className="absolute inset-0 opacity-20 pointer-events-none">

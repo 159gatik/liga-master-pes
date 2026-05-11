@@ -18,6 +18,7 @@ interface Postulacion {
     fecha: Timestamp;
     speedtestUrl: string;
     whatsapp: string;
+    edad: number;
 }
 
 export default function BandejaPostulaciones() {
@@ -124,6 +125,7 @@ export default function BandejaPostulaciones() {
                                 <p>DISCORD: <span className="text-gray-300">{p.discord}</span></p>
                                 <p>PAIS: <span className="text-gray-300">{p.pais}</span></p>
                                 <p>WHATSAPP: <span className="text-gray-300">{p.whatsapp}</span></p>
+                                <p>EDAD: <span className="text-gray-300">{p.edad}</span></p>
                                 <p>SPEEDTEST: <a href={p.speedtestUrl} target="_blank" className="text-[#c9a84c] underline">VER TEST</a></p>
                             </div>
                         </div>

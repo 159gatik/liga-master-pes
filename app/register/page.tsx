@@ -113,7 +113,7 @@ export default function RegisterPage() {
                         <input
                             type="text"
                             required
-                            placeholder="EJ: GULI_PES"
+                            placeholder="EJ: NICK_DT"
                             className="w-full bg-[#1a1a1a] border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all"
                             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                         />
