@@ -93,8 +93,8 @@ export default function PositionsPage() {
                             key={div}
                             onClick={() => setActiveTab(div as "A" | "B")}
                             className={`font-bebas text-2xl md:text-4xl px-10 py-2 skew-x-[-15deg] transition-all duration-300 ${activeTab === div
-                                    ? 'bg-[#c9a84c] text-black shadow-[0_0_20px_rgba(201,168,76,0.3)]'
-                                    : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'
+                                ? 'bg-[#c9a84c] text-black shadow-[0_0_20px_rgba(201,168,76,0.3)]'
+                                : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'
                                 }`}
                         >
                             <span className="inline-block skew-x-[15deg]">DIVISIÓN {div}</span>
@@ -172,7 +172,7 @@ export default function PositionsPage() {
                     <div className="flex flex-wrap gap-8 mt-8 border-t border-white/5 pt-8">
                         <div className="flex items-center gap-3">
                             <div className="w-4 h-4 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]"></div>
-                            <span className="text-[10px] font-barlow text-gray-500 uppercase tracking-[3px]">Zona Play-offs / Libertadores</span>
+                            <span className="text-[10px] font-barlow text-gray-500 uppercase tracking-[3px]">Zona Play-offs / Champions</span>
                         </div>
                         {activeTab === "A" && (
                             <div className="flex items-center gap-3">

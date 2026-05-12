@@ -12,16 +12,24 @@ import SeccionAdminMercado from "../components/SeccionAdminMercado";
 import BandejaPostulaciones from "../components/BandejaPostulaciones";
 import BandejaMercadoLibre from "../components/BandejaMercadoLibre";
 
-// --- INTERFACES ---
-interface Equipo { id: string; nombre: string; dt: string; dtUid?: string; estado: string; }
+// --- INTERFACES ACTUALIZADAS ---
+interface Equipo {
+    id: string;
+    nombre: string;
+    dt: string;
+    dtUid?: string;
+    estado: string;
+    division: string; // AGREGADO: Necesario para filtrar cruces
+    juego: string;
+}
+
 interface Seleccionado { id: string; uid: string; nombre: string; }
 interface ConfigMercado { fichajesAbiertos: boolean; liberacionesAbiertas: boolean; }
 
 export default function AdminPage() {
-    const { isAdmin, loading } = useAuth();
+    const { isAdmin, loading, userData } = useAuth();
     const router = useRouter();
 
-    // ESTADOS GENERALES
     const [equiposOcupados, setEquiposOcupados] = useState<Equipo[]>([]);
     const [todosLosEquipos, setTodosLosEquipos] = useState<Equipo[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
@@ -31,12 +39,10 @@ export default function AdminPage() {
         liberacionesAbiertas: false
     });
 
-    // ESTADOS FIXTURE LIGA
     const [fechaSel, setFechaSel] = useState(1);
     const [local, setLocal] = useState("");
     const [visita, setVisita] = useState("");
 
-    // ESTADOS FIXTURE COPA
     const [rondaCopaSel, setRondaCopaSel] = useState(1);
     const [localCopa, setLocalCopa] = useState("");
     const [visitaCopa, setVisitaCopa] = useState("");
@@ -60,12 +66,35 @@ export default function AdminPage() {
         return () => { unsubOcupados(); unsubTodos(); unsubConfig(); };
     }, [isAdmin]);
 
+    // --- FUNCIÓN CORREGIDA ---
     const guardarPartido = async () => {
         if (!local || !visita || local === visita) return Alert.fire("Error", "Selecciona equipos diferentes", "error");
+
         const lD = todosLosEquipos.find(e => e.id === local);
         const vD = todosLosEquipos.find(e => e.id === visita);
-        await addDoc(collection(db, "partidos"), { fechaTorneo: Number(fechaSel), localId: local, localNombre: lD?.nombre, visitaId: visita, visitaNombre: vD?.nombre });
-        Toast.fire({ icon: 'success', title: 'Cruce Liga registrado' });
+
+        if (!lD || !vD) return Alert.fire("Error", "Equipo no encontrado", "error");
+
+        try {
+            // Guardamos el partido incluyendo la división del equipo local
+            await addDoc(collection(db, "partidos"), {
+                fechaTorneo: Number(fechaSel),
+                localId: local,
+                localNombre: lD.nombre,
+                visitaId: visita,
+                visitaNombre: vD.nombre,
+                division: lD.division, // IMPORTANTE: Sin esto no aparece en el Fixture B
+                juego: lD.juego || "pes6",
+                estado: "pendiente",
+                fechaCreacion: serverTimestamp()
+            });
+
+            Toast.fire({ icon: 'success', title: `Cruce Liga Div ${lD.division} registrado` });
+            setLocal("");
+            setVisita("");
+        } catch (error) {
+            Alert.fire("Error", "No se pudo guardar el partido", "error");
+        }
     };
 
     const guardarCruceCopa = async () => {
@@ -101,21 +130,20 @@ export default function AdminPage() {
     };
 
     if (loading || !isAdmin) return null;
+
     return (
         <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-10 font-barlow-condensed text-white">
             <div className="max-w-7xl mx-auto space-y-10">
 
-                {/* CABECERA */}
                 <div className="border-l-4 border-[#c9a84c] pl-6 mb-10">
                     <h1 className="font-bebas text-6xl tracking-widest uppercase italic leading-none">Panel de <span className="text-[#c9a84c]">Comisionado</span></h1>
                     <p className="text-gray-500 uppercase tracking-[3px] italic text-sm">Administración Central El Legado</p>
                 </div>
 
-                {/* --- CARGA DE CRUCES (FIXTURE) --- */}
                 <section className="bg-[#111] border border-[#222] p-8 shadow-2xl space-y-6">
                     <div className="flex items-center gap-3">
                         <div className="w-2 h-8 bg-[#c9a84c]"></div>
-                        <h3 className="font-bebas text-4xl italic uppercase">Programar Partidos</h3>
+                        <h3 className="font-bebas text-4xl italic uppercase">Programar Partidos (Liga)</h3>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -127,16 +155,24 @@ export default function AdminPage() {
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Equipo Local</label>
-                            <select className="w-full bg-black border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all" value={local} onChange={e => setLocal(e.target.value)}>
+                            <select className="w-full bg-black border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all font-bold" value={local} onChange={e => setLocal(e.target.value)}>
                                 <option value="">Seleccionar...</option>
-                                {todosLosEquipos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                                {todosLosEquipos.map(e => (
+                                    <option key={e.id} value={e.id}>
+                                        [{e.division}] {e.nombre}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Equipo Visitante</label>
-                            <select className="w-full bg-black border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all" value={visita} onChange={e => setVisita(e.target.value)}>
+                            <select className="w-full bg-black border border-[#333] p-3 text-white outline-none focus:border-[#c9a84c] transition-all font-bold" value={visita} onChange={e => setVisita(e.target.value)}>
                                 <option value="">Seleccionar...</option>
-                                {todosLosEquipos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                                {todosLosEquipos.map(e => (
+                                    <option key={e.id} value={e.id}>
+                                        [{e.division}] {e.nombre}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                         <div className="flex items-end">
@@ -145,11 +181,12 @@ export default function AdminPage() {
                             </button>
                         </div>
                     </div>
+                    <p className="text-[10px] text-gray-600 italic uppercase">Nota: El sistema detectará automáticamente si los equipos son de División A o B.</p>
                 </section>
 
                 <section className="bg-[#111] border border-[#222] p-8 space-y-6">
                     <h3 className="font-bebas text-4xl italic uppercase">Programar Copa</h3>
-                    <div className="grid grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <select className="bg-black p-3" value={rondaCopaSel} onChange={e => setRondaCopaSel(Number(e.target.value))}>{[1, 2, 3, 4, 5].map(r => <option key={r} value={r}>Ronda {r}</option>)}</select>
                         <select className="bg-black p-3" value={localCopa} onChange={e => setLocalCopa(e.target.value)}><option value="">Local...</option>{todosLosEquipos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</select>
                         <select className="bg-black p-3" value={visitaCopa} onChange={e => setVisitaCopa(e.target.value)}><option value="">Visita...</option>{todosLosEquipos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}</select>
@@ -157,7 +194,6 @@ export default function AdminPage() {
                     </div>
                 </section>
 
-                {/* --- VENTANA DE TRANSFERENCIAS --- */}
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className={`p-6 border-2 transition-all ${configMercado.fichajesAbiertos ? "bg-green-900/10 border-green-500" : "bg-red-900/10 border-red-500"}`}>
                         <h4 className="font-bebas text-2xl mb-2 uppercase italic">Mercado de Fichajes (Altas)</h4>
@@ -176,7 +212,6 @@ export default function AdminPage() {
                 <BandejaPostulaciones />
                 <BandejaMercadoLibre />
 
-                {/* --- STAFF TÉCNICO --- */}
                 <section className="bg-[#111] border border-[#222] p-8 shadow-2xl">
                     <h3 className="font-bebas text-4xl text-white mb-8 italic uppercase border-b border-[#222] pb-4">Gestión de Staff Técnico</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -185,6 +220,7 @@ export default function AdminPage() {
                                 <div>
                                     <p className="font-bebas text-2xl text-white italic leading-none uppercase">{eq.nombre}</p>
                                     <p className="text-[#c9a84c] text-xs uppercase font-bold tracking-[2px] mt-2">DT: {eq.dt}</p>
+                                    <p className="text-gray-600 text-[10px] uppercase font-bold mt-1">División {eq.division}</p>
                                 </div>
                                 <button onClick={() => {
                                     if (!eq.dtUid) return Alert.fire("Error", "Falta dtUid", "error");
@@ -201,7 +237,6 @@ export default function AdminPage() {
                 </div>
             </div>
 
-            {/* MODAL DE DESTITUCIÓN */}
             {modalOpen && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
                     <div className="bg-[#111] border-2 border-red-600 p-8 max-w-md w-full shadow-2xl">

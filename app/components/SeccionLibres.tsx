@@ -9,15 +9,15 @@ import {
 
 interface FichajeConfirmado {
     id: string;
-    usuario: string; // Nombre del equipo
-    texto: string;   // "Jugador - Ex Equipo"
+    usuario: string;
+    texto: string;
     fecha: Timestamp;
     estado: string;
 }
 
 interface MercadoConfig {
     fichajesAbiertos: boolean;
-    liberacionesAbiertas: boolean; // Agregué este porque lo vi en tu captura
+    liberacionesAbiertas: boolean;
     fechaCierre: Timestamp;
 }
 
@@ -27,10 +27,9 @@ interface JugadorLibre {
     pos: string;
     exEquipo: string;
     valor?: number;
-    tipo: string;
+    tipo: string; // Ej: "Agente Libre" o "Cedible"
     fechaLiberacion: Timestamp;
 }
-
 
 export default function SeccionLibres() {
     const { user, userData } = useAuth();
@@ -43,7 +42,19 @@ export default function SeccionLibres() {
         fechaCierre: null
     });
     const [jugadoresLibres, setJugadoresLibres] = useState<JugadorLibre[]>([]);
-
+    const [pedidosEnVivo, setPedidosEnVivo] = useState<any[]>([]);
+    useEffect(() => {
+        // Escuchamos los últimos 10 pedidos que entren, sin importar el estado
+        const q = query(
+            collection(db, "pedidos_libres"),
+            orderBy("fecha", "desc"),
+            limit(10)
+        );
+        return onSnapshot(q, (snapshot) => {
+            setPedidosEnVivo(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+    }, []);
+    // 1. Cargar Jugadores Libres
     useEffect(() => {
         const q = query(
             collection(db, "jugadores_libres"),
@@ -54,24 +65,30 @@ export default function SeccionLibres() {
         });
     }, []);
 
-    // 1. Escuchar solo los fichajes ACEPTADOS para mostrar como historial oficial
+    // 2. Escuchar Configuración de Mercado
     useEffect(() => {
         const unsub = onSnapshot(doc(db, "configuracion", "mercado"), (docSnap) => {
             if (docSnap.exists()) {
-                // Firestore data() devuelve un objeto, lo forzamos a nuestro tipo
-                const data = docSnap.data() as MercadoConfig;
-                setMercado(data);
+                setMercado(docSnap.data() as MercadoConfig);
             }
         });
         return () => unsub();
     }, []);
-    // 2. Escuchar fichajes aceptados (igual que antes)
+
+    // 3. Escuchar Fichajes Oficializados
     useEffect(() => {
         const q = query(collection(db, "pedidos_libres"), where("estado", "==", "aceptado"), orderBy("fecha", "desc"), limit(20));
         return onSnapshot(q, (snapshot) => {
             setConfirmados(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FichajeConfirmado)));
         });
     }, []);
+
+    // Función para auto-completar el formulario al hacer click en un jugador
+    const seleccionarJugador = (j: JugadorLibre) => {
+        if (!mercado.fichajesAbiertos) return;
+        setNuevoPedido(`${j.nombre} - ${j.exEquipo}`);
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Sube al formulario
+    };
 
     const enviarSolicitud = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -83,9 +100,9 @@ export default function SeccionLibres() {
                 usuario: userData?.nombreEquipo || "Sin Equipo",
                 dtNombre: userData?.nombre || user.displayName,
                 uid: user.uid,
-                texto: nuevoPedido, // Ejemplo: "Rodrygo - Real Madrid"
+                texto: nuevoPedido.toUpperCase(),
                 fecha: serverTimestamp(),
-                estado: "pendiente" // El admin lo verá en su panel
+                estado: "pendiente"
             });
             setNuevoPedido("");
             alert("Solicitud enviada al Comité. Esperá la resolución.");
@@ -97,105 +114,168 @@ export default function SeccionLibres() {
     };
 
     return (
-        <div className="max-w-5xl mx-auto space-y-10 pb-20 font-barlow-condensed">
+        <div className="max-w-5xl mx-auto space-y-10 pb-20 font-barlow-condensed animate-fadeIn">
 
-            {/* --- FORMULARIO O AVISO DE CIERRE --- */}
+            {/* --- FORMULARIO --- */}
             {user && userData?.equipoId && (
-                <div className="bg-[#111] p-6 border border-[#222]">
+                <div className="bg-[#111] p-8 border-t-4 border-[#c9a84c] shadow-2xl">
                     {mercado.fichajesAbiertos ? (
                         <>
-                            <h4 className="font-bebas text-2xl text-[#c9a84c] mb-4">Enviar Pedido al Comité</h4>
+                            <div className="mb-6">
+                                <h4 className="font-bebas text-4xl text-white italic uppercase tracking-tighter">Solicitar <span className="text-[#c9a84c]">Fichaje</span></h4>
+                                <p className="text-gray-500 text-xs uppercase tracking-[3px]">Seleccioná un jugador de la lista o escribí su nombre</p>
+                            </div>
                             <form onSubmit={enviarSolicitud} className="flex flex-col md:flex-row gap-4">
                                 <input
                                     type="text"
                                     value={nuevoPedido}
                                     onChange={(e) => setNuevoPedido(e.target.value)}
-                                    placeholder="JUGADOR - EX EQUIPO"
-                                    className="flex-1 bg-black border border-[#333] p-3 text-white uppercase text-sm focus:border-[#c9a84c] outline-none"
+                                    placeholder="NOMBRE DEL JUGADOR - CLUB ORIGEN"
+                                    className="flex-1 bg-black border border-[#333] p-4 text-white uppercase text-lg focus:border-[#c9a84c] outline-none italic"
                                     required
                                 />
-                                <button disabled={enviando} className="bg-[#c9a84c] text-black font-bebas px-10 py-3 text-xl hover:bg-white transition-all disabled:opacity-50">
-                                    {enviando ? "ENVIANDO..." : "SOLICITAR FICHAJE"}
+                                <button disabled={enviando} className="bg-[#c9a84c] text-black font-bebas px-12 py-4 text-2xl hover:bg-white transition-all disabled:opacity-50 skew-x-[-15deg]">
+                                    <span className="inline-block skew-x-[15deg]">{enviando ? "PROCESANDO..." : "ENVIAR PEDIDO"}</span>
                                 </button>
                             </form>
                         </>
                     ) : (
-                        <div className="text-center py-6 border border-red-900 bg-red-950/20">
-                            <h4 className="font-bebas text-2xl text-red-500">MERCADO CERRADO</h4>
-                            <p className="text-gray-400 mt-2">El periodo de fichajes se encuentra inhabilitado en este momento.</p>
-                            {mercado.fechaCierre && (
-                                <p className="text-sm text-gray-500 mt-1">
-                                    Última actualización: {mercado.fechaCierre.toDate().toLocaleDateString()}
-                                </p>
-                            )}
+                        <div className="text-center py-10 border border-red-900/50 bg-red-950/10">
+                            <h4 className="font-bebas text-4xl text-red-600 uppercase italic">Mercado de Pases Cerrado</h4>
+                            <p className="text-gray-500 mt-2 tracking-widest text-xs uppercase font-bold">Las transferencias no están permitidas en este momento</p>
                         </div>
                     )}
                 </div>
             )}
-            {/* JUGADORES DISPONIBLES EN EL MERCADO */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h4 className="font-bebas text-3xl text-white tracking-[2px] uppercase">
-                        Jugadores Disponibles
+
+            {/* JUGADORES DISPONIBLES */}
+            <div className="space-y-6">
+                <div className="flex items-end justify-between border-b border-white/10 pb-2">
+                    <h4 className="font-bebas text-5xl text-white italic uppercase tracking-tighter">
+                        Jugadores <span className="text-[#c9a84c]">Disponibles</span>
                     </h4>
-                    <span className="text-[10px] text-[#c9a84c] font-mono uppercase tracking-widest">
-                        {jugadoresLibres.length} en el mercado
+                    <span className="text-[11px] text-gray-500 font-bold uppercase tracking-widest pb-1">
+                        {jugadoresLibres.length} Opciones en cartera
                     </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {jugadoresLibres.length === 0 ? (
-                        <p className="text-gray-600 italic">No hay jugadores libres en este momento.</p>
+                        <p className="text-gray-600 italic">Buscando jugadores disponibles...</p>
                     ) : (
                         jugadoresLibres.map((j) => (
-                            <div key={j.id} className="bg-black/40 border border-[#222] p-4 flex items-center justify-between group hover:border-[#c9a84c] transition-all">
-                                <div>
-                                    <p className="text-gray-500 text-[10px] uppercase tracking-widest">
-                                        Ex {j.exEquipo} · {j.pos}
-                                    </p>
-                                    <p className="text-white font-bebas text-2xl uppercase tracking-tighter group-hover:text-[#c9a84c]">
-                                        {j.nombre}
-                                    </p>
+                            <div
+                                key={j.id}
+                                onClick={() => seleccionarJugador(j)}
+                                className={`bg-[#0d0d0d] border border-[#222] p-5 flex flex-col justify-between group transition-all cursor-pointer ${mercado.fichajesAbiertos ? 'hover:border-[#c9a84c] hover:bg-[#111]' : 'opacity-70'}`}
+                            >
+                                <div className="flex justify-between items-start mb-4">
+                                    <span className="bg-white/5 px-2 py-0.5 text-[10px] text-gray-400 font-bold uppercase tracking-widest border border-white/5">
+                                        {j.pos}
+                                    </span>
+                                    <span className="text-[9px] text-[#c9a84c] font-bold uppercase italic tracking-tighter">
+                                        {j.tipo}
+                                    </span>
                                 </div>
-                                <div className="text-right">
-                                    {j.valor && (
-                                        <span className="text-[#c9a84c] font-bebas text-xl block">
-                                            ${j.valor.toLocaleString()}
-                                        </span>
-                                    )}
-                                    <span className="text-[8px] text-gray-600 uppercase">{j.tipo}</span>
+
+                                <div className="mb-4">
+                                    <h5 className="text-white font-bebas text-3xl uppercase tracking-tighter group-hover:text-[#c9a84c] transition-colors leading-none">
+                                        {j.nombre}
+                                    </h5>
+                                    <p className="text-gray-600 text-[10px] uppercase font-bold mt-1">Ex {j.exEquipo}</p>
+                                </div>
+
+                                <div className="pt-3 border-t border-white/5 flex justify-between items-end">
+                                    <div className="text-[9px] text-gray-700 uppercase">Valor de Mercado</div>
+                                    <div className="text-[#c9a84c] font-bebas text-2xl leading-none">
+                                        ${j.valor?.toLocaleString() || "---"}
+                                    </div>
                                 </div>
                             </div>
                         ))
                     )}
                 </div>
             </div>
-            {/* --- HISTORIAL DE FICHAJES CONFIRMADOS --- */}
-            <div className="space-y-6 pt-10 border-t border-[#222]">
-                <div className="flex items-center justify-between">
-                    <h4 className="font-bebas text-3xl text-[#c9a84c] tracking-[2px] uppercase">
-                        Fichajes Oficializados
-                    </h4>
-                    <span className="text-[10px] text-green-500 font-mono animate-pulse underline">BOLETÍN OFICIAL</span>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {confirmados.length === 0 ? (
-                        <p className="text-gray-600 italic">No hay fichajes confirmados en esta tanda.</p>
-                    ) : (
-                        confirmados.map((c) => (
-                            <div key={c.id} className="bg-black/40 border border-[#222] p-4 flex items-center justify-between group hover:border-[#27ae60] transition-all">
+            {/* FICHAJES CONFIRMADOS */}
+            <div className="space-y-6 pt-10 border-t border-white/5">
+                <h4 className="font-bebas text-4xl text-white italic uppercase tracking-tighter">
+                    Boletín <span className="text-[#27ae60]">Oficial</span>
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {confirmados.map((c) => (
+                        <div key={c.id} className="bg-black/40 border border-[#222] p-4 flex items-center justify-between group hover:border-[#27ae60] transition-all">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 bg-[#27ae60]/10 border border-[#27ae60]/20 flex items-center justify-center font-bebas text-[#27ae60] text-xl">✓</div>
                                 <div>
-                                    <p className="text-gray-500 text-[10px] uppercase tracking-widest">{c.usuario} incorporó a:</p>
-                                    <p className="text-white font-bebas text-2xl uppercase tracking-tighter group-hover:text-[#27ae60]">{c.texto}</p>
-                                </div>
-                                <div className="text-right">
-                                    <span className="text-[#27ae60] text-[9px] font-bold block">✓ CONFIRMADO</span>
-                                    <span className="text-[8px] text-gray-700">{c.fecha?.toDate().toLocaleDateString()}</span>
+                                    <p className="text-gray-600 text-[9px] uppercase font-bold">{c.usuario} incorporó a:</p>
+                                    <p className="text-white font-bebas text-2xl uppercase tracking-tighter group-hover:text-[#27ae60] leading-none">{c.texto}</p>
                                 </div>
                             </div>
-                        ))
-                    )}
+                            <div className="text-right">
+                                <span className="text-[8px] text-gray-700 block uppercase font-bold tracking-widest">
+                                    {c.fecha?.toDate().toLocaleDateString()}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            {/* --- MONITOR DE PEDIDOS EN TIEMPO REAL --- */}
+            <div className="space-y-6 pt-10 border-t border-white/5">
+                <div className="flex items-end justify-between border-b border-white/10 pb-2">
+                    <h4 className="font-bebas text-4xl text-white italic uppercase tracking-tighter">
+                        Monitor de <span className="text-blue-500">Solicitudes</span>
+                    </h4>
+                    <span className="text-[10px] text-blue-500 font-bold uppercase tracking-widest pb-1 animate-pulse">
+                        • En Vivo
+                    </span>
+                </div>
+
+                <div className="bg-black/20 border border-white/5 overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-white/5 text-[#c9a84c] font-bebas text-xl uppercase tracking-widest">
+                                <th className="p-4 font-normal">Hora Exacta</th>
+                                <th className="p-4 font-normal">Club Solicitante</th>
+                                <th className="p-4 font-normal">Jugador / Pedido</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                            {pedidosEnVivo.length === 0 ? (
+                                <tr>
+                                    <td colSpan={3} className="p-10 text-center text-gray-600 italic">
+                                        No hay solicitudes recientes en el monitor.
+                                    </td>
+                                </tr>
+                            ) : (
+                                pedidosEnVivo.map((p) => (
+                                    <tr key={p.id} className="hover:bg-white/[0.02] transition-colors group">
+                                        <td className="p-4">
+                                            <span className="text-blue-500 font-mono text-xs font-bold">
+                                                {p.fecha?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                            </span>
+                                            <p className="text-[9px] text-gray-700 uppercase mt-1">
+                                                {p.fecha?.toDate().toLocaleDateString()}
+                                            </p>
+                                        </td>
+                                        <td className="p-4">
+                                            <p className="text-white font-bold text-sm uppercase group-hover:text-[#c9a84c] transition-colors">
+                                                {p.usuario}
+                                            </p>
+                                            <p className="text-[10px] text-gray-600 italic">DT: {p.dtNombre}</p>
+                                        </td>
+                                        <td className="p-4">
+                                            <p className="text-gray-300 font-bebas text-xl uppercase tracking-wider">
+                                                {p.texto}
+                                            </p>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
