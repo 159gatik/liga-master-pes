@@ -8,6 +8,8 @@ import SeccionAdminMercado from "../components/SeccionAdminMercado";
 import SeccionReglamentoMercado from "../components/SeccionRegalementoMercado";
 import SeccionTraspasos from "../components/SeccionTraspasos";
 import SeccionLibres from "../components/SeccionLibres";
+import SeccionTransferibles from "../components/SeccionTransferibles";
+import SeccionOjeadores from "../components/SeccionOjeadores";
 
 export default function FichajesPage() {
     const [activeTab, setActiveTab] = useState("reglamento");
@@ -70,6 +72,17 @@ export default function FichajesPage() {
                             active={activeTab === "libres"}
                             onClick={() => setActiveTab("libres")}
                         />
+
+                        <TabButton
+                            label="Transferibles"
+                            active={activeTab === "transferibles"}
+                            onClick={() => setActiveTab("transferibles")}
+                        />
+                        <TabButton
+                            label="Ojeadores"
+                            active={activeTab === "ojeadores"}
+                            onClick={() => setActiveTab("ojeadores")}
+                        />
                         <TabButton
                             label="Confirmación"
                             active={activeTab === "confirmacion"}
@@ -103,7 +116,8 @@ export default function FichajesPage() {
                 {activeTab === "libres" && (userData?.rol === "dt" || isAdmin) && <SeccionLibres />}
                 {activeTab === "confirmacion" && (userData?.rol === "dt" || isAdmin) && <SeccionConfirmacion />}
                 {activeTab === "admin" && isAdmin && <SeccionAdminMercado />}
-
+                {activeTab === "transferibles" && <SeccionTransferibles />}
+                {activeTab === "ojeadores" && <SeccionOjeadores />}
                 {/* Mensaje de bloqueo para usuarios invitados (sin equipo) */}
                 {(activeTab === "libres" || activeTab === "confirmacion") && userData?.rol === "invitado" && !isAdmin && (
                     <div className="py-20 text-center border border-[#1a1a1a] bg-[#050505] animate-fade-in">

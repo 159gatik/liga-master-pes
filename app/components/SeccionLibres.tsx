@@ -116,7 +116,7 @@ export default function SeccionLibres() {
     return (
         <div className="max-w-5xl mx-auto space-y-10 pb-20 font-barlow-condensed animate-fadeIn">
 
-            {/* --- FORMULARIO --- */}
+            {/* --- FORMULARIO / REGLAMENTO --- */}
             {user && userData?.equipoId && (
                 <div className="bg-[#111] p-8 border-t-4 border-[#c9a84c] shadow-2xl">
                     {mercado.fichajesAbiertos ? (
@@ -140,9 +140,42 @@ export default function SeccionLibres() {
                             </form>
                         </>
                     ) : (
-                        <div className="text-center py-10 border border-red-900/50 bg-red-950/10">
-                            <h4 className="font-bebas text-4xl text-red-600 uppercase italic">Mercado de Pases Cerrado</h4>
-                            <p className="text-gray-500 mt-2 tracking-widest text-xs uppercase font-bold">Las transferencias no están permitidas en este momento</p>
+                        <div className="space-y-8">
+                            <div className="text-center pb-6 border-b border-white/5">
+                                <h4 className="font-bebas text-5xl text-red-600 uppercase italic leading-none">Mercado de Pases Cerrado</h4>
+                                <p className="text-gray-500 mt-2 tracking-[4px] text-[10px] uppercase font-bold">Las transferencias no están permitidas en este momento</p>
+                            </div>
+
+                            {/* CUADRO INFORMATIVO DE REGLAS */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                                <div className="space-y-4">
+                                    <h5 className="font-bebas text-2xl text-[#c9a84c] uppercase tracking-widest italic">Reglamento de Agentes Libres</h5>
+                                    <ul className="space-y-3">
+                                        <li className="flex gap-3 items-start">
+                                            <p className="text-gray-400 text-sm uppercase font-bold leading-tight">Los jugadores libres solo podrán contratarse cuando el mercado esté <span className="text-white">abierto</span>.</p>
+                                        </li>
+                                        <li className="flex gap-3 items-start">
+                                            <p className="text-gray-400 text-sm uppercase font-bold leading-tight">Para contratar, el DT deberá abonar el <span className="text-white">valor del sueldo</span> del jugador.</p>
+                                        </li>
+                                        <li className="flex gap-3 items-start">
+                                            <p className="text-gray-400 text-sm uppercase font-bold leading-tight">Cupo máximo permitido: <span className="text-white">2 jugadores libres</span> por equipo.</p>
+                                        </li>
+                                        <li className="flex gap-3 items-start">
+                                            <p className="text-gray-400 text-sm uppercase font-bold leading-tight">Contrato garantizado por <span className="text-white">1 año (2 torneos)</span>.</p>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div className="bg-black/50 border border-[#c9a84c]/20 p-6 skew-x-[-1deg]">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-1 h-6 bg-red-600"></div>
+                                        <h6 className="font-bebas text-xl text-white uppercase tracking-widest">Protocolo Obligatorio</h6>
+                                    </div>
+                                    <p className="text-xs text-gray-500 uppercase font-bold italic leading-relaxed">
+                                        Es obligatorio redactar el informe con los demás movimientos del mercado en su respectivo <span className="text-[#c9a84c]">despacho oficial</span> para que el comité procese la validez del fichaje.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

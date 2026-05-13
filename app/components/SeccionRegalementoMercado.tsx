@@ -14,10 +14,10 @@ export default function SeccionReglamentoMercado() {
                     <h3 className="font-bebas text-6xl text-white tracking-tighter uppercase leading-none">
                         Reglamento de <span className="text-[#c9a84c]">Mercado</span>
                     </h3>
-                    <p className="text-gray-500 text-sm uppercase tracking-[5px] mt-2 font-bold">Temporada I · Ciclo Integral</p>
+                    <p className="text-gray-500 text-sm uppercase tracking-[5px] mt-2 font-bold">Temporada I</p>
                 </div>
                 <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-5 font-bebas text-9xl uppercase tracking-tighter select-none">
-                    MARKET
+                    MERCADO
                 </div>
             </header>
 
@@ -26,7 +26,7 @@ export default function SeccionReglamentoMercado() {
                 <div className="skew-x-[10deg]">
                     <p className="text-red-500 font-bebas text-3xl uppercase mb-1 tracking-widest">Mercado Cerrado</p>
                     <p className="text-gray-400 text-lg leading-tight max-w-2xl">
-                        El mercado permanecerá **bloqueado** durante el desarrollo de los torneos. Altas, bajas y traspasos solo se habilitarán en el receso oficial tras el Clausura.
+                        El mercado permanecerá **bloqueado** durante el desarrollo de los torneos. Altas, bajas y traspasos solo se habilitarán una vez terminado el torneo.
                     </p>
                 </div>
             </div>
@@ -52,10 +52,11 @@ export default function SeccionReglamentoMercado() {
                 </div>
 
                 <div className="bg-[#c9a84c]/10 border border-[#c9a84c]/20 p-6 relative">
-                    <h4 className="text-[#c9a84c] font-bebas text-2xl uppercase mb-3"> jugadores Libres</h4>
+                    <h4 className="text-[#c9a84c] font-bebas text-2xl uppercase mb-3">Jugadores Libres</h4>
                     <ul className="text-xs text-gray-400 space-y-1 uppercase font-bold">
                         <li className="flex justify-between"><span>Cupo:</span> <span className="text-white">2 por DT</span></li>
-                        <li className="flex justify-between"><span>Costo:</span> <span className="text-white">80% Valor</span></li>
+                        <li className="flex justify-between"><span>Costo:</span> <span className="text-white">10% del Valor</span></li>
+                        <li className="flex justify-between"><span>Contrato:</span> <span className="text-white">1 Año (2 Torneos)</span></li>
                         <li className="flex justify-between"><span>Orden:</span> <span className="text-[#c9a84c]">Prioridad Pedido</span></li>
                     </ul>
                 </div>
